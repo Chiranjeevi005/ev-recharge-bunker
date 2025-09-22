@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Lighter semi-dark futuristic color palette */
+    --color-background: #1E293B; /* Medium dark blue */
+    --color-foreground: #F1F5F9; /* Light gray for text */
+    --color-card-bg: #334155; /* Medium blue-gray for cards */
+    --color-accent: #10B981; /* Emerald green as primary accent */
+    --color-accent-dark: #059669; /* Darker emerald for depth */
+    --color-secondary: #8B5CF6; /* Vibrant purple for secondary elements */
+    --color-highlight: #F59E0B; /* Amber for highlights and warnings */
+    --font-sans: 'Inter', 'Poppins', 'Roboto', 'Open Sans', sans-serif;
+    --font-mono: var(--font-geist-mono);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Custom gradient utilities with new color scheme */
+.bg-gradient-futuristic {
+  background: linear-gradient(90deg, #8B5CF6 0%, #10B981 50%, #059669 100%);
+}
+
+.bg-gradient-purple-emerald {
+  background: linear-gradient(90deg, #8B5CF6 0%, #10B981 100%);
+}
+
+.bg-gradient-emerald-amber {
+  background: linear-gradient(90deg, #10B981 0%, #F59E0B 100%);
+}
+
+/* Custom animation utilities */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glow effects with new colors */
+.glow-purple {
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+}
+
+.glow-amber {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
 }
