@@ -3,3 +3,6 @@ export * from './Card';
 export * from './LoadingScreen';
 export * from './Section';
 export * from './AuthDemo';
+export * from './Logo';
+export * from './TestimonialCard';
+export * from './ApiLoadingIndicator';

@@ -1,70 +1,154 @@
-# EV Bunker - Electric Vehicle Charging Stations
+# EV Bunker - Electric Vehicle Charging Platform
 
-Find, book, and pay for EV charging stations seamlessly with EV Bunker. Revolutionizing the electric vehicle charging experience.
+A futuristic web application for booking electric vehicle charging stations with real-time availability, secure payments, and comprehensive booking management.
 
 ## Features
 
-- Real-time charging station availability
-- Instant booking and payment processing
-- Route optimization to nearest stations
-- User reviews and ratings
-- Admin dashboard for station management
+### Client Dashboard
+- **Interactive Map**: Google Maps integration with glowing pins for charging stations
+- **Quick Booking**: One-click slot booking with Razorpay payment integration
+- **Real-time Stats**: Animated counters for EVs charged, active bunks, and trips completed
+- **Booking History**: Detailed view of past bookings with status indicators
+- **Responsive Design**: Fully optimized for mobile, tablet, and desktop devices
 
-## Authentication System
+### Authentication
+- **Secure Login/Registration**: Email/password and Google OAuth options
+- **Role-based Access**: Separate dashboards for clients and administrators
+- **Session Management**: Secure session handling with NextAuth.js
 
-This project includes a complete authentication and authorization system. For detailed information, see [AUTHENTICATION.md](AUTHENTICATION.md).
+### Admin Panel
+- **Station Management**: Add, edit, and remove charging stations
+- **Booking Oversight**: View and manage all bookings
+- **User Management**: Administer user accounts and permissions
 
-### User Roles
+### API Loading Indicator
+- **Futuristic Animation**: Theme-consistent loading animation for API calls
+- **Flexible Display**: Inline component or full-page overlay
+- **Multiple Sizes**: Small, medium, and large variations
+- **Customizable**: Support for custom messages and styling
 
-1. **Client (EV User)**
-   - Login/signup only via Google OAuth
-   - Automatically creates user record on first login
+## Technology Stack
 
-2. **Admin**
-   - Login/signup via email and password
-   - Default credentials: admin@ebunker.com / admin123
-
-## Tech Stack
-
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS
-- **Authentication**: NextAuth.js (Auth.js)
-- **Database**: SQLite with Prisma ORM
-- **Security**: JWT, bcrypt, HTTP-only cookies
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **UI/UX**: Framer Motion for animations, Lottie for energy effects
+- **State Management**: React Context API
+- **Authentication**: NextAuth.js with credentials and Google OAuth
+- **Database**: PostgreSQL with Prisma ORM
+- **Payments**: Razorpay integration
+- **Mapping**: Google Maps API
+- **Testing**: Jest and React Testing Library
+- **Deployment**: Docker support, CI/CD ready
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Set up environment variables (see .env.example)
-4. Run database migrations: `npx prisma migrate dev`
-5. Seed the database: `npm run seed`
-6. Start the development server: `npm run dev`
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database
+- Google Maps API key
+- Razorpay account
 
-## Available Scripts
+### Installation
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run seed` - Seed the database with default data
-- `npm test` - Run authentication tests
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd ev-bunker
+```
 
-## Security Features
+2. Install dependencies:
+```bash
+npm install
+```
 
-- Password hashing with bcrypt
-- JWT-based session management
-- Refresh token rotation
-- CSRF protection
-- Role-based access control
-- Input validation and sanitization
-- Rate limiting on auth endpoints
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+# Edit .env.local with your configuration
+```
+
+4. Run database migrations:
+```bash
+npx prisma migrate dev
+```
+
+5. Start the development server:
+```bash
+npm run dev
+```
+
+The application will be available at http://localhost:3002
+
+## Project Structure
+
+```
+src/
+├── app/              # Next.js app router pages
+├── components/       # Reusable UI components
+├── lib/              # Utility functions and configurations
+├── prisma/           # Database schema and migrations
+└── tests/            # Unit and integration tests
+```
+
+## Key Components
+
+### UI Components
+- `Button`, `Card`, `Input`, `Logo` - Basic UI elements
+- `LoadingScreen` - Futuristic battery charging animation for initial load
+- `ApiLoadingIndicator` - Futuristic animation for API calls
+- `FloatingActionButton` - Primary action button with animations
+- `EnergyAnimation` - Lottie-based energy effects
+
+### Dashboard Components
+- `BookingPanel` - Modal for booking slots and payments
+- `MapSection` - Interactive map with station markers
+- `PastBookings` - History of previous bookings
+- `QuickStats` - Animated statistics counters
+
+## Documentation
+
+- [Authentication Setup](AUTHENTICATION.md)
+- [Google OAuth Configuration](GOOGLE_OAUTH_SETUP.md)
+- [Loading Screen Guide](LOADING_SCREEN_GUIDE.md)
+- [Testimonials Guide](TESTIMONIALS_GUIDE.md)
+- [Dashboard Features](DASHBOARD_FEATURES.md)
+- [Google Maps Setup](GOOGLE_MAPS_SETUP.md)
+- [Razorpay Integration](RAZORPAY_SETUP.md)
+- [API Loading Indicator](API_LOADING_INDICATOR.md)
+- [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
 
 ## Testing
 
-This project includes comprehensive tests for the authentication system. See the [tests/README.md](tests/README.md) for more information.
-
-To run tests:
+Run the test suite:
 ```bash
 npm test
 ```
+
+## Deployment
+
+Build for production:
+```bash
+npm run build
+npm start
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Framer Motion](https://www.framer.com/motion/)
+- [Prisma](https://www.prisma.io/)
+- [NextAuth.js](https://next-auth.js.org/)
+- [Razorpay](https://razorpay.com/)
+- [Google Maps Platform](https://cloud.google.com/maps-platform)

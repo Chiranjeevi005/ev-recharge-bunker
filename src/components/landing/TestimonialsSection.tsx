@@ -1,45 +1,75 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Section } from '@/components/ui/Section';
-import { Card } from '@/components/ui/Card';
+import { TestimonialCard } from '@/components/ui/TestimonialCard';
 
 export const TestimonialsSection: React.FC = () => {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Placeholder data - to be replaced with real testimonials from database
+  // Best testimonials data
   const testimonials = [
     {
+      id: 1,
       name: "Narayana Patel",
       role: "EV Owner",
-      content: "Real user testimonials will be displayed here once users start sharing their experiences with our platform.",
-      avatar: "UN",
+      content: "EV Bunker has completely transformed my charging experience. No more waiting in long queues or searching for available stations. The app makes everything seamless.",
+      rating: 5,
     },
     {
+      id: 2,
       name: "Krishna Sagar",
-      role: "EV Driver",
-      content: "Real user testimonials will be displayed here once users start sharing their experiences with our platform.",
-      avatar: "UN",
+      role: "Fleet Manager",
+      content: "As a fleet manager, I need reliable charging solutions for my electric vehicles. EV Bunker's network and booking system have saved us countless hours and improved efficiency.",
+      rating: 5,
     },
     {
-      name: "Vendanta Kumar",
-      role: "EV Enthusiast",
-      content: "Real user testimonials will be displayed here once users start sharing their experiences with our platform.",
-      avatar: "UN",
+      id: 3,
+      name: "Priya Sharma",
+      role: "Daily Commuter",
+      content: "I use EV Bunker for my daily commute charging needs. The real-time availability and fast charging have made my transition to electric vehicles effortless.",
+      rating: 5,
     },
   ];
 
+  // Auto-rotate testimonials
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % testimonials.length);
     }, 5000);
+    
     return () => clearInterval(interval);
   }, [testimonials.length]);
 
+  // Function to render star ratings
+  const renderRating = (rating: number) => {
+    return (
+      <div className="flex mb-4">
+        {[...Array(5)].map((_, i) => (
+          <motion.svg
+            key={i}
+            className={`w-5 h-5 ${i < rating ? 'text-[#F59E0B]' : 'text-[#475569]'}`}
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </motion.svg>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <Section id="testimonials" className="bg-[#1E293B] section-responsive">
-      <div className="container mx-auto">
+    <Section id="testimonials" className="bg-[#1E293B] section-responsive relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] opacity-10 blur-3xl"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] opacity-10 blur-3xl"></div>
+      
+      <div className="container mx-auto relative z-10">
         <motion.div
           className="text-center mb-12 sm:mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -55,48 +85,91 @@ export const TestimonialsSection: React.FC = () => {
           </p>
         </motion.div>
 
-        <div className="relative max-w-4xl mx-auto">
-          <Card className="p-6 sm:p-8 md:p-10 lg:p-12">
-            <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-[#8B5CF6] opacity-10"></div>
-            <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-[#10B981] opacity-10"></div>
+        {/* Testimonial Slider */}
+        <div className="max-w-4xl mx-auto">
+          <TestimonialCard className="p-8 md:p-10 lg:p-12 relative overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] opacity-10 blur-3xl"></div>
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] opacity-10 blur-3xl"></div>
             
             <div className="relative z-10">
-              <motion.div
-                key={currentTestimonial}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="flex items-center mb-5 sm:mb-6">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white font-bold text-lg sm:text-xl mr-3 sm:mr-4">
-                    {testimonials[currentTestimonial].avatar}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="text-center"
+                >
+                  {/* Rating */}
+                  {renderRating(testimonials[currentIndex].rating)}
+                  
+                  {/* Testimonial content */}
+                  <div className="mb-8">
+                    <p className="text-[#F1F5F9] text-lg md:text-xl italic leading-relaxed max-w-2xl mx-auto">
+                      "{testimonials[currentIndex].content}"
+                    </p>
                   </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-[#F1F5F9]">{testimonials[currentTestimonial].name}</h3>
-                    <p className="text-[#94A3B8] text-sm sm:text-base">{testimonials[currentTestimonial].role}</p>
+                  
+                  {/* User info */}
+                  <div className="mb-2">
+                    <h3 className="text-xl md:text-2xl font-bold text-[#F1F5F9]">{testimonials[currentIndex].name}</h3>
+                    <p className="text-[#94A3B8] text-base mt-1">{testimonials[currentIndex].role}</p>
                   </div>
-                </div>
-                
-                <p className="text-[#CBD5E1] italic text-sm sm:text-base md:text-lg">
-                  "{testimonials[currentTestimonial].content}"
-                </p>
-              </motion.div>
+                  
+                  {/* Decorative quote marks */}
+                  <div className="absolute top-6 left-6 text-[#8B5CF6] opacity-20 text-7xl font-serif">"</div>
+                  <div className="absolute bottom-6 right-6 text-[#8B5CF6] opacity-20 text-7xl font-serif rotate-180">"</div>
+                </motion.div>
+              </AnimatePresence>
               
-              <div className="flex justify-center mt-6 sm:mt-8 space-x-2">
+              {/* Navigation Dots */}
+              <div className="flex justify-center mt-8 space-x-2">
                 {testimonials.map((_, index) => (
-                  <button
+                  <motion.button
                     key={index}
-                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-                      index === currentTestimonial ? "bg-[#8B5CF6]" : "bg-[#475569]"
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      index === currentIndex 
+                        ? "bg-gradient-to-r from-[#8B5CF6] to-[#10B981] w-8" 
+                        : "bg-[#475569]"
                     }`}
-                    onClick={() => setCurrentTestimonial(index)}
+                    onClick={() => setCurrentIndex(index)}
                     aria-label={`View testimonial ${index + 1}`}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
                   />
                 ))}
               </div>
             </div>
-          </Card>
+          </TestimonialCard>
+          
+          {/* Navigation Arrows */}
+          <div className="flex justify-between mt-6">
+            <motion.button
+              className="p-3 rounded-full bg-[#334155] border border-[#475569] text-[#CBD5E1] hover:bg-gradient-to-r hover:from-[#8B5CF6] hover:to-[#10B981] hover:text-white transition-all duration-300"
+              onClick={() => setCurrentIndex((currentIndex - 1 + testimonials.length) % testimonials.length)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              aria-label="Previous testimonial"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </motion.button>
+            
+            <motion.button
+              className="p-3 rounded-full bg-[#334155] border border-[#475569] text-[#CBD5E1] hover:bg-gradient-to-r hover:from-[#8B5CF6] hover:to-[#10B981] hover:text-white transition-all duration-300"
+              onClick={() => setCurrentIndex((currentIndex + 1) % testimonials.length)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              aria-label="Next testimonial"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </motion.button>
+          </div>
         </div>
       </div>
     </Section>

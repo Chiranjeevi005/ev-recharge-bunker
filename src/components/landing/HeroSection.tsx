@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 
 // Predefined positions for particles to ensure SSR/CSR consistency
@@ -38,10 +39,31 @@ const particleAnimations = [
 ];
 
 export const HeroSection: React.FC = () => {
+  const handleContactClick = () => {
+    // Scroll to footer
+    const footer = document.querySelector('footer');
+    if (footer) {
+      footer.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155] pt-16">
-      {/* Animated background */}
+      {/* Hero Banner Image - Full width and height */}
       <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/hero-banner.jpg"
+          alt="EV Charging Station"
+          fill
+          className="object-cover"
+          priority
+        />
+        {/* Overlay to ensure text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1E293B]/80 via-[#1E293B]/50 to-[#1E293B]/80"></div>
+      </div>
+      
+      {/* Animated background elements on top of banner */}
+      <div className="absolute inset-0 z-10">
         {/* Gradient blobs */}
         <div className="absolute top-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] opacity-20 blur-3xl"></div>
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] opacity-20 blur-3xl"></div>
@@ -83,83 +105,40 @@ export const HeroSection: React.FC = () => {
         </div>
       </div>
       
-      <div className="container mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center py-12 md:py-16">
+      {/* Content centered on top of the banner */}
+      <div className="container mx-auto relative z-20">
+        <div className="flex flex-col items-center justify-center min-h-screen py-12 md:py-16 text-center">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center sm:text-left"
+            className="max-w-4xl mx-auto"
           >
             <h1 className="text-responsive-xl font-bold text-[#F1F5F9] mb-4 sm:mb-6">
               Power the Future of <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#8B5CF6] via-[#10B981] to-[#059669]">Electric Mobility</span>
             </h1>
-            <p className="text-base sm:text-lg text-[#CBD5E1] mb-6 sm:mb-8 max-w-2xl mx-auto sm:mx-0">
+            <p className="text-base sm:text-lg text-[#CBD5E1] mb-6 sm:mb-8 max-w-2xl mx-auto">
               India's most advanced EV charging network. Book your charging slot seamlessly and power up in minutes, not hours. 
               Join the green revolution across the nation.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/login">
                 <Button 
                   size="md" 
                   glow
                   className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white hover:from-[#7C3AED] hover:to-[#059669] w-full sm:w-auto"
                 >
-                  Get Started
+                  Book a Slot
                 </Button>
               </Link>
-              <Button variant="outline" size="md" className="w-full sm:w-auto">
-                How It Works
+              <Button 
+                variant="outline" 
+                size="md" 
+                className="w-full sm:w-auto"
+                onClick={handleContactClick}
+              >
+                Contact
               </Button>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            {/* Futuristic EV illustration */}
-            <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#334155]/50 to-[#1E293B]/50 border border-[#475569]/50 backdrop-blur-sm p-6 sm:p-8">
-              <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#8B5CF6] via-[#10B981] to-[#059669] opacity-20 blur-xl"></div>
-              <div className="relative z-10">
-                <div className="flex justify-center mb-6 sm:mb-8">
-                  <div className="relative">
-                    {/* EV Car */}
-                    <div className="w-48 h-24 sm:w-64 sm:h-32 bg-gradient-to-r from-[#10B981] to-[#059669] rounded-t-xl sm:rounded-t-2xl rounded-b-md sm:rounded-b-lg"></div>
-                    <div className="absolute -bottom-3 left-6 sm:left-8 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#475569]"></div>
-                    <div className="absolute -bottom-3 right-6 sm:right-8 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#475569]"></div>
-                    <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-12 h-6 sm:w-16 sm:h-8 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] rounded-t-md sm:rounded-t-lg"></div>
-                    
-                    {/* Charging effect */}
-                    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
-                      <div className="w-1 h-6 sm:h-8 bg-[#059669] animate-pulse"></div>
-                      <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#059669] animate-ping absolute -top-1.5 -left-1 sm:-top-2 sm:-left-1.5"></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <h3 className="text-lg sm:text-xl font-bold text-[#F1F5F9] mb-1 sm:mb-2">Ultra-Fast Charging</h3>
-                  <p className="text-sm sm:text-base text-[#CBD5E1]">80% charge in just 15 minutes</p>
-                </div>
-              </div>
-              
-              {/* Charging stats */}
-              <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] flex items-center justify-center text-[#1E293B]">
-                <div className="text-center">
-                  <div className="font-bold text-sm sm:text-base">15</div>
-                  <div className="text-xs">min</div>
-                </div>
-              </div>
-              
-              <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-[#F1F5F9]">
-                <div className="text-center">
-                  <div className="font-bold text-sm sm:text-base">80%</div>
-                  <div className="text-xs">charge</div>
-                </div>
-              </div>
             </div>
           </motion.div>
         </div>

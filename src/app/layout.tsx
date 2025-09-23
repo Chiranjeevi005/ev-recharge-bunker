@@ -23,6 +23,11 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "EV Bunker - Electric Vehicle Charging Stations",
   description: "Find, book, and pay for EV charging stations seamlessly with EV Bunker. Revolutionizing the electric vehicle charging experience.",
+  icons: {
+    icon: "/assets/favicon.ico",
+    shortcut: "/assets/favicon.ico",
+    apple: "/assets/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
