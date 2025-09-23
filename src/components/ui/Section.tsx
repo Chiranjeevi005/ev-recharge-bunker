@@ -22,7 +22,7 @@ export const Section: React.FC<SectionProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.5 }}
-      className={`py-16 md:py-24 ${className}`}
+      className={`py-12 sm:py-16 md:py-20 lg:py-24 ${className}`}
       {...props}
     >
       {children}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { 
+  Navbar,
   HeroSection,
   StatsSection,
   FeaturesSection,
@@ -10,11 +11,15 @@ import {
   MapSection,
   PaymentSection,
   TestimonialsSection,
+  CTASection,
   Footer
 } from '@/components/landing';
+import { useSession } from "next-auth/react";
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const sessionLoading = status === "loading";
 
   useEffect(() => {
     // Simulate loading time
@@ -31,6 +36,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#1E293B]">
+      <Navbar />
       <HeroSection />
       <StatsSection />
       <FeaturesSection />
@@ -38,6 +44,8 @@ export default function Home() {
       <MapSection />
       <PaymentSection />
       <TestimonialsSection />
+      {/* Only show CTA section if user is not logged in */}
+      {!session?.user && <CTASection />}
       <Footer />
     </div>
   );

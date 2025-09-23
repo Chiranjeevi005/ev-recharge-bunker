@@ -26,8 +26,8 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="bg-[#1E293B] border-t border-[#334155]">
-      <div className="container mx-auto px-4 md:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
+      <div className="container mx-auto px-4 py-12 sm:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 lg:gap-12">
           <div className="lg:col-span-2">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -35,10 +35,10 @@ export const Footer: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#8B5CF6] via-[#10B981] to-[#059669] mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#8B5CF6] via-[#10B981] to-[#059669] mb-3 sm:mb-4">
                 EV Bunker
               </h2>
-              <p className="text-[#94A3B8] mb-6 max-w-md">
+              <p className="text-[#94A3B8] mb-5 sm:mb-6 max-w-md text-sm sm:text-base">
                 Revolutionizing electric vehicle charging with a seamless, futuristic experience. 
                 Powering the future of sustainable transportation.
               </p>
@@ -46,15 +46,15 @@ export const Footer: React.FC = () => {
           </div>
           
           {Object.entries(navigation).map(([category, links], categoryIndex) => (
-            <div key={category} className="md:text-left">
+            <div key={category} className="sm:text-left">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: categoryIndex * 0.1 }}
               >
-                <h3 className="text-lg font-semibold mb-4 text-[#F1F5F9] capitalize">{category}</h3>
-                <ul className="space-y-3">
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-[#F1F5F9] capitalize">{category}</h3>
+                <ul className="space-y-2 sm:space-y-3">
                   {links.map((link, linkIndex) => (
                     <motion.li 
                       key={link.name}
@@ -63,7 +63,7 @@ export const Footer: React.FC = () => {
                     >
                       <a 
                         href={link.href} 
-                        className="text-[#94A3B8] hover:text-[#F1F5F9] transition-colors duration-200"
+                        className="text-[#94A3B8] hover:text-[#F1F5F9] transition-colors duration-200 text-sm sm:text-base"
                       >
                         {link.name}
                       </a>
@@ -76,7 +76,7 @@ export const Footer: React.FC = () => {
         </div>
         
         <motion.div 
-          className="border-t border-[#334155] mt-12 pt-8 flex flex-col md:flex-row justify-between items-center"
+          className="border-t border-[#334155] mt-10 sm:mt-12 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -85,7 +85,7 @@ export const Footer: React.FC = () => {
           <p className="text-[#94A3B8] text-sm">
             &copy; {new Date().getFullYear()} EV Bunker. All rights reserved.
           </p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
+          <div className="flex space-x-4 sm:space-x-6 mt-3 sm:mt-0">
             <a href="#" className="text-[#94A3B8] hover:text-[#F1F5F9] text-sm transition-colors duration-200">
               Privacy Policy
             </a>

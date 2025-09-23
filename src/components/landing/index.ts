@@ -1,3 +1,4 @@
+export * from './Navbar';
 export * from './HeroSection';
 export * from './StatsSection';
 export * from './FeaturesSection';
@@ -5,4 +6,5 @@ export * from './HowItWorksSection';
 export * from './MapSection';
 export * from './PaymentSection';
 export * from './TestimonialsSection';
+export * from './CTASection';
 export * from './Footer';

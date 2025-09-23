@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EV Bunker - Electric Vehicle Charging Stations
+
+Find, book, and pay for EV charging stations seamlessly with EV Bunker. Revolutionizing the electric vehicle charging experience.
+
+## Features
+
+- Real-time charging station availability
+- Instant booking and payment processing
+- Route optimization to nearest stations
+- User reviews and ratings
+- Admin dashboard for station management
+
+## Authentication System
+
+This project includes a complete authentication and authorization system. For detailed information, see [AUTHENTICATION.md](AUTHENTICATION.md).
+
+### User Roles
+
+1. **Client (EV User)**
+   - Login/signup only via Google OAuth
+   - Automatically creates user record on first login
+
+2. **Admin**
+   - Login/signup via email and password
+   - Default credentials: admin@ebunker.com / admin123
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **Authentication**: NextAuth.js (Auth.js)
+- **Database**: SQLite with Prisma ORM
+- **Security**: JWT, bcrypt, HTTP-only cookies
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see .env.example)
+4. Run database migrations: `npx prisma migrate dev`
+5. Seed the database: `npm run seed`
+6. Start the development server: `npm run dev`
 
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run seed` - Seed the database with default data
+- `npm test` - Run authentication tests
+
+## Security Features
+
+- Password hashing with bcrypt
+- JWT-based session management
+- Refresh token rotation
+- CSRF protection
+- Role-based access control
+- Input validation and sanitization
+- Rate limiting on auth endpoints
+
+## Testing
+
+This project includes comprehensive tests for the authentication system. See the [tests/README.md](tests/README.md) for more information.
+
+To run tests:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

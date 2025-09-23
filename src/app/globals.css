@@ -44,8 +44,21 @@ body {
   }
 }
 
+@keyframes wave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-wave {
+  animation: wave 3s infinite linear;
 }
 
 /* Glow effects with new colors */
@@ -59,4 +72,146 @@ body {
 
 .glow-amber {
   box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+}
+
+/* Enhanced responsive utilities */
+@layer utilities {
+  /* Container padding for all screen sizes */
+  .container {
+    @apply px-4;
+  }
+  
+  @media (min-width: 640px) {
+    .container {
+      @apply px-6;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .container {
+      @apply px-8;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .container {
+      @apply px-10;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    .container {
+      @apply px-12;
+    }
+  }
+  
+  /* Text size adjustments for better readability on mobile */
+  .text-responsive-xl {
+    font-size: 1.75rem; /* 28px on mobile */
+    line-height: 1.2;
+  }
+  
+  @media (min-width: 768px) {
+    .text-responsive-xl {
+      font-size: 2.5rem; /* 40px on tablet */
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .text-responsive-xl {
+      font-size: 3rem; /* 48px on desktop */
+    }
+  }
+  
+  /* Heading responsive sizes */
+  .text-responsive-2xl {
+    font-size: 1.5rem; /* 24px on mobile */
+    line-height: 1.3;
+  }
+  
+  @media (min-width: 768px) {
+    .text-responsive-2xl {
+      font-size: 2rem; /* 32px on tablet */
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .text-responsive-2xl {
+      font-size: 2.5rem; /* 40px on desktop */
+    }
+  }
+  
+  /* Button responsive sizing */
+  .btn-responsive {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  @media (min-width: 768px) {
+    .btn-responsive {
+      @apply px-6 py-3 text-base;
+    }
+  }
+  
+  /* Card responsive padding */
+  .card-responsive {
+    @apply p-4;
+  }
+  
+  @media (min-width: 768px) {
+    .card-responsive {
+      @apply p-6;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .card-responsive {
+      @apply p-8;
+    }
+  }
+  
+  /* Section responsive padding */
+  .section-responsive {
+    @apply py-12;
+  }
+  
+  @media (min-width: 768px) {
+    .section-responsive {
+      @apply py-16;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .section-responsive {
+      @apply py-20;
+    }
+  }
+  
+  /* Grid responsive adjustments */
+  .grid-responsive {
+    @apply grid grid-cols-1 gap-6;
+  }
+  
+  @media (min-width: 640px) {
+    .grid-responsive {
+      @apply gap-8;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .grid-responsive {
+      @apply grid-cols-2;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .grid-responsive {
+      @apply grid-cols-3;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    .grid-responsive {
+      @apply grid-cols-4;
+    }
+  }
 }
