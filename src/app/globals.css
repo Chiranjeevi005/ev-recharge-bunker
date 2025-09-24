@@ -53,12 +53,26 @@ body {
   }
 }
 
+/* Electric line animation */
+@keyframes move-line {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-wave {
   animation: wave 3s infinite linear;
+}
+
+.animate-move-line {
+  animation: move-line 4s linear infinite;
 }
 
 /* Glow effects with new colors */
@@ -213,5 +227,21 @@ body {
     .grid-responsive {
       @apply grid-cols-4;
     }
+  }
+  
+  /* Glassmorphism effect */
+  .glass {
+    background: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(71, 85, 103, 0.5);
+  }
+  
+  /* Floating label adjustments */
+  input:focus + label,
+  input:not(:placeholder-shown) + label,
+  textarea:focus + label,
+  textarea:not(:placeholder-shown) + label {
+    @apply text-sm top-2;
   }
 }

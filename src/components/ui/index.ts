@@ -6,3 +6,6 @@ export * from './AuthDemo';
 export * from './Logo';
 export * from './TestimonialCard';
 export * from './ApiLoadingIndicator';
+export * from './LoadingSpinner';
+export * from './SuccessAnimation';
+export * from './ErrorAnimation';

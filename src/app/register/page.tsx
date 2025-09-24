@@ -70,6 +70,8 @@ export default function RegisterPage() {
 
       if (response.ok) {
         setSuccess(true);
+        // Set flag to show loading screen after registration
+        localStorage.setItem('showLoadingAfterLogin', 'true');
         // After 2 seconds, redirect to login page with pre-filled credentials
         setTimeout(() => {
           router.push(`/login?email=${encodeURIComponent(formData.email)}`);

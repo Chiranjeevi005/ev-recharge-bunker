@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 interface LogoProps {
   width?: number;
@@ -22,7 +21,7 @@ export const Logo: React.FC<LogoProps> = ({
   const containerClass = variant === 'navbar' ? "relative w-12 h-12" : "relative w-10 h-10";
 
   return (
-    <Link href="/" className={`flex items-center space-x-2 ${className}`}>
+    <div className={`flex items-center space-x-2 ${className}`}>
       {/* You can replace this with your custom logo image */}
       <div className={containerClass}>
         <Image 
@@ -38,7 +37,7 @@ export const Logo: React.FC<LogoProps> = ({
       <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hidden sm:block">
         EV Bunker
       </span>
-    </Link>
+    </div>
   );
 };
 

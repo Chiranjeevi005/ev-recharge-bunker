@@ -64,6 +64,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password. Please check your credentials and try again.");
       } else {
+        // Set flag to show loading screen after login
+        localStorage.setItem('showLoadingAfterLogin', 'true');
         // Redirect to home page after successful login
         router.push("/");
         router.refresh(); // Refresh to update navbar
@@ -93,6 +95,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password. Please check your credentials and try again.");
       } else {
+        // Set flag to show loading screen after login
+        localStorage.setItem('showLoadingAfterLogin', 'true');
         // Redirect to home page after successful login
         router.push("/");
         router.refresh(); // Refresh to update navbar
@@ -110,6 +114,8 @@ export default function LoginPage() {
     setError(null);
     
     try {
+      // Set flag to show loading screen after login
+      localStorage.setItem('showLoadingAfterLogin', 'true');
       await signIn("google", { callbackUrl: "/" });
     } catch (err) {
       setError("Failed to initiate Google login");
