@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { FuturisticMap } from "@/components/landing/FuturisticMap";
 
 export default async function AdminDashboard() {
   const session = await auth();
@@ -20,6 +21,12 @@ export default async function AdminDashboard() {
               Logout
             </Button>
           </form>
+        </div>
+        
+        {/* Map Section */}
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4">Network Overview</h2>
+          <FuturisticMap />
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

@@ -6,7 +6,7 @@ import { FloatingActionButton } from '@/components/ui/FloatingActionButton';
 import { BookingPanel } from '@/components/dashboard/BookingPanel';
 import { PastBookings } from '@/components/dashboard/PastBookings';
 import { QuickStats } from '@/components/dashboard/QuickStats';
-import { MapSection } from '@/components/dashboard/MapSection';
+import { FuturisticMap } from '@/components/landing/FuturisticMap';
 
 export default function ClientDashboard() {
   const [isBookingPanelOpen, setIsBookingPanelOpen] = useState(false);
@@ -25,7 +25,9 @@ export default function ClientDashboard() {
       
       <main className="pt-16">
         {/* Hero / Map Section */}
-        <MapSection onBookPay={handleBookPay} />
+        <div className="px-4 py-6">
+          <FuturisticMap />
+        </div>
         
         {/* Quick Stats / Highlights */}
         <QuickStats />

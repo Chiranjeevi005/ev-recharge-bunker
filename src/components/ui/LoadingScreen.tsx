@@ -85,7 +85,7 @@ export const LoadingScreen: React.FC = () => {
             ]
           }}
           transition={{
-            duration: 8,
+            duration: 4,
             repeat: Infinity,
             repeatType: "reverse"
           }}
@@ -103,7 +103,7 @@ export const LoadingScreen: React.FC = () => {
                 opacity: [0.1, 0.3, 0.1],
               }}
               transition={{
-                duration: 3,
+                duration: 2,
                 repeat: Infinity,
                 delay: i * 0.1,
               }}
@@ -120,7 +120,7 @@ export const LoadingScreen: React.FC = () => {
                 opacity: [0.1, 0.3, 0.1],
               }}
               transition={{
-                duration: 3,
+                duration: 2,
                 repeat: Infinity,
                 delay: i * 0.1,
               }}
@@ -148,7 +148,7 @@ export const LoadingScreen: React.FC = () => {
               opacity: [0, 1, 0],
             }}
             transition={{
-              duration: 4,
+              duration: 3,
               repeat: Infinity,
               delay: i * 0.1,
             }}
@@ -171,9 +171,9 @@ export const LoadingScreen: React.FC = () => {
               opacity: [0, 1, 0],
             }}
             transition={{
-              duration: 2,
+              duration: 2.5,
               repeat: Infinity,
-              delay: i * 0.1,
+              delay: i * 0.15,
             }}
           />
         ))}
@@ -188,7 +188,7 @@ export const LoadingScreen: React.FC = () => {
             scale: [1, 1.08, 1],
           }}
           transition={{
-            duration: 3,
+            duration: 2,
             repeat: Infinity,
             ease: "easeInOut"
           }}
@@ -204,7 +204,7 @@ export const LoadingScreen: React.FC = () => {
               scale: [1, 1.5, 1],
             }}
             transition={{
-              duration: 3,
+              duration: 2,
               repeat: Infinity,
             }}
           />
@@ -216,7 +216,7 @@ export const LoadingScreen: React.FC = () => {
               opacity: [0.1, 0.3, 0.1],
             }}
             transition={{
-              duration: 2,
+              duration: 1.5,
               repeat: Infinity,
             }}
           />
@@ -238,7 +238,7 @@ export const LoadingScreen: React.FC = () => {
           className="text-center mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
+          transition={{ delay: 0.3 }}
         >
           <motion.h2 
             className="text-2xl font-light tracking-wider text-[#F1F5F9] font-mono"
@@ -250,7 +250,7 @@ export const LoadingScreen: React.FC = () => {
               ]
             }}
             transition={{
-              duration: 2,
+              duration: 1.5,
               repeat: Infinity
             }}
           >
@@ -263,22 +263,21 @@ export const LoadingScreen: React.FC = () => {
           className="mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
+          transition={{ delay: 0.6 }}
         >
           <div className="relative w-64 h-8 bg-[#334155] border-2 border-[#475569] rounded-lg overflow-hidden">
             {/* Battery terminal */}
             <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-[#475569] rounded-r-sm"></div>
             
-            {/* Battery fill with gradient and animation */}
+            {/* Battery fill with gradient and animation - CHANGED to charge to 100% and stay */}
             <motion.div 
               className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#10B981] to-[#059669] rounded-sm"
               initial={{ width: "0%" }}
               animate={{ width: "100%" }}
               transition={{ 
-                duration: 3, 
-                ease: "easeInOut",
-                repeat: Infinity,
-                repeatType: "reverse"
+                duration: 4, 
+                ease: "easeInOut"
+                // Removed repeat to ensure it charges to 100% and stays
               }}
             />
             
@@ -293,9 +292,9 @@ export const LoadingScreen: React.FC = () => {
                     scaleY: [0.5, 1.2, 0.5],
                   }}
                   transition={{
-                    duration: 1.5,
+                    duration: 1,
                     repeat: Infinity,
-                    delay: i * 0.2,
+                    delay: i * 0.1,
                   }}
                 />
               ))}

@@ -8,7 +8,7 @@ import {
   StatsSection,
   FeaturesSection,
   HowItWorksSection,
-  MapSection,
+  FuturisticMap,
   PaymentSection,
   TestimonialsSection,
   CTASection,
@@ -23,6 +23,20 @@ export default function Home() {
   const [wasLoggedIn, setWasLoggedIn] = useState(false);
 
   useEffect(() => {
+    // Check for manual trigger via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceLoading = urlParams.get('forceLoading') === 'true';
+    
+    // Check if we're on localhost (development environment)
+    const isLocalhost = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+       window.location.hostname === '127.0.0.1' ||
+       window.location.hostname === '[::1]');
+    
+    // Set a flag in sessionStorage to detect refresh
+    const isRefresh = sessionStorage.getItem('isRefresh') === 'true';
+    sessionStorage.setItem('isRefresh', 'true');
+    
     // Check if user was previously logged in
     const storedSession = localStorage.getItem('userSession');
     if (storedSession) {
@@ -32,7 +46,14 @@ export default function Home() {
     // Check if we should show the loading screen
     const hasSeenLoadingScreen = localStorage.getItem('hasSeenLoadingScreen');
     const showLoadingAfterLogin = localStorage.getItem('showLoadingAfterLogin');
-    const shouldShowLoading = !hasSeenLoadingScreen || showLoadingAfterLogin || !storedSession;
+    
+    // Show loading screen when:
+    // 1. For first-time visitors (hasSeenLoadingScreen is null)
+    // 2. After login (showLoadingAfterLogin is set)
+    // 3. On page refresh
+    // 4. When manually triggered via URL parameter
+    // 5. When on localhost (development environment)
+    const shouldShowLoading = !hasSeenLoadingScreen || showLoadingAfterLogin || isRefresh || forceLoading || isLocalhost;
 
     if (shouldShowLoading) {
       // Set loading screen timeout
@@ -46,7 +67,7 @@ export default function Home() {
         if (session?.user) {
           localStorage.setItem('userSession', JSON.stringify(session.user));
         }
-      }, 3000);
+      }, 5000);
 
       return () => clearTimeout(timer);
     } else {
@@ -73,7 +94,7 @@ export default function Home() {
       <StatsSection />
       <FeaturesSection />
       <HowItWorksSection />
-      <MapSection />
+      <FuturisticMap />
       <PaymentSection />
       <TestimonialsSection />
       {/* Only show CTA section if user is not logged in */}
