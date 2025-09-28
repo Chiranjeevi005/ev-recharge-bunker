@@ -1,12 +1,11 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { PrismaClient } from "@prisma/client";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { Adapter } from "next-auth/adapters";
-
-const prisma = new PrismaClient();
+import { MongoClient, ObjectId } from "mongodb";
+import { connectToDatabase } from "./db/connection";
+import { MongoDBAdapter } from "./db/adapter";
 
 // Extend the built-in types to add role and id
 declare module "@auth/core/types" {
@@ -33,7 +32,7 @@ declare module "@auth/core/jwt" {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma) as Adapter,
+  adapter: MongoDBAdapter() as Adapter,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -59,26 +58,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // Check if admin user exists in database, create if not
-        let admin = await prisma.admin.findUnique({
-          where: { email: "admin@ebunker.com" }
-        });
+        const { db } = await connectToDatabase();
+        let admin = await db.collection("admins").findOne({ email: "admin@ebunker.com" });
 
         if (!admin) {
           // Hash the password
           const hashedPassword = await bcrypt.hash("admin123", 12);
           
           // Create the admin user
-          admin = await prisma.admin.create({
-            data: {
-              email: "admin@ebunker.com",
-              hashedPassword,
-              role: "admin"
-            }
+          const result = await db.collection("admins").insertOne({
+            email: "admin@ebunker.com",
+            hashedPassword,
+            role: "admin",
+            createdAt: new Date(),
+            updatedAt: new Date()
           });
+          
+          admin = await db.collection("admins").findOne({ _id: result.insertedId });
+        }
+
+        if (!admin) {
+          return null;
         }
 
         return {
-          id: admin.id,
+          id: admin._id.toString(),
           email: admin.email,
           role: admin.role,
         };
@@ -102,9 +106,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // Find client by email
-        const client = await prisma.client.findUnique({
-          where: { email }
-        });
+        const { db } = await connectToDatabase();
+        const client = await db.collection("clients").findOne({ email });
 
         if (!client) {
           return null;
@@ -112,18 +115,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // For email/password clients, check if they have a credentials-type googleId
         // In our implementation, clients with googleId starting with "credentials-" are email/password clients
-        if (!client.googleId.startsWith("credentials-")) {
+        if (!client.googleId?.startsWith("credentials-")) {
           // This is a Google OAuth client, they can't use password auth
           return null;
         }
 
         // For email/password clients, we'll check the Account record to verify the password
         // First, check if an account already exists for this client
-        const existingAccount = await prisma.account.findFirst({
-          where: {
-            userId: client.id,
-            provider: "credentials"
-          }
+        const existingAccount = await db.collection("accounts").findOne({
+          userId: client._id.toString(),
+          provider: "credentials"
         });
 
         if (!existingAccount) {
@@ -139,7 +140,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // Return the client user object
         return {
-          id: client.id,
+          id: client._id.toString(),
           email: client.email,
           name: client.name,
           role: client.role,

@@ -68,7 +68,8 @@ cp .env.example .env.local
 
 4. Run database migrations:
 ```bash
-npx prisma migrate dev
+# Start your MongoDB server
+# The application will automatically connect to MongoDB
 ```
 
 5. Start the development server:
@@ -85,7 +86,6 @@ src/
 ├── app/              # Next.js app router pages
 ├── components/       # Reusable UI components
 ├── lib/              # Utility functions and configurations
-├── prisma/           # Database schema and migrations
 └── tests/            # Unit and integration tests
 ```
 
@@ -148,7 +148,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Next.js](https://nextjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Framer Motion](https://www.framer.com/motion/)
-- [Prisma](https://www.prisma.io/)
 - [NextAuth.js](https://next-auth.js.org/)
 - [Razorpay](https://razorpay.com/)
 - [Google Maps Platform](https://cloud.google.com/maps-platform)

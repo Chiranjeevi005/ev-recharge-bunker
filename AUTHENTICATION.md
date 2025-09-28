@@ -47,54 +47,14 @@ This document explains the complete authentication and authorization system for 
 
 ## Database Schema
 
-The authentication system uses Prisma with SQLite for data storage:
+The authentication system uses MongoDB for data storage:
 
-```prisma
-model Admin {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  hashedPassword String
-  role          String    @default("admin")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-model Client {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  googleId  String   @unique
-  role      String   @default("client")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  accounts  Account[]
-  sessions  Session[]
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              Client  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         Client   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+```
+Collections:
+- admins: Stores admin user information
+- clients: Stores client user information
+- accounts: Stores account information for clients
+- sessions: Stores session information
 ```
 
 ## API Endpoints
@@ -145,7 +105,7 @@ GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
 # Database
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="mongodb://localhost:27017/ev_bunker"
 ```
 
 ## Default Credentials

@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
+import { connectToDatabase } from "@/lib/db/connection";
 
 export async function POST(request: Request) {
   try {
@@ -16,10 +14,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Connect to MongoDB
+    const { db } = await connectToDatabase();
+
     // Check if admin already exists
-    const existingAdmin = await prisma.admin.findUnique({
-      where: { email }
-    });
+    const existingAdmin = await db.collection("admins").findOne({ email });
 
     if (existingAdmin) {
       return NextResponse.json(
@@ -32,20 +31,32 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create admin
-    const admin = await prisma.admin.create({
-      data: {
-        email,
-        hashedPassword,
-        role: "admin"
-      }
+    const result = await db.collection("admins").insertOne({
+      email,
+      hashedPassword,
+      role: "admin",
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
+    const admin = await db.collection("admins").findOne({ _id: result.insertedId });
+
+    if (!admin) {
+      return NextResponse.json(
+        { error: "Failed to create admin user" },
+        { status: 500 }
+      );
+    }
+
     // Return success response without password
-    const { hashedPassword: _, ...adminWithoutPassword } = admin;
+    const { hashedPassword: _, ...adminWithoutPassword } = admin as any;
     
     return NextResponse.json({
       message: "Admin created successfully",
-      admin: adminWithoutPassword
+      admin: {
+        ...adminWithoutPassword,
+        id: admin._id.toString()
+      }
     }, { status: 201 });
 
   } catch (error) {
