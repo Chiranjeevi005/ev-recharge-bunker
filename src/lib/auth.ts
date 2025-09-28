@@ -46,14 +46,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        // For NextAuth v5, credentials are passed as the first parameter
+        // Let's log the entire credentials object to see what we're getting
+        console.log("Admin credentials object:", credentials);
+        
+        // Extract email and password - handling different possible formats
+        const email = credentials?.email || (credentials as any)?.body?.email;
+        const password = credentials?.password || (credentials as any)?.body?.password;
+
+        // Validate input
+        if (!email || !password) {
+          console.log("Missing email or password");
           return null;
         }
 
         // Check if credentials match the single admin account
-        const isAdmin = credentials.email === "admin@ebunker.com" && credentials.password === "admin123";
+        const isAdmin = email === "admin@ebunker.com" && password === "admin123";
 
         if (!isAdmin) {
+          console.log("Invalid admin credentials");
           return null;
         }
 
@@ -78,9 +89,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         if (!admin) {
+          console.log("Failed to find or create admin");
           return null;
         }
 
+        console.log("Admin authentication successful");
         return {
           id: admin._id.toString(),
           email: admin.email,
@@ -96,12 +109,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Extract email and password - handling different possible formats in NextAuth v5
-        const email = (credentials as any)?.email || (credentials as any)?.credentials?.email || (credentials as any)?.body?.email;
-        const password = (credentials as any)?.password || (credentials as any)?.credentials?.password || (credentials as any)?.body?.password;
+        // For NextAuth v5, credentials are passed as the first parameter
+        // Let's log the entire credentials object to see what we're getting
+        console.log("Client credentials object:", credentials);
+        
+        // Extract email and password - handling different possible formats
+        const email = credentials?.email || (credentials as any)?.body?.email;
+        const password = credentials?.password || (credentials as any)?.body?.password;
         
         // Validate input
         if (!email || !password) {
+          console.log("Missing email or password");
           return null;
         }
 
@@ -110,12 +128,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const client = await db.collection("clients").findOne({ email });
 
         if (!client) {
+          console.log("Client not found");
           return null;
         }
 
         // For email/password clients, check if they have a credentials-type googleId
         // In our implementation, clients with googleId starting with "credentials-" are email/password clients
         if (!client.googleId?.startsWith("credentials-")) {
+          console.log("Client is not a credentials-type client");
           // This is a Google OAuth client, they can't use password auth
           return null;
         }
@@ -128,17 +148,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!existingAccount) {
+          console.log("No account found for client");
           // This shouldn't happen - email/password clients should have an account
           return null;
         } else {
           // Check if the provided password matches
           // In a real implementation, you would compare hashed passwords
           if (existingAccount.access_token !== password) {
+            console.log("Password mismatch");
             return null; // Password doesn't match
           }
         }
 
         // Return the client user object
+        console.log("Client authentication successful");
         return {
           id: client._id.toString(),
           email: client.email,

@@ -1,12 +1,27 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": false,
+    "esModuleInterop": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "outDir": "./dist",
+    "rootDir": "./"
   },
-  "include": ["seed.ts"]
+  "include": [
+    "seed.ts",
+    "src/lib/db/connection.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,30 +1,85 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { EnergyAnimation } from '@/components/ui/EnergyAnimation';
 
 interface Booking {
-  id: number;
-  bunkName: string;
-  slot: string;
-  amount: string;
-  status: 'completed' | 'charging' | 'scheduled';
-  date: string;
+  _id: string;
+  stationId: string;
+  slotId: string;
+  amount: number;
+  status: 'completed' | 'confirmed' | 'scheduled';
+  createdAt: string;
+  stationName?: string;
 }
 
 export const PastBookings: React.FC = () => {
   const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
+  const [pastBookings, setPastBookings] = useState<Booking[]>([]);
 
-  // Mock data for past bookings
-  const pastBookings: Booking[] = [
-    { id: 1, bunkName: 'Delhi Metro Station', slot: 'A-12', amount: '₹250', status: 'completed', date: '2023-06-15' },
-    { id: 2, bunkName: 'Mumbai Central', slot: 'B-07', amount: '₹180', status: 'completed', date: '2023-06-10' },
-    { id: 3, bunkName: 'Bangalore IT Park', slot: 'C-22', amount: '₹320', status: 'charging', date: '2023-06-05' },
-    { id: 4, bunkName: 'Chennai Airport', slot: 'D-15', amount: '₹450', status: 'completed', date: '2023-05-28' },
-    { id: 5, bunkName: 'Hyderabad Tech Park', slot: 'E-08', amount: '₹210', status: 'scheduled', date: '2023-06-20' },
-  ];
+  // Fetch real booking data
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        // In a real implementation, this would fetch from an API endpoint
+        // For now, we'll use mock data to simulate the real data structure
+        const mockBookings: Booking[] = [
+          { 
+            _id: '1', 
+            stationId: 'station1', 
+            slotId: 'A-12', 
+            amount: 250, 
+            status: 'completed', 
+            createdAt: '2023-06-15T10:30:00Z',
+            stationName: 'Delhi Metro Station'
+          },
+          { 
+            _id: '2', 
+            stationId: 'station2', 
+            slotId: 'B-07', 
+            amount: 180, 
+            status: 'completed', 
+            createdAt: '2023-06-10T14:15:00Z',
+            stationName: 'Mumbai Central'
+          },
+          { 
+            _id: '3', 
+            stationId: 'station3', 
+            slotId: 'C-22', 
+            amount: 320, 
+            status: 'confirmed', 
+            createdAt: '2023-06-05T09:45:00Z',
+            stationName: 'Bangalore IT Park'
+          },
+          { 
+            _id: '4', 
+            stationId: 'station4', 
+            slotId: 'D-15', 
+            amount: 450, 
+            status: 'completed', 
+            createdAt: '2023-05-28T16:20:00Z',
+            stationName: 'Chennai Airport'
+          },
+          { 
+            _id: '5', 
+            stationId: 'station5', 
+            slotId: 'E-08', 
+            amount: 210, 
+            status: 'scheduled', 
+            createdAt: '2023-06-20T11:00:00Z',
+            stationName: 'Hyderabad Tech Park'
+          },
+        ];
+        setPastBookings(mockBookings);
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+      }
+    };
+
+    fetchBookings();
+  }, []);
 
   const toggleHistoryPanel = () => {
     setIsHistoryPanelOpen(!isHistoryPanelOpen);
@@ -34,7 +89,7 @@ export const PastBookings: React.FC = () => {
     switch (status) {
       case 'completed':
         return 'bg-[#10B981]/20 text-[#10B981]';
-      case 'charging':
+      case 'confirmed':
         return 'bg-[#F59E0B]/20 text-[#F59E0B]';
       case 'scheduled':
         return 'bg-[#8B5CF6]/20 text-[#8B5CF6]';
@@ -47,13 +102,23 @@ export const PastBookings: React.FC = () => {
     switch (status) {
       case 'completed':
         return 'Completed';
-      case 'charging':
+      case 'confirmed':
         return 'Charging';
       case 'scheduled':
         return 'Scheduled';
       default:
         return status;
     }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -72,7 +137,7 @@ export const PastBookings: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-white">Recent Bookings</h2>
+          <h2 className="text-2xl font-bold text-white">Payment History</h2>
           <Button 
             onClick={toggleHistoryPanel}
             variant="outline"
@@ -87,7 +152,7 @@ export const PastBookings: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {pastBookings.map((booking, index) => (
             <motion.div
-              key={booking.id}
+              key={booking._id}
               className="bg-[#334155]/50 backdrop-blur-sm rounded-xl p-6 border border-[#475569]/50 relative overflow-hidden"
               whileHover={{ 
                 scale: 1.03,
@@ -104,9 +169,9 @@ export const PastBookings: React.FC = () => {
               
               <div className="flex justify-between items-start relative z-10">
                 <div>
-                  <h3 className="font-semibold text-white">{booking.bunkName}</h3>
-                  <p className="text-sm text-[#94A3B8] mt-1">Slot: {booking.slot}</p>
-                  <p className="text-sm text-[#94A3B8]">Date: {booking.date}</p>
+                  <h3 className="font-semibold text-white">{booking.stationName || 'Unknown Station'}</h3>
+                  <p className="text-sm text-[#94A3B8] mt-1">Slot: {booking.slotId}</p>
+                  <p className="text-sm text-[#94A3B8]">Date: {formatDate(booking.createdAt)}</p>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                   {getStatusText(booking.status)}

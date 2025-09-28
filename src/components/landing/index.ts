@@ -10,3 +10,4 @@ export * from './PaymentSection';
 export * from './TestimonialsSection';
 export * from './CTASection';
 export * from './Footer';
+export * from './FindBunksMap';

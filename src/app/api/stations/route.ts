@@ -1,116 +1,167 @@
 import { NextResponse } from 'next/server';
+import { MongoClient, Document } from 'mongodb';
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
 
-// Mock data for charging stations
-const chargingStations = [
+interface Slot {
+  slotId: string;
+  status: "available" | "occupied" | "maintenance";
+  chargerType: string;
+  pricePerHour: number;
+}
+
+interface Station {
+  _id: string; // Changed to string since we'll convert it
+  city: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  slots: Slot[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Mock data for when database is not accessible
+const mockStations: any[] = [
   {
-    id: 1,
-    name: 'Delhi Metro Station',
-    address: 'Rajiv Chowk, New Delhi',
-    phone: '+91 11 2345 6789',
-    position: [77.209021, 28.613939],
-    slots: 12,
-    available: 8,
-    pricing: '₹25/min',
-    distance: '0.5 km',
-    fastCharging: true
+    _id: "1",
+    city: "Delhi",
+    name: "Delhi Metro Station",
+    address: "Rajiv Chowk, New Delhi",
+    lat: 28.6328,
+    lng: 77.2194,
+    slots: [
+      { slotId: "delhi-1-1", status: "available", chargerType: "AC Type 2", pricePerHour: 50 },
+      { slotId: "delhi-1-2", status: "available", chargerType: "DC CHAdeMO", pricePerHour: 60 },
+      { slotId: "delhi-1-3", status: "occupied", chargerType: "DC CCS", pricePerHour: 70 },
+      { slotId: "delhi-1-4", status: "available", chargerType: "AC Type 1", pricePerHour: 45 },
+    ]
   },
   {
-    id: 2,
-    name: 'Connaught Place Hub',
-    address: 'Connaught Place, New Delhi',
-    phone: '+91 11 3456 7890',
-    position: [77.219400, 28.632800],
-    slots: 10,
-    available: 5,
-    pricing: '₹30/min',
-    distance: '1.2 km',
-    fastCharging: true
-  },
-  {
-    id: 3,
-    name: 'South Delhi Complex',
-    address: 'Hauz Khas, New Delhi',
-    phone: '+91 11 4567 8901',
-    position: [77.211000, 28.589700],
-    slots: 15,
-    available: 12,
-    pricing: '₹20/min',
-    distance: '2.3 km',
-    fastCharging: false
-  },
-  {
-    id: 4,
-    name: 'East Delhi Mall',
-    address: 'Welcome Metro Station, Delhi',
-    phone: '+91 11 5678 9012',
-    position: [77.280000, 28.620000],
-    slots: 8,
-    available: 3,
-    pricing: '₹35/min',
-    distance: '3.1 km',
-    fastCharging: true
-  },
-  {
-    id: 5,
-    name: 'North Delhi Center',
-    address: 'Kashmere Gate, Delhi',
-    phone: '+91 11 6789 0123',
-    position: [77.190000, 28.680000],
-    slots: 20,
-    available: 15,
-    pricing: '₹22/min',
-    distance: '4.5 km',
-    fastCharging: false
+    _id: "2",
+    city: "Mumbai",
+    name: "Mumbai Central Station",
+    address: "Mumbai Central, Mumbai",
+    lat: 18.9693,
+    lng: 72.8202,
+    slots: [
+      { slotId: "mumbai-1-1", status: "available", chargerType: "AC Type 2", pricePerHour: 55 },
+      { slotId: "mumbai-1-2", status: "available", chargerType: "DC CCS", pricePerHour: 75 },
+      { slotId: "mumbai-1-3", status: "occupied", chargerType: "DC CHAdeMO", pricePerHour: 65 },
+    ]
   }
 ];
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('query');
+export async function GET() {
+  let client: MongoClient | null = null;
   
-  // If there's a search query, filter stations
-  if (query) {
-    const filteredStations = chargingStations.filter(station => 
-      station.name.toLowerCase().includes(query.toLowerCase()) ||
-      station.address.toLowerCase().includes(query.toLowerCase())
-    );
-    return NextResponse.json(filteredStations);
+  try {
+    console.log('Creating new MongoDB client for stations API');
+    console.log('DATABASE_URL:', process.env.DATABASE_URL);
+    client = new MongoClient(process.env.DATABASE_URL!);
+    await client.connect();
+    console.log('Connected to MongoDB for stations API');
+    
+    // Explicitly specify the database name
+    const db = client.db('ev_bunker');
+    console.log('Database name:', db.databaseName);
+    
+    // List all collections
+    const collections = await db.listCollections().toArray();
+    console.log('Available collections:', collections.map((c: any) => c.name));
+    
+    // Try to fetch stations from the correct collection
+    let stations: Document[] = [];
+    try {
+      console.log('Attempting to fetch from "stations" collection');
+      stations = await db.collection("stations").find({}).toArray();
+      console.log('Found stations in "stations" collection:', stations.length);
+    } catch (collectionError) {
+      console.log('Error fetching from "stations" collection:', collectionError);
+    }
+    
+    // If no stations found, try alternative collection names
+    if (stations.length === 0) {
+      try {
+        console.log('Attempting to fetch from "ChargingStation" collection');
+        stations = await db.collection("ChargingStation").find({}).toArray();
+        console.log('Found stations in "ChargingStation" collection:', stations.length);
+      } catch (collectionError) {
+        console.log('Error fetching from "ChargingStation" collection:', collectionError);
+      }
+    }
+    
+    // Try to directly access the collection to see if it exists
+    if (stations.length === 0) {
+      try {
+        console.log('Checking if "stations" collection exists');
+        const collectionInfo = await db.listCollections({name: "stations"}).toArray();
+        console.log('"stations" collection info:', collectionInfo);
+      } catch (collectionError) {
+        console.log('Error checking "stations" collection existence:', collectionError);
+      }
+    }
+    
+    if (stations.length === 0) {
+      console.log('No stations found, returning mock data');
+      return NextResponse.json(mockStations);
+    }
+    
+    // Convert ObjectId to string for JSON serialization
+    const serializedStations = stations.map((station: any) => ({
+      ...station,
+      _id: station._id.toString(),
+      slots: station.slots || []
+    }));
+    
+    console.log('Returning', serializedStations.length, 'stations from API');
+    return NextResponse.json(serializedStations);
+  } catch (error: any) {
+    console.error("Error fetching stations:", error);
+    console.log('Returning mock data due to error');
+    return NextResponse.json(mockStations);
+  } finally {
+    // Close the connection
+    if (client) {
+      await client.close();
+      console.log('Closed MongoDB connection');
+    }
   }
-  
-  // Return all stations
-  return NextResponse.json(chargingStations);
 }
 
 export async function POST(request: Request) {
+  let client: MongoClient | null = null;
+  
   try {
+    client = new MongoClient(process.env.DATABASE_URL!);
+    await client.connect();
+    const db = client.db('ev_bunker');
+    
     const body = await request.json();
-    const { stationId, slotId } = body;
     
-    // In a real implementation, this would update the database
-    // For now, we'll just simulate a successful booking
-    const station = chargingStations.find(s => s.id === stationId);
+    // Insert new station
+    const result = await db.collection("stations").insertOne({
+      ...body,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
     
-    if (!station) {
-      return NextResponse.json({ error: 'Station not found' }, { status: 404 });
-    }
-    
-    if (station.available <= 0) {
-      return NextResponse.json({ error: 'No slots available' }, { status: 400 });
-    }
-    
-    // Simulate booking by reducing available slots
-    // In a real app, this would be a database update
-    const updatedStation = {
-      ...station,
-      available: station.available - 1
-    };
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Booking confirmed',
-      station: updatedStation
+    return NextResponse.json({ 
+      success: true, 
+      id: result.insertedId.toString() 
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to process booking' }, { status: 500 });
+    console.error("Error creating station:", error);
+    return NextResponse.json(
+      { error: "Failed to create station" }, 
+      { status: 500 }
+    );
+  } finally {
+    // Close the connection
+    if (client) {
+      await client.close();
+    }
   }
 }

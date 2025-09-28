@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
 import { signOut, useSession } from "next-auth/react";
@@ -11,6 +12,17 @@ export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
   const loading = status === "loading";
+  const router = useRouter();
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Prevent loading screen from showing on logo click
+    localStorage.setItem('hasSeenLoadingScreen', 'true');
+    localStorage.removeItem('showLoadingAfterLogin');
+    localStorage.removeItem('userSession');
+    // Navigate to home page
+    router.push("/");
+  };
 
   const handleLogout = async () => {
     try {
@@ -42,22 +54,18 @@ export const Navbar: React.FC = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1E293B]/80 backdrop-blur-md border-b border-[#334155]/50">
       <div className="container mx-auto">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo - modified to redirect to main page without loader */}
-          <Link 
+          {/* Logo - redirect to main page without loader */}
+          <a 
             href="/" 
             className="flex items-center space-x-2"
-            onClick={(e) => {
-              // Clear loading screen flags to prevent loader on direct navigation
-              localStorage.removeItem('hasSeenLoadingScreen');
-              localStorage.removeItem('showLoadingAfterLogin');
-            }}
+            onClick={handleLogoClick}
           >
             <Logo variant="navbar" />
-          </Link>
+          </a>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
-            <Link href="/ev-finder" className="text-[#CBD5E1] hover:text-white transition-colors text-sm lg:text-base">
+            <Link href="/find-bunks" className="text-[#CBD5E1] hover:text-white transition-colors text-sm lg:text-base">
               Find Bunks
             </Link>
             <Link href="#history" className="text-[#CBD5E1] hover:text-white transition-colors text-sm lg:text-base">
@@ -170,7 +178,7 @@ export const Navbar: React.FC = () => {
           >
             <div className="px-3 py-2 sm:px-4 sm:py-3 space-y-1">
               <Link 
-                href="/ev-finder" 
+                href="/find-bunks" 
                 className="block px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 text-sm"
                 onClick={() => setIsMenuOpen(false)}
               >

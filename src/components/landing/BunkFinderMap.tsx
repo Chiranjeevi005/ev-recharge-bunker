@@ -10,21 +10,25 @@ import MaplibreGeocoder from '@maplibre/maplibre-gl-geocoder';
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import type { MaplibreGeocoderApi, MaplibreGeocoderApiConfig, MaplibreGeocoderFeatureResults, CarmenGeojsonFeature } from '@maplibre/maplibre-gl-geocoder';
 
+interface Slot {
+  slotId: string;
+  status: "available" | "occupied" | "maintenance";
+  chargerType: string;
+  pricePerHour: number;
+}
+
 interface ChargingStation {
-  id: number;
+  _id: string;
+  city: string;
   name: string;
   address: string;
-  phone: string;
-  position: [number, number];
-  slots: number;
-  available: number;
-  pricing: string;
-  distance: string;
-  fastCharging: boolean;
+  lat: number;
+  lng: number;
+  slots: Slot[];
 }
 
 interface BookingData {
-  stationId: number;
+  stationId: string;
   slotId: string;
   bunkName: string;
   amount: number;
@@ -35,11 +39,10 @@ export const BunkFinderMap: React.FC = () => {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
   const [mapStyle, setMapStyle] = useState<'liberty' | 'positron' | 'bright'>('liberty');
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [chargingStations, setChargingStations] = useState<ChargingStation[]>([]);
   const [filters, setFilters] = useState({
     availableOnly: false,
-    fastCharging: false,
     maxPrice: 100
   });
   const [isBookingPanelOpen, setIsBookingPanelOpen] = useState(false);
@@ -59,64 +62,31 @@ export const BunkFinderMap: React.FC = () => {
         // Fallback to sample data
         setChargingStations([
           {
-            id: 1,
-            name: 'Delhi Metro Station',
-            address: 'Rajiv Chowk, New Delhi',
-            phone: '+91 11 2345 6789',
-            position: [77.209021, 28.613939],
-            slots: 12,
-            available: 8,
-            pricing: '₹25/min',
-            distance: '0.5 km',
-            fastCharging: true
+            _id: "1",
+            city: "Delhi",
+            name: "Delhi Metro Station",
+            address: "Rajiv Chowk, New Delhi",
+            lat: 28.6328,
+            lng: 77.2194,
+            slots: [
+              { slotId: "delhi-1-1", status: "available", chargerType: "AC Type 2", pricePerHour: 50 },
+              { slotId: "delhi-1-2", status: "available", chargerType: "DC CHAdeMO", pricePerHour: 60 },
+              { slotId: "delhi-1-3", status: "occupied", chargerType: "DC CCS", pricePerHour: 70 },
+              { slotId: "delhi-1-4", status: "available", chargerType: "AC Type 1", pricePerHour: 45 },
+            ]
           },
           {
-            id: 2,
-            name: 'Connaught Place Hub',
-            address: 'Connaught Place, New Delhi',
-            phone: '+91 11 3456 7890',
-            position: [77.219400, 28.632800],
-            slots: 10,
-            available: 5,
-            pricing: '₹30/min',
-            distance: '1.2 km',
-            fastCharging: true
-          },
-          {
-            id: 3,
-            name: 'South Delhi Complex',
-            address: 'Hauz Khas, New Delhi',
-            phone: '+91 11 4567 8901',
-            position: [77.211000, 28.589700],
-            slots: 15,
-            available: 12,
-            pricing: '₹20/min',
-            distance: '2.3 km',
-            fastCharging: false
-          },
-          {
-            id: 4,
-            name: 'East Delhi Mall',
-            address: 'Welcome Metro Station, Delhi',
-            phone: '+91 11 5678 9012',
-            position: [77.280000, 28.620000],
-            slots: 8,
-            available: 3,
-            pricing: '₹35/min',
-            distance: '3.1 km',
-            fastCharging: true
-          },
-          {
-            id: 5,
-            name: 'North Delhi Center',
-            address: 'Kashmere Gate, Delhi',
-            phone: '+91 11 6789 0123',
-            position: [77.190000, 28.680000],
-            slots: 20,
-            available: 15,
-            pricing: '₹22/min',
-            distance: '4.5 km',
-            fastCharging: false
+            _id: "2",
+            city: "Mumbai",
+            name: "Mumbai Central Station",
+            address: "Mumbai Central, Mumbai",
+            lat: 18.9693,
+            lng: 72.8202,
+            slots: [
+              { slotId: "mumbai-1-1", status: "available", chargerType: "AC Type 2", pricePerHour: 55 },
+              { slotId: "mumbai-1-2", status: "available", chargerType: "DC CCS", pricePerHour: 75 },
+              { slotId: "mumbai-1-3", status: "occupied", chargerType: "DC CHAdeMO", pricePerHour: 65 },
+            ]
           }
         ]);
       }
@@ -126,7 +96,7 @@ export const BunkFinderMap: React.FC = () => {
   }, []);
 
   // Toggle favorite status for a station
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = (id: string) => {
     setFavorites(prev => 
       prev.includes(id) 
         ? prev.filter(favId => favId !== id) 
@@ -136,11 +106,15 @@ export const BunkFinderMap: React.FC = () => {
 
   // Filter stations based on filters
   const filteredStations = chargingStations.filter(station => {
-    if (filters.availableOnly && station.available === 0) return false;
-    if (filters.fastCharging && !station.fastCharging) return false;
-    // Extract numeric price for comparison
-    const price = parseInt(station.pricing.replace(/[^\d]/g, ''));
-    if (price > filters.maxPrice) return false;
+    if (filters.availableOnly && station.slots.filter(s => s.status === "available").length === 0) return false;
+    
+    // Find the minimum price among available slots
+    const availableSlots = station.slots.filter(s => s.status === "available");
+    if (availableSlots.length > 0) {
+      const minPrice = Math.min(...availableSlots.map(s => s.pricePerHour));
+      if (minPrice > filters.maxPrice) return false;
+    }
+    
     return true;
   });
 
@@ -274,15 +248,19 @@ export const BunkFinderMap: React.FC = () => {
     // Add custom markers for charging stations
     filteredStations.forEach(station => {
       // Remove existing marker for this station
-      const existingMarker = document.querySelector(`.station-marker-${station.id}`);
+      const existingMarker = document.querySelector(`.station-marker-${station._id}`);
       if (existingMarker) {
         existingMarker.remove();
       }
 
+      // Count available slots
+      const availableSlots = station.slots.filter(s => s.status === "available").length;
+      const hasAvailableSlots = availableSlots > 0;
+
       const el = document.createElement('div');
-      el.className = `station-marker-container station-marker-${station.id}`;
+      el.className = `station-marker-container station-marker-${station._id}`;
       el.innerHTML = `
-        <div class="${favorites.includes(station.id) ? 'favorite-marker' : station.available > 0 ? 'station-marker available' : 'station-marker unavailable'}">
+        <div class="${favorites.includes(station._id) ? 'favorite-marker' : hasAvailableSlots ? 'station-marker available' : 'station-marker unavailable'}">
           ⚡
         </div>
       `;
@@ -296,7 +274,7 @@ export const BunkFinderMap: React.FC = () => {
         element: el,
         anchor: 'center'
       })
-        .setLngLat(station.position)
+        .setLngLat([station.lng, station.lat])
         .addTo(mapRef.current!);
     });
   }, [filteredStations, favorites]);
@@ -328,13 +306,13 @@ export const BunkFinderMap: React.FC = () => {
     
     try {
       // Simulate booking process
-      const response = await fetch('/api/stations', {
+      const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          stationId: selectedStation.id,
+          stationId: selectedStation._id,
           slotId: selectedSlot
         }),
       });
@@ -345,15 +323,22 @@ export const BunkFinderMap: React.FC = () => {
         // Update local state to reflect booked slot
         setChargingStations(prev => 
           prev.map(station => 
-            station.id === selectedStation.id 
-              ? { ...station, available: station.available - 1 } 
+            station._id === selectedStation._id 
+              ? { 
+                  ...station, 
+                  slots: station.slots.map(slot => 
+                    slot.slotId === selectedSlot 
+                      ? { ...slot, status: "occupied" } 
+                      : slot
+                  )
+                } 
               : station
           )
         );
         
         // Set booking data for confirmation
         setBookingData({
-          stationId: selectedStation.id,
+          stationId: selectedStation._id,
           slotId: selectedSlot,
           bunkName: selectedStation.name,
           amount: 250 // This would be calculated based on pricing and duration
@@ -380,7 +365,6 @@ export const BunkFinderMap: React.FC = () => {
   const resetFilters = () => {
     setFilters({
       availableOnly: false,
-      fastCharging: false,
       maxPrice: 100
     });
   };
@@ -470,18 +454,8 @@ export const BunkFinderMap: React.FC = () => {
             />
             <label htmlFor="available" className="text-xs text-[#CBD5E1]">Available Only</label>
           </div>
-          <div className="flex items-center">
-            <input 
-              type="checkbox" 
-              id="fast" 
-              className="mr-2 h-4 w-4 rounded border-[#475569] bg-[#334155] text-[#8B5CF6] focus:ring-[#8B5CF6]"
-              checked={filters.fastCharging}
-              onChange={(e) => setFilters({...filters, fastCharging: e.target.checked})}
-            />
-            <label htmlFor="fast" className="text-xs text-[#CBD5E1]">Fast Charging</label>
-          </div>
           <div>
-            <label className="block text-xs text-[#CBD5E1] mb-1">Max Price (₹/min)</label>
+            <label className="block text-xs text-[#CBD5E1] mb-1">Max Price (₹/hour)</label>
             <input 
               type="range" 
               min="10" 
@@ -506,8 +480,7 @@ export const BunkFinderMap: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-lg font-bold text-[#F1F5F9]">{selectedStation.name}</h3>
-              <p className="text-sm text-[#94A3B8]">{selectedStation.address}</p>
-              <p className="text-xs text-[#94A3B8] mt-1">{selectedStation.phone}</p>
+              <p className="text-sm text-[#94A3B8]">{selectedStation.address}, {selectedStation.city}</p>
             </div>
             <button 
               onClick={() => setSelectedStation(null)}
@@ -521,17 +494,13 @@ export const BunkFinderMap: React.FC = () => {
             <div>
               <p className="text-sm text-[#94A3B8]">Available Slots</p>
               <p className="text-lg font-bold text-[#10B981]">
-                {selectedStation.available}/{selectedStation.slots}
+                {selectedStation.slots.filter(s => s.status === "available").length}/{selectedStation.slots.length}
               </p>
             </div>
             <div>
-              <p className="text-sm text-[#94A3B8]">Pricing</p>
-              <p className="text-lg font-bold text-[#F1F5F9]">{selectedStation.pricing}</p>
-            </div>
-            <div>
-              <p className="text-sm text-[#94A3B8]">Fast Charging</p>
+              <p className="text-sm text-[#94A3B8]">Min Price</p>
               <p className="text-lg font-bold text-[#F1F5F9]">
-                {selectedStation.fastCharging ? '✓' : '✗'}
+                ₹{Math.min(...selectedStation.slots.filter(s => s.status === "available").map(s => s.pricePerHour), 0)}/hr
               </p>
             </div>
           </div>
@@ -539,24 +508,24 @@ export const BunkFinderMap: React.FC = () => {
           <div className="mt-4 flex space-x-2">
             <button 
               className="flex-1 py-2 px-4 bg-[#334155] hover:bg-[#475569] text-[#F1F5F9] rounded-lg transition-colors"
-              onClick={() => toggleFavorite(selectedStation.id)}
+              onClick={() => toggleFavorite(selectedStation._id)}
             >
-              {favorites.includes(selectedStation.id) ? '★ Favorited' : '☆ Favorite'}
+              {favorites.includes(selectedStation._id) ? '★ Favorited' : '☆ Favorite'}
             </button>
             <button 
               className={`flex-1 py-2 px-4 rounded-lg transition-opacity ${
-                selectedStation.available > 0
+                selectedStation.slots.filter(s => s.status === "available").length > 0
                   ? 'bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white hover:opacity-90'
                   : 'bg-[#94A3B8] text-[#1E293B] cursor-not-allowed'
               }`}
               onClick={() => {
-                if (selectedStation.available > 0) {
+                if (selectedStation.slots.filter(s => s.status === "available").length > 0) {
                   setIsBookingPanelOpen(true);
                 }
               }}
-              disabled={selectedStation.available === 0}
+              disabled={selectedStation.slots.filter(s => s.status === "available").length === 0}
             >
-              {selectedStation.available > 0 ? 'Book Slot' : 'No Slots'}
+              {selectedStation.slots.filter(s => s.status === "available").length > 0 ? 'Book Slot' : 'No Slots'}
             </button>
           </div>
         </motion.div>
@@ -599,63 +568,71 @@ export const BunkFinderMap: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              <div className="px-4 py-3 sm:px-6 sm:py-5">
-                <div className="mb-4 sm:mb-6">
-                  <label className="block text-sm font-medium text-[#94A3B8] mb-2">Select Slot</label>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {Array.from({ length: selectedStation.slots }, (_, i) => {
-                      const slotId = `Slot-${i + 1}`;
-                      const isAvailable = i < selectedStation.available;
-                      return (
-                        <button
-                          key={slotId}
-                          className={`bg-[#334155] border rounded-lg py-2 text-white transition-colors text-sm sm:text-base ${
-                            selectedSlot === slotId 
-                              ? 'border-[#10B981] bg-[#10B981]/20' 
-                              : isAvailable
-                                ? 'border-[#475569] hover:bg-[#475569]'
-                                : 'border-[#94A3B8] bg-[#94A3B8]/20 cursor-not-allowed opacity-50'
-                          }`}
-                          onClick={() => isAvailable && setSelectedSlot(slotId)}
-                          disabled={!isAvailable}
-                        >
-                          {slotId}
-                        </button>
-                      );
-                    })}
-                  </div>
+              <div className="px-4 py-5 sm:p-6">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-[#F1F5F9] mb-2">Select Slot</label>
+                  <select
+                    value={selectedSlot}
+                    onChange={(e) => setSelectedSlot(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#334155] border border-[#475569] rounded-lg text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
+                  >
+                    <option value="">Choose a slot</option>
+                    {selectedStation.slots
+                      .filter(slot => slot.status === "available")
+                      .map(slot => (
+                        <option key={slot.slotId} value={slot.slotId}>
+                          {slot.chargerType} - ₹{slot.pricePerHour}/hr
+                        </option>
+                      ))}
+                  </select>
                 </div>
                 
                 {selectedSlot && (
-                  <div className="mb-4 sm:mb-6 p-3 bg-[#334155]/50 rounded-lg border border-[#475569]">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-[#94A3B8]">Selected Slot</p>
-                        <p className="font-medium text-white">{selectedSlot}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-[#94A3B8]">Estimated Cost</p>
-                        <p className="font-medium text-white">₹250</p>
-                        <p className="text-xs text-[#94A3B8]">for 10 minutes</p>
+                  <div className="bg-[#334155]/50 rounded-lg p-4 mb-4">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-[#94A3B8]">Charger Type:</span>
+                      <span className="text-[#F1F5F9]">
+                        {selectedStation.slots.find(s => s.slotId === selectedSlot)?.chargerType}
+                      </span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-[#94A3B8]">Price per hour:</span>
+                      <span className="text-[#F1F5F9]">
+                        ₹{selectedStation.slots.find(s => s.slotId === selectedSlot)?.pricePerHour}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#94A3B8]">Estimated Duration:</span>
+                      <span className="text-[#F1F5F9]">1 hour</span>
+                    </div>
+                    <div className="border-t border-[#475569] pt-2 mt-2">
+                      <div className="flex justify-between font-bold">
+                        <span className="text-[#F1F5F9]">Total:</span>
+                        <span className="text-[#10B981]">₹{selectedStation.slots.find(s => s.slotId === selectedSlot)?.pricePerHour}</span>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                <div className="flex justify-end space-x-2 sm:space-x-3">
+                <div className="flex space-x-3">
                   <button
+                    type="button"
                     onClick={() => setIsBookingPanelOpen(false)}
-                    className="border border-[#475569] text-[#CBD5E1] hover:bg-[#334155] px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg transition-colors"
-                    disabled={isLoading}
+                    className="flex-1 py-2 px-4 border border-[#475569] text-[#F1F5F9] rounded-lg hover:bg-[#334155] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
-                    className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white hover:from-[#7C3AED] hover:to-[#059669] px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg transition-colors disabled:opacity-50"
+                    type="button"
                     onClick={handleBookSlot}
                     disabled={!selectedSlot || isLoading}
+                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                      !selectedSlot || isLoading
+                        ? 'bg-[#94A3B8] cursor-not-allowed'
+                        : 'bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:opacity-90 text-white'
+                    }`}
                   >
-                    {isLoading ? 'Processing...' : `Pay ₹250`}
+                    {isLoading ? 'Booking...' : 'Confirm Booking'}
                   </button>
                 </div>
               </div>
@@ -663,181 +640,6 @@ export const BunkFinderMap: React.FC = () => {
           </div>
         </motion.div>
       )}
-      
-      {/* Custom CSS for map styling */}
-      <style jsx>{`
-        .station-marker-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-        }
-        
-        .station-marker {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          font-size: 16px;
-          border: 2px solid white;
-          transition: all 0.3s ease;
-        }
-        
-        .station-marker.available {
-          background: linear-gradient(135deg, #00ffff, #8B5CF6);
-          box-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
-          animation: pulse 2s infinite;
-        }
-        
-        .station-marker.available:hover {
-          transform: scale(1.2);
-          box-shadow: 0 0 15px rgba(139, 92, 246, 1);
-        }
-        
-        .station-marker.unavailable {
-          background: linear-gradient(135deg, #64748B, #94A3B8);
-          box-shadow: 0 0 10px rgba(100, 116, 139, 0.7);
-          opacity: 0.7;
-        }
-        
-        .favorite-marker {
-          width: 30px;
-          height: 30px;
-          background: linear-gradient(135deg, #F59E0B, #F97316);
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          font-size: 16px;
-          box-shadow: 0 0 15px rgba(245, 158, 11, 0.8);
-          border: 2px solid white;
-          animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
-          }
-          70% {
-            transform: scale(1.1);
-            box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
-          }
-          100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-          }
-        }
-        
-        .neon-button {
-          width: 36px;
-          height: 36px;
-          background: #1E293B;
-          border: 1px solid #475569;
-          border-radius: 8px;
-          color: #F1F5F9;
-          font-weight: bold;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s ease;
-          box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
-        }
-        
-        .neon-button:hover {
-          background: #334155;
-          box-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
-          border-color: #8B5CF6;
-        }
-        
-        .maplibregl-ctrl-top-left {
-          top: 1rem;
-          left: 1rem;
-        }
-        
-        .maplibregl-ctrl-top-right {
-          top: 1rem;
-          right: 1rem;
-        }
-        
-        .maplibregl-ctrl-group {
-          background: rgba(30, 41, 59, 0.8) !important;
-          backdrop-filter: blur(4px);
-          border: 1px solid #475569 !important;
-          border-radius: 8px !important;
-          box-shadow: 0 0 10px rgba(139, 92, 246, 0.3) !important;
-        }
-        
-        .maplibregl-ctrl-group button {
-          background: transparent !important;
-          color: #F1F5F9 !important;
-          border-bottom: 1px solid #475569 !important;
-        }
-        
-        .maplibregl-ctrl-group button:hover {
-          background: rgba(51, 65, 85, 0.5) !important;
-        }
-        
-        .maplibregl-ctrl-geocoder {
-          background: rgba(30, 41, 59, 0.8) !important;
-          backdrop-filter: blur(4px);
-          border: 1px solid #475569 !important;
-          border-radius: 8px !important;
-          box-shadow: 0 0 10px rgba(139, 92, 246, 0.3) !important;
-          color: #F1F5F9 !important;
-          min-width: 300px !important;
-        }
-        
-        .maplibregl-ctrl-geocoder--input {
-          background: transparent !important;
-          color: #F1F5F9 !important;
-          font-family: var(--font-sans) !important;
-        }
-        
-        .maplibregl-ctrl-geocoder--input::placeholder {
-          color: #94A3B8 !important;
-        }
-        
-        .maplibregl-ctrl-geocoder--icon-search {
-          fill: #94A3B8 !important;
-        }
-        
-        .maplibregl-popup {
-          background: rgba(30, 41, 59, 0.9) !important;
-          backdrop-filter: blur(4px);
-          border: 1px solid #475569 !important;
-          border-radius: 8px !important;
-          box-shadow: 0 0 15px rgba(139, 92, 246, 0.5) !important;
-        }
-        
-        .maplibregl-popup-content {
-          background: transparent !important;
-          padding: 12px !important;
-          color: #F1F5F9 !important;
-        }
-        
-        .maplibregl-popup-close-button {
-          color: #94A3B8 !important;
-          font-size: 20px !important;
-        }
-        
-        .maplibregl-popup-close-button:hover {
-          color: #F1F5F9 !important;
-          background: transparent !important;
-        }
-        
-        .maplibregl-popup-tip {
-          border-top-color: #475569 !important;
-        }
-        
-        /* Hide default navigation controls */
-        .maplibregl-ctrl-nav {
-          display: none !important;
-        }
-      `}</style>
     </div>
   );
 };
