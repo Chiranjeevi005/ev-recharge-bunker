@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
     
-    const { stationId, slotId, duration, amount } = body;
+    const { stationId, slotId, duration, amount, userId } = body;
     
     // Validate input
     if (!stationId || !slotId || !duration || amount === undefined) {
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     
     // Store order in database
     const orderResult = await db.collection("payments").insertOne({
+      userId: userId || "anonymous",
       stationId,
       slotId,
       amount,

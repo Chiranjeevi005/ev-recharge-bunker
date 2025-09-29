@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 interface BookingPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  userId: string;
 }
 
 declare global {
@@ -15,11 +16,13 @@ declare global {
   }
 }
 
-export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose }) => {
+export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose, userId }) => {
   const [selectedBunk, setSelectedBunk] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
+  const [duration, setDuration] = useState(1); // Duration in hours
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadRazorpay = () => {
     return new Promise((resolve) => {
@@ -35,55 +38,104 @@ export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose }) =
     });
   };
 
+  const createPaymentOrder = async (amount: number) => {
+    try {
+      const response = await fetch('/api/payment/order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stationId: selectedBunk,
+          slotId: selectedSlot,
+          duration: duration,
+          amount: amount,
+          userId: userId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment order');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Error creating payment order:', err);
+      throw err;
+    }
+  };
+
   const handleBooking = async () => {
     if (paymentMethod === 'razorpay') {
       setIsLoading(true);
+      setError(null);
       
-      const res = await loadRazorpay();
-      
-      if (!res) {
-        alert('Failed to load Razorpay. Please try again.');
+      try {
+        const res = await loadRazorpay();
+        
+        if (!res) {
+          throw new Error('Failed to load Razorpay');
+        }
+        
+        // Calculate amount based on duration (₹50 per hour for example)
+        const amount = duration * 50;
+        
+        // Create payment order
+        const orderData = await createPaymentOrder(amount);
+        
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_example',
+          amount: orderData.amount, // Amount in paise
+          currency: orderData.currency,
+          name: 'EV Bunker',
+          description: `Charging Slot Booking for ${duration} hour(s)`,
+          image: '/logo.png',
+          order_id: orderData.orderId,
+          handler: function (response: any) {
+            console.log('Payment successful:', response);
+            alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
+            // Close the panel after successful payment
+            onClose();
+          },
+          prefill: {
+            name: 'John Doe',
+            email: 'john@example.com',
+            contact: '9876543210',
+          },
+          notes: {
+            address: 'EV Bunker Corporate Office',
+            bookingId: orderData.bookingId
+          },
+          theme: {
+            color: '#8B5CF6',
+          },
+          modal: {
+            ondismiss: function() {
+              console.log('Payment cancelled');
+              setIsLoading(false);
+            }
+          }
+        };
+        
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (err: any) {
+        console.error('Booking error:', err);
+        setError(err.message || 'Failed to process booking. Please try again.');
+        alert('Failed to process booking. Please try again.');
+      } finally {
         setIsLoading(false);
-        return;
       }
-      
-      // In a real app, this would be an API call to your backend
-      // to create an order and get the order ID
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_example',
-        amount: 25000, // Amount in paise (₹250)
-        currency: 'INR',
-        name: 'EV Bunker',
-        description: 'Charging Slot Booking',
-        image: '/logo.png',
-        order_id: '', // This would come from your backend
-        handler: function (response: any) {
-          alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
-          // Close the panel after successful payment
-          onClose();
-        },
-        prefill: {
-          name: 'John Doe',
-          email: 'john@example.com',
-          contact: '9876543210',
-        },
-        notes: {
-          address: 'EV Bunker Corporate Office',
-        },
-        theme: {
-          color: '#8B5CF6',
-        },
-      };
-      
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-      setIsLoading(false);
     } else {
       // Handle other payment methods
       alert('Booking confirmed with saved payment method!');
       onClose();
     }
   };
+
+  // Calculate total amount based on duration
+  const totalAmount = duration * 50;
 
   return (
     <>
@@ -124,6 +176,12 @@ export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose }) =
                 </button>
               </div>
               <div className="px-4 py-3 sm:px-6 sm:py-5">
+                {error && (
+                  <div className="mb-4 p-3 bg-red-900/50 border border-red-800/50 text-red-400 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
+                
                 <div className="mb-4 sm:mb-6">
                   <label className="block text-sm font-medium text-[#94A3B8] mb-2">Select Bunk</label>
                   <select 
@@ -155,6 +213,31 @@ export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose }) =
                         {slot}
                       </button>
                     ))}
+                  </div>
+                </div>
+                
+                <div className="mb-4 sm:mb-6">
+                  <label className="block text-sm font-medium text-[#94A3B8] mb-2">
+                    Duration: {duration} hour{duration !== 1 ? 's' : ''}
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="8"
+                    value={duration}
+                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-[#94A3B8] mt-1">
+                    <span>1h</span>
+                    <span>8h</span>
+                  </div>
+                </div>
+                
+                <div className="mb-4 sm:mb-6 p-3 bg-[#334155]/50 rounded-lg border border-[#475569]/50">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#94A3B8]">Total Amount:</span>
+                    <span className="text-xl font-bold text-[#10B981]">₹{totalAmount}</span>
                   </div>
                 </div>
                 
@@ -200,7 +283,7 @@ export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose }) =
                     onClick={handleBooking}
                     disabled={!selectedBunk || !selectedSlot || isLoading}
                   >
-                    {isLoading ? 'Processing...' : `Pay ₹250`}
+                    {isLoading ? 'Processing...' : `Pay ₹${totalAmount}`}
                   </Button>
                 </div>
               </div>

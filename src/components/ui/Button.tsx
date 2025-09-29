@@ -18,12 +18,12 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = "font-semibold rounded-lg sm:rounded-xl transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0F172A] focus:ring-[#8B5CF6] whitespace-nowrap";
+  const baseClasses = "font-semibold rounded-lg sm:rounded-xl transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1E293B] focus:ring-[#8B5CF6] whitespace-nowrap";
   
   const variantClasses = {
-    primary: "bg-[#10B981] text-[#0F172A] hover:bg-[#059669] shadow-md hover:shadow-lg",
+    primary: "bg-[#10B981] text-[#1E293B] hover:bg-[#059669] shadow-md hover:shadow-lg",
     secondary: "bg-[#8B5CF6] text-white hover:bg-[#7C3AED] shadow-md hover:shadow-lg",
-    outline: "border-2 border-[#10B981] text-[#10B981] bg-transparent hover:bg-[#10B981] hover:text-[#0F172A]",
+    outline: "border-2 border-[#10B981] text-[#F1F5F9] bg-transparent hover:bg-[#10B981] hover:text-[#1E293B]",
   };
   
   const sizeClasses = {

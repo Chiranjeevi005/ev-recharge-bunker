@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
+import { PaymentService } from '@/lib/payment';
 
 export async function POST(request: Request) {
   try {
@@ -42,17 +43,19 @@ export async function POST(request: Request) {
       );
     }
     
-    // Update payment status
-    await db.collection("payments").updateOne(
-      { orderId: razorpay_order_id },
-      { 
-        $set: { 
-          paymentId: razorpay_payment_id,
-          status: 'completed',
-          updatedAt: new Date()
-        } 
-      }
+    // Update payment status using the payment service
+    const updatedPayment = await PaymentService.updatePaymentStatus(
+      razorpay_order_id, 
+      razorpay_payment_id, 
+      'completed'
     );
+    
+    if (!updatedPayment) {
+      return NextResponse.json(
+        { error: "Failed to update payment status" }, 
+        { status: 500 }
+      );
+    }
     
     // Create booking record
     const bookingResult = await db.collection("bookings").insertOne({
@@ -80,6 +83,9 @@ export async function POST(request: Request) {
         } 
       }
     );
+    
+    // Emit real-time payment update
+    await PaymentService.emitPaymentUpdate(updatedPayment);
     
     return NextResponse.json({
       success: true,

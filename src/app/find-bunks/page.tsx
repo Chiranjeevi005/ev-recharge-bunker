@@ -258,7 +258,7 @@ export default function FindBunksPage() {
       <Navbar />
       
       {/* Add padding top to account for fixed navbar */}
-      <main className="pt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-10">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}

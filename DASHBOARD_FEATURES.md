@@ -1,102 +1,115 @@
-# EV Bunker Client Dashboard Features
+# Client Dashboard Implementation
 
 ## Overview
+This document describes the implementation of the futuristic, real-time Client Dashboard for the EV Charging Web App. The dashboard provides users with a comprehensive view of their EV charging activities, real-time updates, and quick access to key features.
 
-The EV Bunker client dashboard is a futuristic, responsive web application designed for electric vehicle owners to quickly find charging stations, book slots, and manage payments. The dashboard features a modern UI with smooth animations and intuitive navigation.
+## Features Implemented
 
-## Key Features
+### 1. Overview Section
+- **User Profile Display**: Shows user name and email from Auth.js session
+- **Quick Stats**:
+  - Total bookings
+  - Total payments
+  - CO₂ savings
 
-### 1. Navigation
+### 2. Real-time Booking Tracker
+- **Active Booking Display**: Shows current charging session with station details
+- **Countdown Timer**: Real-time countdown to session end
+- **Session Controls**: Extend or cancel booking options
+- **Real-time Updates**: WebSocket-based updates using Socket.io
 
-- **Navbar**: Fixed top navigation with logo, primary links, and user profile
-- **Floating Action Button (FAB)**: Always-visible "Book & Pay" button for quick access
-- **Mobile Responsive**: Hamburger menu for mobile devices
+### 3. Payment History
+- **Transaction Table**: Displays past payments with station, amount, payment ID, date, and status
+- **Recent Transactions**: Shows the 5 most recent payments
 
-### 2. Interactive Map
+### 4. Charging History & Analytics
+- **Usage Analytics**: Placeholder for line/bar graph of monthly charging usage
+- **Environmental Impact**: CO₂ savings visualization
 
-- **Google Maps Integration**: Real-time map showing charging station locations
-- **Glowing Pins**: Visual indicators for station availability (green = available, red = full)
-- **Info Windows**: Click on pins to view station details and book slots
-- **Energy Animations**: Subtle background animations for a futuristic feel
-
-### 3. Quick Stats
-
-- **Animated Counters**: Real-time statistics with smooth counting animations
-- **Glassmorphism Cards**: Modern UI with hover effects
-- **Key Metrics**: 
-  - Total EVs charged
-  - Active charging bunks
-  - Trips completed
-
-### 4. Booking & Payment
-
-- **Modal Interface**: Slide-over panel for booking slots
-- **Razorpay Integration**: Secure payment processing
-- **Slot Selection**: Visual interface for choosing available slots
-- **Payment Methods**: Support for Razorpay and saved cards
-
-### 5. Booking History
-
-- **Status Indicators**: Visual indicators for booking status (completed, charging, scheduled)
-- **Responsive Grid**: Adapts to different screen sizes
-- **Detailed Information**: Shows bunk name, slot, amount, and date
+### 5. Quick Actions Panel
+- **Find Nearby Station**: Button to navigate to station finder
+- **Book Again**: Button to quickly book another session
+- **Support**: Button to contact support
 
 ## Technical Implementation
 
-### Animations
+### Frontend (Next.js + Tailwind CSS)
+- **Framework**: Next.js 15.5.3 with App Router
+- **Styling**: Tailwind CSS with custom futuristic theme
+- **Animations**: Framer Motion for smooth transitions
+- **Real-time Updates**: Socket.io client for live data
+- **Authentication**: NextAuth.js for user session management
 
-- **Framer Motion**: For smooth transitions and hover effects
-- **Lottie**: Energy pulse animations throughout the interface
-- **CSS Animations**: Custom animations for glowing effects
+### Backend (API Routes)
+- **User Data**: `/api/users/[id]` - Fetch user profile
+- **Active Bookings**: `/api/bookings/active` - Get current booking
+- **Payment History**: `/api/payments` - Retrieve payment transactions
+- **Charging History**: `/api/charging-history` - Get completed bookings
 
-### Responsive Design
+### Database (MongoDB)
+- **Users Collection**: User profile information
+- **Bookings Collection**: Current and past charging sessions
+- **Payments Collection**: Payment transaction records
+- **Stations Collection**: Charging station details
 
-- **Mobile First**: Optimized for all device sizes
-- **Flexible Grids**: CSS Grid and Flexbox for adaptive layouts
-- **Touch Friendly**: Large touch targets for mobile users
+### Security (Arcjet)
+- **Bot Detection**: Blocks malicious bots
+- **Shield Protection**: Protects against common attacks
+- **Rate Limiting**: Prevents API abuse
 
-### Security
+### Real-time Updates (Socket.io)
+- **WebSocket Server**: Real-time communication server
+- **User Rooms**: Isolated updates per user
+- **Event Broadcasting**: Booking and payment status updates
 
-- **Environment Variables**: Secure storage of API keys
-- **Protected Routes**: Authentication required for dashboard access
-- **Input Validation**: Client-side validation for forms
+## UI/Theme Features
+- **Semi-dark Futuristic Theme**: Professional color scheme with purple/emerald accents
+- **Glowing Borders**: Subtle glowing effects on interactive elements
+- **Smooth Animations**: Framer Motion powered transitions
+- **Responsive Design**: Works on all device sizes
+- **Glassmorphism**: Frosted glass effect on cards and panels
 
-## Setup Instructions
+## File Structure
+```
+src/
+├── app/
+│   ├── dashboard/
+│   │   └── page.tsx          # Main dashboard page
+│   ├── api/
+│   │   ├── users/
+│   │   │   └── [id]/
+│   │   │       └── route.ts   # User profile API
+│   │   ├── bookings/
+│   │   │   └── active/
+│   │   │       └── route.ts   # Active booking API
+│   │   ├── payments/
+│   │   │   └── route.ts       # Payment history API
+│   │   ├── charging-history/
+│   │   │   └── route.ts       # Charging history API
+│   │   └── socketio/
+│   │       └── route.ts       # Socket.io endpoint
+├── lib/
+│   ├── arcjet.ts              # Arcjet security configuration
+│   ├── socket.ts              # Socket.io server setup
+│   └── auth.ts                # NextAuth.js configuration
+└── components/
+    └── ui/
+        └── EnergyAnimation.tsx # Custom energy animation
+```
 
-1. **Google Maps API**:
-   - Create a Google Cloud project
-   - Enable Maps JavaScript API
-   - Add your API key to `.env.local`
+## Real-time Functionality
+1. **Socket.io Server**: Initializes WebSocket server for real-time communication
+2. **User Rooms**: Each user joins a private room for targeted updates
+3. **Event Handling**: Listens for booking and payment updates
+4. **Client Integration**: Dashboard subscribes to real-time events
 
-2. **Razorpay Integration**:
-   - Create a Razorpay account
-   - Generate API keys
-   - Add keys to `.env.local`
-
-3. **Environment Variables**:
-   ```env
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-   NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
-   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-   ```
-
-## Components
-
-### UI Components
-- `FloatingActionButton`: Primary action button with animations
-- `EnergyAnimation`: Lottie-based energy pulse effects
-- `Button`: Reusable button with variants
-
-### Dashboard Components
-- `BookingPanel`: Modal for booking slots and payments
-- `MapSection`: Interactive map with station markers
-- `PastBookings`: History of previous bookings
-- `QuickStats`: Animated statistics counters
+## Security Features
+1. **Arcjet Integration**: Protects API routes from bots and attacks
+2. **Rate Limiting**: Prevents abuse of API endpoints
+3. **Session Management**: Secure user authentication with NextAuth.js
 
 ## Future Enhancements
-
-- Real-time slot availability updates
-- Push notifications for charging status
-- Route optimization to nearest charging stations
-- User reviews and ratings for charging stations
-- Dark/light theme toggle
+1. **Chart.js Integration**: Add actual data visualization for analytics
+2. **Advanced Filtering**: Enhanced filtering options for history
+3. **Notification System**: Push notifications for booking updates
+4. **Dark/Light Mode**: Theme toggle for user preference
