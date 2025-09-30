@@ -182,12 +182,21 @@ export default function FindBunksPage() {
       }
       
       // Create booking order
+      console.log("Creating payment order with:", {
+        userId: user.id,
+        stationId: selectedStation._id,
+        slotId: selectedSlot,
+        duration,
+        amount: calculatePrice(),
+      });
+      
       const response = await fetch("/api/payment/order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          userId: user.id, // Include userId in the request
           stationId: selectedStation._id,
           slotId: selectedSlot,
           duration,
@@ -196,6 +205,7 @@ export default function FindBunksPage() {
       });
       
       const orderData = await response.json();
+      console.log("Payment order response:", orderData);
       
       if (orderData.orderId) {
         // Initialize Razorpay
@@ -207,24 +217,35 @@ export default function FindBunksPage() {
           description: `Booking for ${selectedStation.name}`,
           order_id: orderData.orderId,
           handler: async function (response: any) {
-            // Verify payment
-            const verifyResponse = await fetch("/api/payment/verify", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
+            console.log("Razorpay response received:", response);
             
-            const verifyData = await verifyResponse.json();
-            
-            if (verifyData.success) {
-              // Redirect to confirmation page
-              router.push(`/confirmation?bookingId=${verifyData.bookingId}`);
+            try {
+              // Verify payment
+              const verifyResponse = await fetch("/api/payment/verify", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+              
+              const verifyData = await verifyResponse.json();
+              console.log("Payment verification response:", verifyData);
+              
+              if (verifyData.success) {
+                // Redirect to confirmation page
+                router.push(`/confirmation?bookingId=${verifyData.bookingId}`);
+              } else {
+                console.error("Payment verification failed:", verifyData.error);
+                alert("Payment verification failed. Please contact support.");
+              }
+            } catch (verifyError) {
+              console.error("Error verifying payment:", verifyError);
+              alert("Failed to verify payment. Please contact support.");
             }
           },
           prefill: {

@@ -12,6 +12,10 @@ const protectedRoutes = [
     path: "/dashboard/client",
     role: "client",
   },
+  {
+    path: "/dashboard",
+    role: "client",
+  },
 ];
 
 export async function middleware(request: NextRequest) {

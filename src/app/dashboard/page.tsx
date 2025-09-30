@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import io from 'socket.io-client';
-import { ChargingStatusCard, SlotAvailabilityCard, PaymentHistoryCard, NotificationBanner, BookingPanel } from '@/components/dashboard';
+import { ChargingStatusCard, SlotAvailabilityCard, PaymentHistoryCard, NotificationBanner } from '@/components/dashboard';
 
 interface ChargingSession {
   userId: string;
@@ -51,7 +51,6 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
-  const [showBookingPanel, setShowBookingPanel] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -177,18 +176,20 @@ export default function ClientDashboard() {
 
   // Handle book slot action
   const handleBookSlot = () => {
-    setShowBookingPanel(true);
+    // Redirect to find-bunks page for booking
+    router.push('/find-bunks');
   };
 
   // Handle view history action
   const handleViewHistory = () => {
-    // Implementation for viewing history
-    alert("View history functionality would be implemented here");
+    // Navigate to payment history page
+    router.push('/dashboard/client/payment-history');
   };
 
   // Handle pay now action
   const handlePayNow = () => {
-    setShowBookingPanel(true);
+    // Redirect to find-bunks page for booking
+    router.push('/find-bunks');
   };
 
   if (status === "loading" || loading) {
@@ -421,12 +422,7 @@ export default function ClientDashboard() {
         </div>
       </main>
       
-      {/* Booking Panel */}
-      <BookingPanel 
-        isOpen={showBookingPanel} 
-        onClose={() => setShowBookingPanel(false)} 
-        userId={session?.user?.id || ''} 
-      />
+      {/* Booking functionality now handled in find-bunks page */}
     </div>
   );
 }

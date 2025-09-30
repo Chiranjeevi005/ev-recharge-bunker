@@ -92,11 +92,37 @@ export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose, use
           description: `Charging Slot Booking for ${duration} hour(s)`,
           image: '/logo.png',
           order_id: orderData.orderId,
-          handler: function (response: any) {
+          handler: async function (response: any) {
             console.log('Payment successful:', response);
-            alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
-            // Close the panel after successful payment
-            onClose();
+            
+            try {
+              // Verify the payment with our backend
+              const verifyResponse = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+              
+              const verifyData = await verifyResponse.json();
+              
+              if (verifyData.success) {
+                // Redirect to confirmation page with the actual booking ID
+                window.location.href = `/confirmation?bookingId=${verifyData.bookingId}`;
+              } else {
+                alert('Payment verification failed. Please contact support.');
+                setIsLoading(false);
+              }
+            } catch (verifyError) {
+              console.error('Error verifying payment:', verifyError);
+              alert('Failed to verify payment. Please contact support.');
+              setIsLoading(false);
+            }
           },
           prefill: {
             name: 'John Doe',

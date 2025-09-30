@@ -24,20 +24,33 @@ export async function connectToDatabase() {
     return { client: cachedClient, db: cachedDb };
   }
 
-  if (!global.mongoClient) {
-    console.log('Creating new MongoDB client');
-    const client = new MongoClient(MONGODB_URI!);
-    await client.connect();
-    console.log('Connected to MongoDB');
-    global.mongoClient = client;
-  } else {
-    console.log('Using existing global MongoDB client');
+  try {
+    if (!global.mongoClient) {
+      console.log('Creating new MongoDB client');
+      const client = new MongoClient(MONGODB_URI!);
+      await client.connect();
+      console.log('Connected to MongoDB');
+      global.mongoClient = client;
+    } else {
+      console.log('Using existing global MongoDB client');
+    }
+
+    cachedClient = global.mongoClient;
+    // Explicitly specify the database name
+    cachedDb = cachedClient.db('ev_bunker');
+    console.log('Database name:', cachedDb.databaseName);
+    
+    // Test the connection by listing collections
+    try {
+      const collections = await cachedDb.listCollections().toArray();
+      console.log('Available collections:', collections.map(c => c.name));
+    } catch (collectionError) {
+      console.error('Error listing collections:', collectionError);
+    }
+
+    return { client: cachedClient, db: cachedDb };
+  } catch (error) {
+    console.error('Error connecting to database:', error);
+    throw new Error('Failed to connect to database');
   }
-
-  cachedClient = global.mongoClient;
-  // Explicitly specify the database name
-  cachedDb = cachedClient.db('ev_bunker');
-  console.log('Database name:', cachedDb.databaseName);
-
-  return { client: cachedClient, db: cachedDb };
 }

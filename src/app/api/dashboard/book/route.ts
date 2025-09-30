@@ -49,7 +49,8 @@ export async function POST(request: Request) {
 
     // Update slot availability in Redis (if available)
     if (redis.isAvailable()) {
-      const station = await db.collection("stations").findOne({ _id: new ObjectId(stationId) });
+      // Fix: Use the string stationId directly instead of converting to ObjectId
+      const station = await db.collection("stations").findOne({ _id: stationId });
       if (station) {
         const availabilityKey = `station:${station.city}:${stationId}:availability`;
         const currentAvailability = await redis.get(availabilityKey);

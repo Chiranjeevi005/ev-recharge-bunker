@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     let body;
     try {
       body = await request.json();
+      console.log("Payment order request body:", body);
     } catch (parseError) {
       console.error("Error parsing request body:", parseError);
       return NextResponse.json(
@@ -29,8 +30,29 @@ export async function POST(request: Request) {
     
     // Validate input
     if (!stationId || !slotId || !duration || amount === undefined) {
+      console.error("Missing required fields:", { stationId, slotId, duration, amount });
       return NextResponse.json(
         { error: "Missing required fields" }, 
+        { status: 400 }
+      );
+    }
+    
+    console.log("Creating payment order with:", { stationId, slotId, duration, amount, userId });
+    
+    // Validate amount
+    if (amount <= 0) {
+      console.error("Invalid amount:", amount);
+      return NextResponse.json(
+        { error: "Invalid amount" }, 
+        { status: 400 }
+      );
+    }
+    
+    // Validate duration
+    if (duration <= 0 || duration > 24) {
+      console.error("Invalid duration:", duration);
+      return NextResponse.json(
+        { error: "Invalid duration. Must be between 1 and 24 hours." }, 
         { status: 400 }
       );
     }
@@ -38,14 +60,35 @@ export async function POST(request: Request) {
     // Create Razorpay order using the actual SDK
     // Fix: Shorten the receipt ID to be within 40 characters
     const receiptId = `receipt_${Date.now()}`.substring(0, 40);
+    console.log("Creating Razorpay order with receiptId:", receiptId);
     
-    const order = await razorpay.orders.create({
-      amount: amount * 100, // Amount in paise
-      currency: 'INR',
-      receipt: receiptId
-    });
+    let order;
+    try {
+      order = await razorpay.orders.create({
+        amount: amount * 100, // Amount in paise
+        currency: 'INR',
+        receipt: receiptId
+      });
+      console.log("Razorpay order created:", order);
+    } catch (razorpayError) {
+      console.error("Error creating Razorpay order:", razorpayError);
+      return NextResponse.json(
+        { error: "Failed to create payment order with Razorpay" }, 
+        { status: 500 }
+      );
+    }
+    
+    // Validate Razorpay order
+    if (!order || !order.id) {
+      console.error("Invalid Razorpay order response:", order);
+      return NextResponse.json(
+        { error: "Invalid Razorpay order response" }, 
+        { status: 500 }
+      );
+    }
     
     // Store order in database
+    console.log("Creating payment record with orderId:", order.id);
     const orderResult = await db.collection("payments").insertOne({
       userId: userId || "anonymous",
       stationId,
@@ -57,6 +100,16 @@ export async function POST(request: Request) {
       status: 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
+    });
+    
+    console.log("Payment record created:", {
+      insertedId: orderResult.insertedId.toString(),
+      orderId: order.id,
+      userId,
+      stationId,
+      slotId,
+      amount,
+      duration
     });
     
     return NextResponse.json({

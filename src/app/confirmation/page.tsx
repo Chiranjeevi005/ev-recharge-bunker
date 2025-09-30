@@ -55,23 +55,22 @@ export default function ConfirmationPage() {
       try {
         setLoading(true);
         
-        // Fetch booking details
-        const bookingResponse = await fetch(`/api/bookings`);
-        const bookings = await bookingResponse.json();
-        const foundBooking = bookings.find((b: Booking) => b._id === bookingId);
+        // Fetch specific booking details
+        const bookingResponse = await fetch(`/api/bookings/${bookingId}`);
+        const bookingData = await bookingResponse.json();
         
-        if (!foundBooking) {
-          setError('Booking not found');
+        if (!bookingResponse.ok || bookingData.error) {
+          setError(bookingData.error || 'Booking not found');
           setLoading(false);
           return;
         }
         
-        setBooking(foundBooking);
+        setBooking(bookingData);
         
         // Fetch station details
         const stationResponse = await fetch(`/api/stations`);
         const stations = await stationResponse.json();
-        const foundStation = stations.find((s: Station) => s._id === foundBooking.stationId);
+        const foundStation = stations.find((s: Station) => s._id === bookingData.stationId);
         
         if (foundStation) {
           setStation(foundStation);
@@ -80,7 +79,7 @@ export default function ConfirmationPage() {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching booking details:', err);
-        setError('Failed to load booking details');
+        setError('Failed to load booking details. Please try again.');
         setLoading(false);
       }
     };
