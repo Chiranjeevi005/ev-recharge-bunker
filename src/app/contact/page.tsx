@@ -4,12 +4,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { SuccessAnimation } from '@/components/ui/SuccessAnimation';
-import { ErrorAnimation } from '@/components/ui/ErrorAnimation';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useContactForm } from '@/hooks/useContactForm';
+import { useLoader } from '@/lib/LoaderContext'; // Added import
 
 const ContactPage = () => {
   const {
@@ -22,11 +20,14 @@ const ContactPage = () => {
     handleChange,
     resetForm
   } = useContactForm();
+  
+  const { showLoader, hideLoader } = useLoader(); // Added loader context
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
+    showLoader("Sending your message..."); // Show loader
     
     try {
       const response = await fetch('/api/contact', {
@@ -41,6 +42,7 @@ const ContactPage = () => {
         // Reset form
         resetForm();
         setSubmitStatus('success');
+        hideLoader(); // Hide loader
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to send message');
@@ -48,6 +50,7 @@ const ContactPage = () => {
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitStatus('error');
+      hideLoader(); // Hide loader
     } finally {
       setIsSubmitting(false);
     }
@@ -230,7 +233,6 @@ const ContactPage = () => {
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center">
-                      <LoadingSpinner className="text-white mr-2" />
                       Sending...
                     </span>
                   ) : (
@@ -246,7 +248,11 @@ const ContactPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="mt-4 p-6 bg-green-500/20 border border-green-500/50 rounded-xl text-green-300 text-center"
                   >
-                    <SuccessAnimation />
+                    <div className="flex justify-center mb-4">
+                      <svg className="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
                     <p className="mt-2">Message sent successfully! We'll get back to you soon.</p>
                   </motion.div>
                 )}
@@ -257,7 +263,11 @@ const ContactPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="mt-4 p-6 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-center"
                   >
-                    <ErrorAnimation />
+                    <div className="flex justify-center mb-4">
+                      <svg className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
                     <p className="mt-2">Oops! Something went wrong. Please try again.</p>
                   </motion.div>
                 )}

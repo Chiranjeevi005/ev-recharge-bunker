@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/Navbar';
 import { Button } from '@/components/ui/Button';
 import { Footer } from '@/components/landing/Footer';
+import { useLoader } from '@/lib/LoaderContext'; // Added import
 
 interface Payment {
   _id: string;
@@ -30,6 +31,7 @@ export default function PaymentHistoryPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showLoader, hideLoader } = useLoader(); // Added loader context
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function PaymentHistoryPage() {
         try {
           setLoading(true);
           setError(null);
+          showLoader("Loading payment history..."); // Show loader
           
           const response = await fetch(`/api/payments?userId=${session.user.id}`);
           if (!response.ok) {
@@ -53,9 +56,11 @@ export default function PaymentHistoryPage() {
           
           const data = await response.json();
           setPayments(data);
+          hideLoader(); // Hide loader
         } catch (err) {
           console.error("Error fetching payment history:", err);
           setError("Failed to load payment history. Please try again later.");
+          hideLoader(); // Hide loader
         } finally {
           setLoading(false);
         }
@@ -104,11 +109,8 @@ export default function PaymentHistoryPage() {
   };
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center">
-        <div className="text-[#F1F5F9]">Loading payment history...</div>
-      </div>
-    );
+    // Return null since we're using the global loader
+    return null;
   }
 
   if (status === "unauthenticated") {
@@ -137,7 +139,7 @@ export default function PaymentHistoryPage() {
                 </p>
               </div>
               <Button 
-                onClick={() => router.push('/dashboard/client')}
+                onClick={() => router.push('/dashboard')}
                 variant="outline"
                 className="border-[#94A3B8] text-[#F1F5F9] hover:bg-[#475569]/50"
               >
@@ -163,9 +165,8 @@ export default function PaymentHistoryPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]"></div>
-              </div>
+              // Return null since we're using the global loader
+              null
             ) : payments.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">

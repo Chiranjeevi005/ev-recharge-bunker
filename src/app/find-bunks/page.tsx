@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
+import { useLoader } from '@/lib/LoaderContext'; // Added import
 
 // Declare Razorpay on window object
 declare global {
@@ -73,6 +74,7 @@ export default function FindBunksPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { showLoader, hideLoader } = useLoader(); // Added loader context
 
   // Load Razorpay script
   const loadRazorpay = () => {
@@ -100,12 +102,17 @@ export default function FindBunksPage() {
   useEffect(() => {
     const fetchStations = async () => {
       try {
+        setIsLoading(true);
+        showLoader("Loading stations..."); // Show loader
+        
         const response = await fetch("/api/stations");
         const data = await response.json();
         setStations(data);
         setFilteredStations(data);
+        hideLoader(); // Hide loader
       } catch (error) {
         console.error("Error fetching stations:", error);
+        hideLoader(); // Hide loader
       } finally {
         setIsLoading(false);
       }
@@ -173,10 +180,13 @@ export default function FindBunksPage() {
     if (!selectedStation || !selectedSlot || !user) return;
     
     try {
+      showLoader("Processing payment..."); // Show loader
+      
       // Load Razorpay script first
       const res = await loadRazorpay();
       
       if (!res) {
+        hideLoader(); // Hide loader
         alert('Failed to load Razorpay. Please try again.');
         return;
       }
@@ -237,13 +247,16 @@ export default function FindBunksPage() {
               console.log("Payment verification response:", verifyData);
               
               if (verifyData.success) {
+                hideLoader(); // Hide loader
                 // Redirect to confirmation page
                 router.push(`/confirmation?bookingId=${verifyData.bookingId}`);
               } else {
+                hideLoader(); // Hide loader
                 console.error("Payment verification failed:", verifyData.error);
                 alert("Payment verification failed. Please contact support.");
               }
             } catch (verifyError) {
+              hideLoader(); // Hide loader
               console.error("Error verifying payment:", verifyError);
               alert("Failed to verify payment. Please contact support.");
             }
@@ -262,16 +275,14 @@ export default function FindBunksPage() {
         rzp.open();
       }
     } catch (error) {
+      hideLoader(); // Hide loader
       console.error("Payment error:", error);
     }
   };
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex items-center justify-center">
-        <div className="text-[#F1F5F9]">Loading...</div>
-      </div>
-    );
+    // Return null since we're using the global loader
+    return null;
   }
 
   return (
@@ -365,10 +376,8 @@ export default function FindBunksPage() {
               </h2>
               <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {isLoading ? (
-                  <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#10B981]"></div>
-                    <p className="mt-2 text-[#94A3B8]">Loading stations...</p>
-                  </div>
+                  // Return null since we're using the global loader
+                  null
                 ) : filteredStations.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-[#94A3B8]">No charging stations found. Try a different search.</p>

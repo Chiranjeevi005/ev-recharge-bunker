@@ -2,7 +2,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  testMatch: ['**/tests/**/*.test.ts'],
+  testMatch: ['**/tests/**/*.test.{ts,tsx}'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
@@ -12,6 +12,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^next/(.*)$': '<rootDir>/node_modules/next/$1',
     '^next$': '<rootDir>/node_modules/next/index.js',
+    '^lottie-react$': '<rootDir>/tests/__mocks__/lottie-react.tsx',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {

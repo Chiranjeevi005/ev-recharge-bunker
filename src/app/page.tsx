@@ -8,8 +8,6 @@ import {
   StatsSection,
   FeaturesSection,
   HowItWorksSection,
-  FuturisticMap,
-  PaymentSection,
   TestimonialsSection,
   CTASection,
   Footer
@@ -47,13 +45,20 @@ export default function Home() {
     const hasSeenLoadingScreen = localStorage.getItem('hasSeenLoadingScreen');
     const showLoadingAfterLogin = localStorage.getItem('showLoadingAfterLogin');
     
+    // Additional check for logo click redirection
+    const isFromLogoClick = sessionStorage.getItem('fromLogoClick') === 'true';
+    if (isFromLogoClick) {
+      sessionStorage.removeItem('fromLogoClick'); // Clean up the flag
+    }
+    
     // Show loading screen when:
     // 1. For first-time visitors (hasSeenLoadingScreen is null)
     // 2. After login (showLoadingAfterLogin is set)
     // 3. On page refresh
     // 4. When manually triggered via URL parameter
     // 5. When on localhost (development environment)
-    const shouldShowLoading = !hasSeenLoadingScreen || showLoadingAfterLogin || isRefresh || forceLoading || isLocalhost;
+    // BUT NOT when redirected from logo click
+    const shouldShowLoading = !isFromLogoClick && (!hasSeenLoadingScreen || showLoadingAfterLogin || isRefresh || forceLoading || isLocalhost);
 
     if (shouldShowLoading) {
       // Set loading screen timeout
@@ -94,8 +99,6 @@ export default function Home() {
       <StatsSection />
       <FeaturesSection />
       <HowItWorksSection />
-      <FuturisticMap />
-      <PaymentSection />
       <TestimonialsSection />
       {/* Only show CTA section if user is not logged in */}
       {!session?.user && <CTASection />}

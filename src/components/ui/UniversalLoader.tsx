@@ -2,17 +2,19 @@
 
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
 interface UniversalLoaderProps {
   task?: string;
+  state?: 'loading' | 'success' | 'error' | 'idle';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
 export const UniversalLoader: React.FC<UniversalLoaderProps> = ({ 
   task = "Loading...", 
+  state = 'loading',
   size = 'md',
   className = '' 
 }) => {
@@ -26,6 +28,14 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
     md: { width: 60, height: 60 },
     lg: { width: 80, height: 80 },
     xl: { width: 100, height: 100 }
+  };
+  
+  // State-based glow colors
+  const stateGlowColors = {
+    loading: "rgba(139, 92, 246, 0.4), rgba(16, 185, 129, 0.2), transparent",
+    success: "rgba(16, 185, 129, 0.4), rgba(5, 150, 105, 0.2), transparent",
+    error: "rgba(239, 68, 68, 0.4), rgba(245, 158, 11, 0.2), transparent",
+    idle: "rgba(139, 92, 246, 0.3), rgba(16, 185, 129, 0.15), transparent"
   };
   
   const currentSize = sizeClasses[size];
@@ -96,11 +106,19 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
       });
       
       textTl.to(textRef.current, {
-        textShadow: "0 0 8px rgba(139, 92, 246, 0.8), 0 0 15px rgba(16, 185, 129, 0.6), 0 0 25px rgba(5, 150, 105, 0.4)",
+        textShadow: state === 'success' 
+          ? "0 0 8px rgba(16, 185, 129, 0.8), 0 0 15px rgba(5, 150, 105, 0.6), 0 0 25px rgba(16, 185, 129, 0.4)"
+          : state === 'error'
+          ? "0 0 8px rgba(239, 68, 68, 0.8), 0 0 15px rgba(245, 158, 11, 0.6), 0 0 25px rgba(239, 68, 68, 0.4)"
+          : "0 0 8px rgba(139, 92, 246, 0.8), 0 0 15px rgba(16, 185, 129, 0.6), 0 0 25px rgba(5, 150, 105, 0.4)",
         duration: 1,
         ease: "sine.inOut"
       }).to(textRef.current, {
-        textShadow: "0 0 4px rgba(139, 92, 246, 0.5), 0 0 8px rgba(16, 185, 129, 0.3), 0 0 15px rgba(5, 150, 105, 0.2)",
+        textShadow: state === 'success'
+          ? "0 0 4px rgba(16, 185, 129, 0.5), 0 0 8px rgba(5, 150, 105, 0.3), 0 0 15px rgba(16, 185, 129, 0.2)"
+          : state === 'error'
+          ? "0 0 4px rgba(239, 68, 68, 0.5), 0 0 8px rgba(245, 158, 11, 0.3), 0 0 15px rgba(239, 68, 68, 0.2)"
+          : "0 0 4px rgba(139, 92, 246, 0.5), 0 0 8px rgba(16, 185, 129, 0.3), 0 0 15px rgba(5, 150, 105, 0.2)",
         duration: 1,
         ease: "sine.inOut"
       });
@@ -149,79 +167,146 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
   }, [task]);
 
   return (
-    <div 
-      ref={containerRef}
-      className={`flex flex-col items-center justify-center ${className}`}
-    >
-      {/* Logo with focused animations */}
-      <div className="relative flex items-center justify-center">
-        {/* Central glow effect - perfectly centered on logo */}
-        <motion.div
-          className="absolute inset-0 rounded-full blur-lg"
-          style={{
-            background: "radial-gradient(circle, rgba(139, 92, 246, 0.4), rgba(16, 185, 129, 0.2), transparent)",
-            width: currentSize.width * 1.4,
-            height: currentSize.height * 1.4,
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-          animate={{
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-          }}
-        />
-        
-        {/* Retained bottom effects - energy flow particles */}
-        {Array.from({ length: energyCount }).map((_, i) => (
-          <div
-            key={`energy-${i}`}
-            ref={(el) => { if (el) energyRefs.current[i] = el; }}
-            className="absolute w-1.5 h-1.5 rounded-full"
+    <AnimatePresence>
+      <motion.div 
+        ref={containerRef}
+        className={`flex flex-col items-center justify-center ${className}`}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
+        {/* Logo with focused animations */}
+        <div className="relative flex items-center justify-center">
+          {/* Central glow effect - perfectly centered on logo */}
+          <motion.div
+            className="absolute inset-0 rounded-full blur-lg"
             style={{
-              background: i % 3 === 0 
-                ? 'rgba(255, 255, 255, 0.9)' 
-                : i % 3 === 1 
-                  ? 'rgba(16, 185, 129, 0.9)' 
-                  : 'rgba(139, 92, 246, 0.9)',
-              left: `${50 + gsap.utils.random(-20, 20)}%`,
-              top: '100%',
-              boxShadow: "0 0 4px currentColor",
+              background: `radial-gradient(circle, ${stateGlowColors[state]})`,
+              width: currentSize.width * 1.4,
+              height: currentSize.height * 1.4,
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+            animate={{
+              opacity: state === 'success' ? [0.4, 0.8, 0.4] : state === 'error' ? [0.3, 0.7, 0.3] : [0.2, 0.5, 0.2],
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              opacity: {
+                duration: state === 'success' ? 1.5 : state === 'error' ? 1.8 : 2,
+                repeat: Infinity,
+              },
+              scale: {
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }
             }}
           />
-        ))}
-        
-        {/* Logo image - stable with subtle pulse */}
-        <div 
-          ref={logoRef}
-          className="relative z-10"
-        >
-          <Image 
-            src="/assets/logo.png" 
-            alt="EV Bunker Logo" 
-            width={currentSize.width}
-            height={currentSize.height}
-            className="object-contain"
-          />
+          
+          {/* Framer Motion animation for spark effects - only small particles */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <motion.div
+                key={`spark-${i}`}
+                className="absolute w-1 h-1 rounded-full"
+                style={{
+                  background: 'rgba(255, 255, 200, 0.9)',
+                  left: '50%',
+                  top: '50%',
+                  boxShadow: "0 0 4px rgba(255, 255, 200, 0.8)",
+                }}
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, gsap.utils.random(-50, 50)],
+                  y: [0, gsap.utils.random(-50, 50)],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: "easeOut"
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Retained bottom effects - energy flow particles */}
+          {Array.from({ length: energyCount }).map((_, i) => (
+            <motion.div
+              key={`energy-${i}`}
+              ref={(el) => { if (el) energyRefs.current[i] = el; }}
+              className="absolute w-1.5 h-1.5 rounded-full"
+              style={{
+                background: i % 3 === 0 
+                  ? 'rgba(255, 255, 255, 0.9)' 
+                  : i % 3 === 1 
+                    ? 'rgba(16, 185, 129, 0.9)' 
+                    : 'rgba(139, 92, 246, 0.9)',
+                left: `${50 + gsap.utils.random(-20, 20)}%`,
+                top: '100%',
+                boxShadow: "0 0 4px currentColor",
+              }}
+              animate={{
+                y: [0, -30, -60],
+                opacity: [0, 0.8, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.1,
+                ease: "easeOut"
+              }}
+            />
+          ))}
+          
+          {/* Logo image - stable with subtle pulse */}
+          <motion.div 
+            ref={logoRef}
+            className="relative z-10"
+            animate={{
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <Image 
+              src="/assets/logo.png" 
+              alt="EV Bunker Logo" 
+              width={currentSize.width}
+              height={currentSize.height}
+              className="object-contain"
+            />
+          </motion.div>
         </div>
-      </div>
-      
-      {/* Enhanced futuristic animated task text with additional effects */}
-      <div 
-        ref={textRef}
-        className="mt-8 text-center font-mono font-light tracking-wider relative"
-        style={{
-          color: 'var(--color-foreground, #F1F5F9)',
-          fontSize: size === 'sm' ? '0.875rem' : size === 'md' ? '1rem' : size === 'lg' ? '1.125rem' : '1.25rem',
-          fontFamily: 'monospace'
-        }}
-      >
-        {task}
-      </div>
-    </div>
+        
+        {/* Enhanced futuristic animated task text with additional effects */}
+        <motion.div 
+          ref={textRef}
+          className="mt-8 text-center font-mono font-light tracking-wider relative"
+          style={{
+            color: state === 'success' 
+              ? '#10B981'
+              : state === 'error'
+              ? '#EF4444'
+              : 'var(--color-foreground, #F1F5F9)',
+            fontSize: size === 'sm' ? '0.875rem' : size === 'md' ? '1rem' : size === 'lg' ? '1.125rem' : '1.25rem',
+            fontFamily: 'monospace'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {task}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

@@ -18,6 +18,7 @@ export const Navbar: React.FC = () => {
     e.preventDefault();
     // Prevent loading screen from showing on logo click
     localStorage.setItem('hasSeenLoadingScreen', 'true');
+    sessionStorage.setItem('fromLogoClick', 'true'); // Flag to indicate logo click redirection
     localStorage.removeItem('showLoadingAfterLogin');
     localStorage.removeItem('userSession');
     // Navigate to home page
@@ -55,13 +56,12 @@ export const Navbar: React.FC = () => {
       <div className="container mx-auto">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo - redirect to main page without loader */}
-          <a 
-            href="/" 
-            className="flex items-center space-x-2"
+          <div 
+            className="flex items-center space-x-2 cursor-pointer"
             onClick={handleLogoClick}
           >
             <Logo variant="navbar" />
-          </a>
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
@@ -80,8 +80,9 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:block relative">
             {session?.user ? (
               <div className="flex items-center space-x-2 sm:space-x-3">
+                {/* CHANGED: Direct link to dashboard instead of redirect page */}
                 <Link 
-                  href="/dashboard/client" 
+                  href="/dashboard" 
                   className="text-[#8B5CF6] hover:text-[#A78BFA] transition-colors text-sm font-medium"
                 >
                   Dashboard
@@ -205,8 +206,9 @@ export const Navbar: React.FC = () => {
                     <div className="px-3 py-2 text-[#CBD5E1] text-sm">
                       Welcome, {session.user.name || session.user.email}
                     </div>
+                    {/* CHANGED: Direct link to dashboard instead of redirect page */}
                     <Link 
-                      href="/dashboard/client" 
+                      href="/dashboard" 
                       className="block px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm"
                       onClick={() => setIsMenuOpen(false)}
                     >

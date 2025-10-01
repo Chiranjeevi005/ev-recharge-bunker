@@ -9,10 +9,6 @@ const protectedRoutes = [
     role: "admin",
   },
   {
-    path: "/dashboard/client",
-    role: "client",
-  },
-  {
     path: "/dashboard",
     role: "client",
   },
@@ -41,7 +37,7 @@ export async function middleware(request: NextRequest) {
       // Redirect to appropriate dashboard based on role
       const redirectPath = session.user.role === "admin" 
         ? "/dashboard/admin" 
-        : "/dashboard/client";
+        : "/dashboard";
       
       const url = new URL(redirectPath, request.url);
       return NextResponse.redirect(url);

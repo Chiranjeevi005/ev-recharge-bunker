@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/Button';
-import { SuccessAnimation } from '@/components/ui/SuccessAnimation';
+import { useLoader } from '@/lib/LoaderContext'; // Added import
 
 interface Booking {
   _id: string;
@@ -43,6 +43,7 @@ export default function ConfirmationPage() {
   const [station, setStation] = useState<Station | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showLoader, hideLoader } = useLoader(); // Added loader context
 
   useEffect(() => {
     if (!bookingId) {
@@ -54,6 +55,7 @@ export default function ConfirmationPage() {
     const fetchBookingDetails = async () => {
       try {
         setLoading(true);
+        showLoader("Loading booking details..."); // Show loader
         
         // Fetch specific booking details
         const bookingResponse = await fetch(`/api/bookings/${bookingId}`);
@@ -62,6 +64,7 @@ export default function ConfirmationPage() {
         if (!bookingResponse.ok || bookingData.error) {
           setError(bookingData.error || 'Booking not found');
           setLoading(false);
+          hideLoader(); // Hide loader
           return;
         }
         
@@ -77,10 +80,12 @@ export default function ConfirmationPage() {
         }
         
         setLoading(false);
+        hideLoader(); // Hide loader
       } catch (err) {
         console.error('Error fetching booking details:', err);
         setError('Failed to load booking details. Please try again.');
         setLoading(false);
+        hideLoader(); // Hide loader
       }
     };
 
@@ -88,11 +93,8 @@ export default function ConfirmationPage() {
   }, [bookingId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex items-center justify-center">
-        <div className="text-[#F1F5F9]">Loading booking details...</div>
-      </div>
-    );
+    // Return null since we're using the global loader
+    return null;
   }
 
   if (error) {
@@ -101,7 +103,7 @@ export default function ConfirmationPage() {
         <div className="text-[#F1F5F9] text-center">
           <div className="text-red-400 mb-4">Error: {error}</div>
           <Button 
-            onClick={() => router.push('/dashboard/client')}
+            onClick={() => router.push('/dashboard')}
             className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white"
           >
             Back to Dashboard
@@ -117,7 +119,7 @@ export default function ConfirmationPage() {
         <div className="text-[#F1F5F9] text-center">
           <div className="text-red-400 mb-4">Booking not found</div>
           <Button 
-            onClick={() => router.push('/dashboard/client')}
+            onClick={() => router.push('/dashboard')}
             className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white"
           >
             Back to Dashboard
@@ -160,7 +162,9 @@ export default function ConfirmationPage() {
             {/* Success Header */}
             <div className="text-center mb-10">
               <div className="flex justify-center mb-6">
-                <SuccessAnimation />
+                <svg className="w-24 h-24 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
                 Payment Successful!
@@ -211,13 +215,13 @@ export default function ConfirmationPage() {
                     </h3>
                     <div className="space-y-2">
                       <p className="text-[#F1F5F9] font-medium">
-                        {station?.name || 'Loading station name...'}
+                        {station?.name || 'Station information unavailable'}
                       </p>
                       <p className="text-[#94A3B8] text-sm">
-                        {station?.address || 'Loading address...'}
+                        {station?.address || 'Address information unavailable'}
                       </p>
                       <p className="text-[#94A3B8] text-sm">
-                        {station?.city || 'Loading city...'}
+                        {station?.city || 'City information unavailable'}
                       </p>
                     </div>
                   </div>
@@ -240,7 +244,7 @@ export default function ConfirmationPage() {
                         <span className="text-[#F1F5F9] font-medium">
                           {booking.startTime && booking.endTime 
                             ? `${calculateDuration(booking.startTime, booking.endTime)} hours` 
-                            : 'Calculating...'}
+                            : 'Duration information unavailable'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -263,13 +267,13 @@ export default function ConfirmationPage() {
                     <div>
                       <p className="text-[#94A3B8] text-sm mb-1">Start Time</p>
                       <p className="text-[#F1F5F9] font-medium">
-                        {booking.startTime ? formatDateTime(booking.startTime) : 'Loading...'}
+                        {booking.startTime ? formatDateTime(booking.startTime) : 'Start time unavailable'}
                       </p>
                     </div>
                     <div>
                       <p className="text-[#94A3B8] text-sm mb-1">End Time</p>
                       <p className="text-[#F1F5F9] font-medium">
-                        {booking.endTime ? formatDateTime(booking.endTime) : 'Loading...'}
+                        {booking.endTime ? formatDateTime(booking.endTime) : 'End time unavailable'}
                       </p>
                     </div>
                   </div>
@@ -302,7 +306,7 @@ export default function ConfirmationPage() {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button
-                onClick={() => router.push('/dashboard/client')}
+                onClick={() => router.push('/dashboard')}
                 className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white px-6 py-3"
               >
                 View Dashboard

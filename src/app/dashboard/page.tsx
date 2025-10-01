@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import io from 'socket.io-client';
 import { ChargingStatusCard, SlotAvailabilityCard, PaymentHistoryCard, NotificationBanner } from '@/components/dashboard';
+import { useLoader } from '@/lib/LoaderContext'; // Added import
 
 interface ChargingSession {
   userId: string;
@@ -24,13 +25,16 @@ interface ChargingSession {
   energyConsumed: number;
 }
 
+// Updated to match the actual data structure from the API
 interface Payment {
   userId: string;
   paymentId: string;
   amount: number;
   status: string;
   method: string;
-  date: string;
+  createdAt: string;
+  updatedAt: string;
+  date?: string; // Optional field for backward compatibility
 }
 
 interface SlotAvailability {
@@ -51,6 +55,7 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
+  const { showLoader, hideLoader } = useLoader(); // Added loader context
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -133,6 +138,7 @@ export default function ClientDashboard() {
         try {
           setLoading(true);
           setError(null);
+          showLoader("Loading your dashboard..."); // Show loader
           
           // Fetch active charging session
           const sessionResponse = await fetch(`/api/dashboard/session?userId=${session.user.id}`);
@@ -159,10 +165,12 @@ export default function ClientDashboard() {
           setSlotAvailability(slotData);
 
           setLoading(false);
+          hideLoader(); // Hide loader
         } catch (error) {
           console.error("Error fetching dashboard data:", error);
           setError("Failed to load dashboard data. Please try again later.");
           setLoading(false);
+          hideLoader(); // Hide loader
         }
       };
 
@@ -193,69 +201,8 @@ export default function ClientDashboard() {
   };
 
   if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 z-0">
-          {/* Gradient shift animation */}
-          <motion.div 
-            className="absolute inset-0 opacity-20"
-            animate={{
-              background: [
-                "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)",
-                "radial-gradient(circle at 80% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 50%)",
-                "radial-gradient(circle at 50% 20%, rgba(5, 150, 105, 0.15) 0%, transparent 50%)",
-                "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)"
-              ]
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          />
-          
-          {/* Tech grid pattern */}
-          <div className="absolute inset-0 opacity-10">
-            {/* Horizontal lines */}
-            {Array.from({ length: 20 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute top-0 bottom-0 w-px bg-[#8B5CF6]"
-                style={{ left: `${i * 5}%` }}
-                animate={{
-                  opacity: [0.1, 0.3, 0.1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: i * 0.1,
-                }}
-              />
-            ))}
-            
-            {/* Vertical lines */}
-            {Array.from({ length: 20 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute left-0 right-0 h-px bg-[#10B981]"
-                style={{ top: `${i * 5}%` }}
-                animate={{
-                  opacity: [0.1, 0.3, 0.1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: i * 0.1,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-        
-        <div className="relative z-10 text-[#F1F5F9]">Loading your dashboard...</div>
-      </div>
-    );
+    // Return null since we're using the global loader
+    return null;
   }
 
   if (status === "unauthenticated") {

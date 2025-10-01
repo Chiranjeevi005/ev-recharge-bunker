@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { EnergyAnimation } from '@/components/ui/EnergyAnimation';
 
 interface Stat {
   id: number;
@@ -54,10 +53,10 @@ export const QuickStats: React.FC = () => {
       {/* Background energy animations */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-16 h-16 opacity-10">
-          <EnergyAnimation />
+          <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] animate-pulse"></div>
         </div>
         <div className="absolute bottom-1/3 right-1/3 w-20 h-20 opacity-10">
-          <EnergyAnimation />
+          <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] animate-pulse"></div>
         </div>
       </div>
       
@@ -77,7 +76,7 @@ export const QuickStats: React.FC = () => {
             >
               {/* Inner energy animation */}
               <div className="absolute top-2 right-2 w-8 h-8 opacity-20">
-                <EnergyAnimation />
+                <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] animate-pulse"></div>
               </div>
               
               <dt className="text-sm font-medium text-[#94A3B8] truncate relative z-10">{stat.name}</dt>

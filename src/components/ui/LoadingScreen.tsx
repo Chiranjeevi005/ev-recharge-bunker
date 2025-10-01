@@ -68,62 +68,55 @@ const energyLinePositions = [
   { angle: 337.5, color: "linear-gradient(90deg, rgba(139, 92, 246, 0.8), transparent)" },
 ];
 
+// Letter-by-letter animation component
+const AnimatedText: React.FC<{ text: string }> = ({ text }) => {
+  return (
+    <div className="flex justify-center">
+      {text.split("").map((char, index) => (
+        <motion.span
+          key={index}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{
+            duration: 0.5,
+            delay: index * 0.1,
+          }}
+          className="inline-block"
+        >
+          {char === " " ? "\u00A0" : char}
+        </motion.span>
+      ))}
+    </div>
+  );
+};
+
 export const LoadingScreen: React.FC = () => {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155]">
       {/* Animated background elements matching website theme */}
       <div className="absolute inset-0 z-0">
         {/* Gradient shift animation */}
-        <motion.div 
+        <div 
           className="absolute inset-0 opacity-20"
-          animate={{
-            background: [
-              "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 80% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 50% 20%, rgba(5, 150, 105, 0.15) 0%, transparent 50%)",
-              "radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)"
-            ]
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
         />
         
         {/* Tech grid pattern matching website theme */}
         <div className="absolute inset-0 opacity-10">
           {/* Horizontal lines */}
           {Array.from({ length: 20 }).map((_, i) => (
-            <motion.div
+            <div
               key={i}
               className="absolute top-0 bottom-0 w-px bg-[#8B5CF6]"
               style={{ left: `${i * 5}%` }}
-              animate={{
-                opacity: [0.1, 0.3, 0.1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                delay: i * 0.1,
-              }}
             />
           ))}
           
           {/* Vertical lines */}
           {Array.from({ length: 20 }).map((_, i) => (
-            <motion.div
+            <div
               key={i}
               className="absolute left-0 right-0 h-px bg-[#10B981]"
               style={{ top: `${i * 5}%` }}
-              animate={{
-                opacity: [0.1, 0.3, 0.1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                delay: i * 0.1,
-              }}
             />
           ))}
         </div>
@@ -181,46 +174,18 @@ export const LoadingScreen: React.FC = () => {
       
       {/* Central content - Logo only, no container */}
       <div className="relative z-10 flex flex-col items-center">
-        {/* Logo with glow and pulse effect */}
-        <motion.div
-          className="relative"
-          animate={{
-            scale: [1, 1.08, 1],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
+        {/* Logo with glow and pulse effect - REMOVED ANIMATION */}
+        <div className="relative">
           {/* Glow effect behind logo */}
-          <motion.div
+          <div
             className="absolute inset-0 rounded-full blur-2xl"
             style={{
               background: "radial-gradient(circle, rgba(139, 92, 246, 0.8), rgba(16, 185, 129, 0.8))"
             }}
-            animate={{
-              opacity: [0.4, 0.8, 0.4],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-            }}
           />
           
           {/* Reflection/highlight effect */}
-          <motion.div
-            className="absolute top-1/4 left-1/4 w-1/3 h-1/3 rounded-full bg-white opacity-20 blur-sm"
-            animate={{
-              opacity: [0.1, 0.3, 0.1],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-            }}
-          />
-          
+
           {/* Logo - no container, transparent background */}
           <div className="relative">
             <Image 
@@ -231,40 +196,26 @@ export const LoadingScreen: React.FC = () => {
               className="object-contain"
             />
           </div>
-        </motion.div>
+        </div>
         
-        {/* Futuristic loading text with tech font */}
-        <motion.div 
-          className="text-center mt-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+        {/* Enhanced futuristic animated task text with letter-by-letter animation - REMOVED MOTION WRAPPER */}
+        <div 
+          className="mt-8 text-center font-mono font-light tracking-wider relative"
+          style={{
+            color: '#F1F5F9',
+            fontSize: '1.125rem',
+            fontFamily: 'monospace'
+          }}
         >
-          <motion.h2 
-            className="text-2xl font-light tracking-wider text-[#F1F5F9] font-mono"
-            animate={{
-              textShadow: [
-                "0 0 10px rgba(139, 92, 246, 0.7), 0 0 20px rgba(16, 185, 129, 0.5)",
-                "0 0 15px rgba(139, 92, 246, 0.9), 0 0 30px rgba(16, 185, 129, 0.7)",
-                "0 0 10px rgba(139, 92, 246, 0.7), 0 0 20px rgba(16, 185, 129, 0.5)"
-              ]
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity
-            }}
+          <h2 
+            className="text-center font-mono font-light tracking-wider relative"
           >
-            EV Revolution Loading...
-          </motion.h2>
-        </motion.div>
+            <AnimatedText text="EV Revolution Loading..." />
+          </h2>
+        </div>
         
         {/* Battery loading animation */}
-        <motion.div 
-          className="mt-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
+        <div className="mt-8">
           <div className="relative w-64 h-8 bg-[#334155] border-2 border-[#475569] rounded-lg overflow-hidden">
             {/* Battery terminal */}
             <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-[#475569] rounded-r-sm"></div>
@@ -300,7 +251,7 @@ export const LoadingScreen: React.FC = () => {
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

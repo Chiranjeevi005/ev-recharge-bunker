@@ -30,7 +30,8 @@ The [UniversalLoader](file:///C:/Users/Chiranjeevi%20PK/Desktop/ev-bunker/src/co
    - Text changes dynamically depending on the current task
    - Smooth fade in/out transitions with GSAP
    - Slight glitch/glow effect for a futuristic feel
-   - Text color syncs with the logo glow (blue/teal/white highlights)
+   - Text color changes based on state (green for success, red for error, default for loading/idle)
+   - Text color syncs with the logo glow (blue/teal/white highlights for loading, green for success, red/orange for error)
 
 ## Installation
 
@@ -53,6 +54,7 @@ import { UniversalLoader } from '@/components/ui';
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `task` | `string` | `"Loading..."` | Dynamic task text displayed below the logo |
+| `state` | `'loading' | 'success' | 'error' | 'idle'` | `'loading'` | Animation state that changes glow effect and text color |
 | `size` | `'sm' | 'md' | 'lg' | 'xl'` | `'md'` | Size of the loader |
 | `className` | `string` | `''` | Additional CSS classes |
 
@@ -71,6 +73,21 @@ import { UniversalLoader } from '@/components/ui';
 #### Small Size
 ```tsx
 <UniversalLoader task="Syncing..." size="sm" />
+```
+
+#### Success State
+```tsx
+<UniversalLoader task="Payment Successful!" state="success" />
+```
+
+#### Error State
+```tsx
+<UniversalLoader task="Retrying..." state="error" />
+```
+
+#### Idle State
+```tsx
+<UniversalLoader task="Ready" state="idle" />
 ```
 
 #### In API Calls
@@ -167,6 +184,7 @@ The main component that implements all the advanced animations using GSAP. Key f
 2. **Glow Effect**
    - Pulsing radial gradient behind the logo
    - Smooth scale and opacity animations
+   - Color changes based on state (purple/teal for loading, green for success, red/orange for error)
    - Color-matched to brand colors
 
 3. **Spark Effects**
@@ -215,3 +233,4 @@ The main component that implements all the advanced animations using GSAP. Key f
 2. **Theme Variations**: Add support for different color themes
 3. **Animation Presets**: Predefined animation styles for different contexts
 4. **Accessibility Features**: Enhanced screen reader support and keyboard navigation
+5. **Lottie Integration**: Add Lottie JSON animations for electric shard pulses and spark effects

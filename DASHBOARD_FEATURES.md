@@ -113,3 +113,70 @@ src/
 2. **Advanced Filtering**: Enhanced filtering options for history
 3. **Notification System**: Push notifications for booking updates
 4. **Dark/Light Mode**: Theme toggle for user preference
+
+# Dashboard Features
+
+## Overview
+
+The EV Bunker dashboard provides a comprehensive interface for users to manage their EV charging experience. It includes real-time data visualization, booking management, and personalized insights.
+
+## Key Features
+
+### 1. Real-time Data Visualization
+- **Quick Stats**: Displays key metrics like EVs charged, active bunks, and trips completed with animated counters
+- **Slot Availability**: Shows real-time availability of charging slots at nearby stations
+- **Payment History**: Lists recent transactions with status indicators
+
+### 2. Booking Management
+- **Current Session**: Tracks active charging sessions with real-time progress updates
+- **Upcoming Bookings**: Displays scheduled charging sessions
+- **Quick Booking**: Allows users to quickly book available slots
+
+### 3. Personalized Insights
+- **Usage Analytics**: Visualizes charging patterns and energy consumption
+- **Savings Tracker**: Shows cost savings from using EV charging stations
+- **Environmental Impact**: Displays CO2 offset and other environmental benefits
+
+## UI Components
+
+### Core Components
+- `QuickStats` - Animated counters for key metrics
+- `SlotAvailabilityCard` - Real-time slot availability display
+- `ChargingStatusCard` - Active session tracking
+- `PaymentHistoryCard` - Transaction history
+- `PastBookings` - Completed booking history
+- `NotificationBanner` - System notifications
+
+### UI Components
+- `Button` - Interactive buttons with hover effects
+- `Card` - Container components with glassmorphism effects
+- `Navbar` - Navigation header with authentication
+- `Footer` - Page footer with links
+- `TestimonialCard` - Customer testimonials
+
+## Technical Implementation
+
+### Animation System
+The dashboard uses Framer Motion for smooth animations and transitions. Key animation patterns include:
+- Staggered entrance animations for lists
+- Hover effects on interactive elements
+- Loading states with skeleton screens
+- Background particle effects for visual interest
+
+### Data Flow
+- Real-time updates via WebSocket connections
+- API integration for fetching user data
+- Local state management with React hooks
+- Context API for global state (user session, notifications)
+
+### Responsive Design
+- Mobile-first approach with progressive enhancement
+- Flexible grid layouts using CSS Grid and Flexbox
+- Adaptive components that reflow based on screen size
+- Touch-friendly interactive elements
+
+## Future Enhancements
+- Integration with smart charging algorithms
+- Predictive analytics for optimal charging times
+- Social features for community engagement
+- Advanced filtering and sorting options

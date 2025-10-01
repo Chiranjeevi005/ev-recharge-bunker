@@ -8,7 +8,10 @@ interface Payment {
   amount: number;
   status: string;
   method: string;
-  date: string;
+  // Updated to match the actual data structure from the API
+  createdAt: string;
+  updatedAt: string;
+  date?: string; // Optional field for backward compatibility
 }
 
 interface PaymentHistoryCardProps {
@@ -38,7 +41,10 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
     return id.length > 20 ? `${id.substring(0, 10)}...${id.substring(id.length - 10)}` : id;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (payment: Payment) => {
+    // Use the date field if available (from socket updates), otherwise use createdAt
+    const dateString = payment.date || payment.createdAt;
+    
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
@@ -103,7 +109,7 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
                     {formatPaymentId(payment.paymentId)}
                   </td>
                   <td className="py-4 text-[#CBD5E1] text-sm">
-                    {formatDate(payment.date)}
+                    {formatDate(payment)}
                   </td>
                   <td className="py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>

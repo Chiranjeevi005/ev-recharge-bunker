@@ -82,7 +82,7 @@ Collections:
 
 ### Dashboards
 - Admin Dashboard: `/dashboard/admin`
-- Client Dashboard: `/dashboard/client`
+- Client Dashboard: `/dashboard`
 
 ### Authentication Hook
 - `useAuth()` hook for client-side authentication management

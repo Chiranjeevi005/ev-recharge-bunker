@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { EnergyAnimation } from '@/components/ui/EnergyAnimation';
 
 interface Booking {
   _id: string;
@@ -126,7 +125,7 @@ export const PastBookings: React.FC = () => {
       {/* Background energy animations */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute top-10 right-10 w-16 h-16 opacity-10">
-          <EnergyAnimation />
+          <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] animate-pulse"></div>
         </div>
       </div>
       
@@ -164,7 +163,7 @@ export const PastBookings: React.FC = () => {
             >
               {/* Inner energy animation */}
               <div className="absolute -top-4 -right-4 w-16 h-16 opacity-10">
-                <EnergyAnimation />
+                <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] animate-pulse"></div>
               </div>
               
               <div className="flex justify-between items-start relative z-10">

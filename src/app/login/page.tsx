@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useLoader } from "@/lib/LoaderContext";
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"admin" | "client">("client"); // Changed default to client
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const router = useRouter();
   const emailRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
+  const { showLoader, hideLoader } = useLoader();
 
   // Focus on email field when tab is selected and pre-fill email from query params
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function LoginPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    showLoader("Signing in as admin...");
     setError(null);
 
     try {
@@ -63,6 +66,7 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Invalid email or password. Please check your credentials and try again.");
+        hideLoader();
       } else {
         // Set flag to show loading screen after login
         localStorage.setItem('showLoadingAfterLogin', 'true');
@@ -73,6 +77,7 @@ export default function LoginPage() {
     } catch (err) {
       setError("An unexpected error occurred");
       console.error(err);
+      hideLoader();
     } finally {
       setIsLoading(false);
     }
@@ -81,6 +86,7 @@ export default function LoginPage() {
   const handleClientLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    showLoader("Signing in...");
     setError(null);
 
     try {
@@ -94,6 +100,7 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Invalid email or password. Please check your credentials and try again.");
+        hideLoader();
       } else {
         // Set flag to show loading screen after login
         localStorage.setItem('showLoadingAfterLogin', 'true');
@@ -104,6 +111,7 @@ export default function LoginPage() {
     } catch (err) {
       setError("An unexpected error occurred");
       console.error(err);
+      hideLoader();
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +119,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    showLoader("Redirecting to Google...");
     setError(null);
     
     try {
@@ -121,6 +130,7 @@ export default function LoginPage() {
       setError("Failed to initiate Google login");
       console.error(err);
       setIsLoading(false);
+      hideLoader();
     }
   };
 

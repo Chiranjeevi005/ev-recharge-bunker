@@ -45,26 +45,6 @@ export const StatsSection: React.FC = () => {
     { y: [0, -20, 0], x: [0, 6, 0], duration: 6, delay: 1.3 },
   ];
 
-  // Predefined positions for map nodes
-  const nodePositions = [
-    { top: "20%", left: "30%" },
-    { top: "40%", left: "70%" },
-    { top: "60%", left: "40%" },
-    { top: "30%", left: "20%" },
-    { top: "50%", left: "80%" },
-    { top: "70%", left: "50%" },
-  ];
-
-  // Predefined animation values for map nodes
-  const nodeAnimations = [
-    { delay: 0 },
-    { delay: 0.3 },
-    { delay: 0.6 },
-    { delay: 0.9 },
-    { delay: 1.2 },
-    { delay: 1.5 },
-  ];
-
   return (
     <Section className="relative overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155] py-12 sm:py-16">
       {/* Animated background particles */}
@@ -111,72 +91,6 @@ export const StatsSection: React.FC = () => {
             </motion.div>
           ))}
         </div>
-        
-        {/* Futuristic map infographic */}
-        <motion.div 
-          className="mt-10 sm:mt-16 rounded-2xl sm:rounded-3xl bg-[#334155]/50 border border-[#475569]/50 backdrop-blur-sm p-6 sm:p-8 relative overflow-hidden"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-        >
-          <div className="absolute inset-0 z-0">
-            {/* Grid pattern */}
-            <div className="absolute inset-0 opacity-10">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="absolute top-0 bottom-0 w-px bg-[#8B5CF6]" style={{ left: `${i * 10}%` }}></div>
-              ))}
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="absolute left-0 right-0 h-px bg-[#10B981]" style={{ top: `${i * 10}%` }}></div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="relative z-10">
-            <h3 className="text-lg sm:text-xl font-bold text-center mb-6 sm:mb-8 text-[#F1F5F9]">Global Network Coverage</h3>
-            
-            {/* Map visualization */}
-            <div className="relative h-48 sm:h-64 rounded-xl sm:rounded-2xl bg-[#1E293B]/50 border border-[#475569]/50">
-              {/* Glowing nodes */}
-              {nodePositions.map((pos, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#8B5CF6] border-2 border-[#F1F5F9]"
-                  style={{
-                    top: pos.top,
-                    left: pos.left,
-                  }}
-                  animate={{
-                    scale: [1, 1.3, 1],
-                    opacity: [0.7, 1, 0.7],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    delay: nodeAnimations[i].delay,
-                  }}
-                >
-                  <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#8B5CF6] animate-ping opacity-75"></div>
-                </motion.div>
-              ))}
-              
-              {/* User location */}
-              <motion.div
-                className="absolute w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-[#10B981] border-2 border-[#F1F5F9]"
-                style={{ top: "50%", left: "50%" }}
-                animate={{
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                }}
-              >
-                <div className="absolute inset-0 w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-[#10B981] animate-ping opacity-75"></div>
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </Section>
   );

@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { EnergyAnimation } from '@/components/ui/EnergyAnimation';
 
 interface SlotAvailability {
   stationId: string;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Poppins, Roboto } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import { LoaderProvider } from "@/lib/LoaderContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,7 +42,9 @@ export default function RootLayout({
         className={`${inter.variable} ${poppins.variable} ${roboto.variable} antialiased`}
       >
         <SessionProvider>
-          {children}
+          <LoaderProvider>
+            {children}
+          </LoaderProvider>
         </SessionProvider>
       </body>
     </html>
