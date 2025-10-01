@@ -5,6 +5,7 @@ export * from './LoadingScreen';
 export * from './Section';
 export * from './AuthDemo';
 export * from './Logo';
+export * from './UniversalLoader';
 export * from './TestimonialCard';
 export * from './ApiLoadingIndicator';
 export * from './LoadingSpinner';
