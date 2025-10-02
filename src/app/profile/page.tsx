@@ -11,6 +11,18 @@ import { Input } from '@/components/ui/Input';
 import { useLoader } from '@/lib/LoaderContext';
 import Image from 'next/image';
 
+// List of major metropolitan cities in India
+const METROPOLITAN_CITIES = [
+  "Delhi",
+  "Mumbai",
+  "Bangalore",
+  "Hyderabad",
+  "Chennai",
+  "Kolkata",
+  "Pune",
+  "Ahmedabad"
+];
+
 export default function ProfileSettings() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -23,6 +35,7 @@ export default function ProfileSettings() {
     fullName: '',
     email: '',
     phone: '',
+    location: '',
     avatar: '/assets/logo.png'
   });
 
@@ -96,6 +109,7 @@ export default function ProfileSettings() {
           fullName: session.user.name || '',
           email: session.user.email || '',
           phone: initialProfile?.phone || '+1 (555) 123-4567', // Preserve phone if available
+          location: initialProfile?.location || '', // Initialize location
           avatar: session.user.image || initialProfile?.avatar || '/assets/logo.png' // Preserve avatar if available
         });
       }
@@ -138,11 +152,67 @@ export default function ProfileSettings() {
   // Handle profile save
   const handleSaveProfile = async () => {
     showLoader("Saving profile changes...");
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    hideLoader();
-    // Show success animation
-    // This would be implemented with GSAP/Framer Motion in a real app
+    
+    try {
+      // Save to localStorage first
+      localStorage.setItem('userProfile', JSON.stringify(profile));
+      
+      // If we have a session, update the user's location in the database
+      if (session?.user?.id && profile.location) {
+        console.log('Profile: Updating location in database for user:', session.user.id, 'location:', profile.location);
+        
+        const response = await fetch(`/api/clients/${session.user.id}/location`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ location: profile.location }),
+        });
+        
+        console.log('Profile: Location update response status:', response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Failed to update client location in database:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error || 'Unknown error'
+          });
+          // Show error to user
+          alert(`Failed to update location: ${errorData.error || 'Unknown error'}`);
+          hideLoader();
+          return; // Exit early if location update failed
+        } else {
+          const updatedClient = await response.json();
+          console.log('Profile: Successfully updated client location in database:', updatedClient);
+          
+          // Successfully updated location, dispatch custom event to notify other components
+          if (typeof window !== 'undefined') {
+            // Dispatch storage event for backward compatibility
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'userProfile',
+              newValue: JSON.stringify(profile)
+            }));
+            
+            // Dispatch custom event for more reliable communication
+            window.dispatchEvent(new CustomEvent('locationUpdated', {
+              detail: { userId: session.user.id, location: profile.location }
+            }));
+            
+            console.log('Profile: Dispatched location update events');
+          }
+        }
+      }
+      
+      // Simulate API call for other profile changes
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      hideLoader();
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert("Failed to save profile. Please try again.");
+      hideLoader();
+    }
   };
 
   // Handle password change
@@ -314,6 +384,32 @@ export default function ProfileSettings() {
                   onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
+                
+                {/* Location Dropdown - Consistent with other Input components */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-[#94A3B8] mb-1">
+                    Location
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={profile.location}
+                      onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full bg-[#334155] border border-[#475569] rounded-lg py-2 px-3 text-[#F1F5F9] text-sm focus:outline-none focus:ring-2 focus:ring-[#10B981] appearance-none"
+                    >
+                      <option value="">Select your city</option>
+                      {METROPOLITAN_CITIES.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#94A3B8]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 
                 <Button 
                   onClick={handleSaveProfile}

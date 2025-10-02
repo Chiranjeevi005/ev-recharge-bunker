@@ -39,3 +39,27 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Redis files
+redis/
+redis-windows/
+redis-windows.zip
+redis.zip
+
+# Test files
+check-db.js
+create-test-client.js
+test-*.js
+test-*.html
+
+# TypeScript test files
+check_stations.ts
+test_location_update.ts
+
+# Distribution files
+dist/
+
+# IDE files
+*.swp
+*.swo
+*~

@@ -1,5 +1,5 @@
 import { MongoClient, Db } from 'mongodb';
-import { connectToDatabase } from '../../src/lib/db/connection';
+import { connectToDatabase } from '@/lib/db/connection';
 
 describe('Client Registration Tests', () => {
   let client: MongoClient;

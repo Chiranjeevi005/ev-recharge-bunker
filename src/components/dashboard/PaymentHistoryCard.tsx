@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 
 interface Payment {
@@ -56,21 +55,13 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
         minute: '2-digit',
         hour12: true
       });
-    } catch (e) {
+    } catch (_e) {
       return 'Invalid Date';
     }
   };
 
   return (
-    <motion.div
-      className="glass rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
-    >
-      {/* Glow effect */}
-      <div className="absolute inset-0 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.15)] pointer-events-none"></div>
-      
+    <div className="rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#F1F5F9]">Payment History</h2>
         <Button 
@@ -96,12 +87,9 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
           <tbody>
             {payments.length > 0 ? (
               payments.slice(0, 5).map((payment, index) => (
-                <motion.tr
+                <tr
                   key={payment.paymentId || index}
                   className="border-b border-[#64748B]/50 hover:bg-[#475569]/30 backdrop-blur-sm"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 * index }}
                 >
                   <td className="py-4 text-[#F1F5F9]">Delhi Metro Station</td>
                   <td className="py-4 text-[#F1F5F9]">₹{payment.amount}</td>
@@ -112,11 +100,20 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
                     {formatDate(payment)}
                   </td>
                   <td className="py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
-                      {payment.status}
-                    </span>
+                    <div className="flex items-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                        {payment.status}
+                      </span>
+                      {payment.status.toLowerCase() === 'completed' && (
+                        <span className="ml-2 w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))
             ) : (
               <tr>
@@ -134,7 +131,7 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
           </tbody>
         </table>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

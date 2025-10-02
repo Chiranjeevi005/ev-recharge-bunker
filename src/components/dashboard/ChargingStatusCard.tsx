@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 
 interface ChargingSession {
@@ -25,15 +24,7 @@ interface ChargingStatusCardProps {
 const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCancelSession }) => {
   if (!session) {
     return (
-      <motion.div
-        className="glass rounded-2xl p-8 text-center shadow-lg border border-[#475569]/50 relative overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Glow effect */}
-        <div className="absolute inset-0 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.15)] pointer-events-none"></div>
-        
+      <div className="rounded-2xl p-8 text-center shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
         <h2 className="text-2xl font-bold text-[#F1F5F9] mb-2">No Active Charging Session</h2>
         <p className="text-[#CBD5E1] mb-6">
           You don't have any active charging sessions right now
@@ -44,7 +35,7 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
         >
           Find a Charging Station
         </Button>
-      </motion.div>
+      </div>
     );
   }
 
@@ -57,15 +48,7 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
   };
 
   return (
-    <motion.div
-      className="glass rounded-2xl p-6 shadow-lg relative overflow-hidden border border-[#475569]/50"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Glow effect */}
-      <div className="absolute inset-0 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.15)] pointer-events-none"></div>
-      
+    <div className="rounded-2xl p-6 shadow-lg relative overflow-hidden border border-[#475569]/50 bg-[#1E293B]/50">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#8B5CF6] to-[#10B981]"></div>
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -75,7 +58,7 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
         </div>
         <div className="mt-4 md:mt-0">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-900/50 text-green-400 border border-green-800/50">
-            <div className="w-2 h-2 rounded-full bg-green-400 mr-2 animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-green-400 mr-2"></div>
             Charging
           </span>
         </div>
@@ -115,7 +98,7 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
 
         <div className="bg-[#475569]/30 rounded-xl p-5 border border-[#64748B]/30 backdrop-blur-sm flex flex-col items-center justify-center">
           <div className="relative w-32 h-32 mb-4">
-            {/* Circular progress bar */}
+            {/* Circular progress bar */}`
             <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -133,7 +116,6 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
                 strokeWidth="8"
                 fill="none"
                 strokeDasharray={`${session.progress * 2.83} 283`}
-                className="transition-all duration-1000 ease-in-out"
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -172,7 +154,7 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
           Cancel Session
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

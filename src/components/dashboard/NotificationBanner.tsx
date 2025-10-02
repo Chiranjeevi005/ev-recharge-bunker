@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 interface NotificationBannerProps {
   message: string;
@@ -23,15 +22,7 @@ const NotificationBanner: React.FC<NotificationBannerProps> = ({ message, type, 
   };
 
   return (
-    <motion.div
-      className={`border rounded-lg p-4 mb-6 ${getTypeStyles()} flex justify-between items-center relative overflow-hidden`}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-    >
-      {/* Glow effect */}
-      <div className="absolute inset-0 rounded-lg pointer-events-none"></div>
-      
+    <div className={`border rounded-lg p-4 ${getTypeStyles()} flex justify-between items-center`}>
       <div className="flex items-center">
         <svg 
           className="w-5 h-5 mr-2" 
@@ -63,7 +54,7 @@ const NotificationBanner: React.FC<NotificationBannerProps> = ({ message, type, 
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
-    </motion.div>
+    </div>
   );
 };
 

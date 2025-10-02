@@ -1,4 +1,4 @@
-import { connectToDatabase } from './src/lib/db/connection';
+import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 // Load environment variables
 import dotenv from 'dotenv';

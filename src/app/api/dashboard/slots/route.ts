@@ -15,9 +15,21 @@ export async function GET(request: Request) {
       );
     }
 
+    // Validate userId format before using it
+    let userObjectId: ObjectId | null = null;
+    try {
+      userObjectId = new ObjectId(userId);
+    } catch (error) {
+      console.log("Invalid userId format, using default city");
+    }
+
     // Fetch user's city/location to get nearby stations
     const { db } = await connectToDatabase();
-    const user = await db.collection("users").findOne({ _id: new ObjectId(userId) });
+    
+    let user = null;
+    if (userObjectId) {
+      user = await db.collection("users").findOne({ _id: userObjectId });
+    }
     
     // For demo purposes, we'll use a default city
     const city = user?.city || "Delhi";

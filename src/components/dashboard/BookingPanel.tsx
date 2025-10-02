@@ -85,7 +85,7 @@ export const BookingPanel: React.FC<BookingPanelProps> = ({ isOpen, onClose, use
         const orderData = await createPaymentOrder(amount);
         
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_example',
+          key: process.env.NEXT_PUBLIC_RZP_KEY_ID || 'rzp_test_example',
           amount: orderData.amount, // Amount in paise
           currency: orderData.currency,
           name: 'EV Bunker',

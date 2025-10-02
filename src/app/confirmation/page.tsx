@@ -71,12 +71,11 @@ export default function ConfirmationPage() {
         setBooking(bookingData);
         
         // Fetch station details
-        const stationResponse = await fetch(`/api/stations`);
-        const stations = await stationResponse.json();
-        const foundStation = stations.find((s: Station) => s._id === bookingData.stationId);
+        const stationResponse = await fetch(`/api/stations/${bookingData.stationId}`);
+        const stationData = await stationResponse.json();
         
-        if (foundStation) {
-          setStation(foundStation);
+        if (stationResponse.ok && !stationData.error) {
+          setStation(stationData);
         }
         
         setLoading(false);

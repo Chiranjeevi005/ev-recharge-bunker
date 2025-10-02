@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     
     // Create Razorpay order using the actual SDK
     // Fix: Shorten the receipt ID to be within 40 characters
-    const receiptId = `receipt_${Date.now()}`.substring(0, 40);
+    const receiptId = `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`.substring(0, 40);
     console.log("Creating Razorpay order with receiptId:", receiptId);
     
     let order;
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
         receipt: receiptId
       });
       console.log("Razorpay order created:", order);
-    } catch (razorpayError) {
+    } catch (razorpayError: any) {
       console.error("Error creating Razorpay order:", razorpayError);
       return NextResponse.json(
-        { error: "Failed to create payment order with Razorpay" }, 
+        { error: "Failed to create payment order with Razorpay", details: razorpayError.message }, 
         { status: 500 }
       );
     }
@@ -87,9 +87,9 @@ export async function POST(request: Request) {
       );
     }
     
-    // Store order in database
+    // Store order in database with proper structure
     console.log("Creating payment record with orderId:", order.id);
-    const orderResult = await db.collection("payments").insertOne({
+    const paymentRecord = {
       userId: userId || "anonymous",
       stationId,
       slotId,
@@ -100,7 +100,9 @@ export async function POST(request: Request) {
       status: 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
-    });
+    };
+    
+    const orderResult = await db.collection("payments").insertOne(paymentRecord);
     
     console.log("Payment record created:", {
       insertedId: orderResult.insertedId.toString(),
@@ -125,7 +127,7 @@ export async function POST(request: Request) {
       console.error("Razorpay Error:", error);
     }
     return NextResponse.json(
-      { error: "Failed to create payment order" }, 
+      { error: "Failed to create payment order", details: error.message }, 
       { status: 500 }
     );
   }

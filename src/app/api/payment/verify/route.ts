@@ -9,6 +9,8 @@ export async function POST(request: Request) {
     const { db } = await connectToDatabase();
     const body = await request.json();
     
+    console.log("Payment verification request body:", JSON.stringify(body, null, 2));
+    
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
     
     console.log("Payment verification request received:", {
@@ -35,6 +37,12 @@ export async function POST(request: Request) {
     shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
     const digest = shasum.digest('hex');
     
+    console.log("Signature verification:", {
+      generatedDigest: digest,
+      receivedSignature: razorpay_signature,
+      isMatch: digest === razorpay_signature
+    });
+    
     if (digest !== razorpay_signature) {
       console.error("Invalid payment signature. Expected:", digest, "Received:", razorpay_signature);
       return NextResponse.json(
@@ -47,47 +55,14 @@ export async function POST(request: Request) {
     console.log(`Searching for payment record with orderId: '${razorpay_order_id}'`);
     console.log("Type of razorpay_order_id:", typeof razorpay_order_id);
     
-    // First, let's check what collections exist
-    try {
-      const collections = await db.listCollections().toArray();
-      console.log("Available collections:", collections.map(c => c.name));
-    } catch (collectionError) {
-      console.error("Error listing collections:", collectionError);
-    }
-    
-    // Let's also try to find all payment records to see what's in the database
-    try {
-      const allPayments = await db.collection("payments").find({}).toArray();
-      console.log("All payment records in database:", allPayments.map(p => ({
-        _id: p._id,
-        orderId: p.orderId,
-        userId: p.userId,
-        status: p.status,
-        createdAt: p.createdAt
-      })));
-    } catch (err) {
-      console.error("Error fetching all payment records:", err);
-    }
-    
     const paymentRecord = await db.collection("payments").findOne({ 
       orderId: razorpay_order_id 
     });
     
+    console.log("Payment record search result:", paymentRecord);
+    
     if (!paymentRecord) {
       console.error(`Payment record not found for orderId: '${razorpay_order_id}'`);
-      // Let's also try with trimmed version
-      const trimmedOrderId = razorpay_order_id.trim();
-      console.log(`Trying with trimmed orderId: '${trimmedOrderId}'`);
-      const paymentRecordTrimmed = await db.collection("payments").findOne({ 
-        orderId: trimmedOrderId 
-      });
-      
-      if (paymentRecordTrimmed) {
-        console.log("Found payment record with trimmed orderId:", paymentRecordTrimmed);
-      } else {
-        console.error("Still no payment record found with trimmed orderId");
-      }
-      
       return NextResponse.json(
         { error: "Payment record not found" }, 
         { status: 404 }
@@ -114,18 +89,10 @@ export async function POST(request: Request) {
       'completed'
     );
     
+    console.log("PaymentService.updatePaymentStatus result:", updatedPayment);
+    
     if (!updatedPayment) {
       console.error(`Failed to update payment status for orderId: '${razorpay_order_id}'`);
-      // Let's also try to find the payment record again to see if it still exists
-      try {
-        const paymentRecordCheck = await db.collection("payments").findOne({ 
-          orderId: razorpay_order_id 
-        });
-        console.log("Payment record check:", paymentRecordCheck);
-      } catch (checkError) {
-        console.error("Error checking payment record:", checkError);
-      }
-      
       return NextResponse.json(
         { error: "Failed to update payment status" }, 
         { status: 500 }
@@ -134,34 +101,46 @@ export async function POST(request: Request) {
     
     console.log("Updated payment record:", updatedPayment);
     
-    // Create booking record
-    const bookingResult = await db.collection("bookings").insertOne({
-      userId: paymentRecord.userId || "anonymous", // In a real app, you'd get this from session
+    // Create booking record with proper structure
+    const startTime = new Date();
+    const endTime = new Date(startTime.getTime() + paymentRecord.duration * 60 * 60 * 1000);
+    
+    const bookingData = {
+      userId: paymentRecord.userId || "anonymous",
       stationId: paymentRecord.stationId,
       slotId: paymentRecord.slotId,
-      startTime: new Date().toISOString(),
-      endTime: new Date(Date.now() + paymentRecord.duration * 60 * 60 * 1000).toISOString(),
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
       amount: paymentRecord.amount,
       paymentId: razorpay_payment_id,
       status: 'confirmed',
       createdAt: new Date(),
       updatedAt: new Date()
-    });
+    };
+    
+    console.log("Creating booking record:", bookingData);
+    const bookingResult = await db.collection("bookings").insertOne(bookingData);
+    console.log("Booking record created:", bookingResult.insertedId.toString());
     
     // Update slot status to occupied
-    // Fix: Check if stationId is a string or ObjectId and handle accordingly
-    const stationFilter = ObjectId.isValid(paymentRecord.stationId) 
-      ? { _id: new ObjectId(paymentRecord.stationId), "slots.slotId": paymentRecord.slotId }
-      : { _id: paymentRecord.stationId, "slots.slotId": paymentRecord.slotId };
+    try {
+      const stationFilter = ObjectId.isValid(paymentRecord.stationId) 
+        ? { _id: new ObjectId(paymentRecord.stationId), "slots.slotId": paymentRecord.slotId }
+        : { _id: paymentRecord.stationId, "slots.slotId": paymentRecord.slotId };
       
-    await db.collection("stations").updateOne(
-      stationFilter,
-      { 
-        $set: { 
-          "slots.$.status": "occupied"
-        } 
-      }
-    );
+      const updateResult = await db.collection("stations").updateOne(
+        stationFilter,
+        { 
+          $set: { 
+            "slots.$.status": "occupied"
+          } 
+        }
+      );
+      
+      console.log("Slot status update result:", updateResult);
+    } catch (slotUpdateError) {
+      console.error("Error updating slot status:", slotUpdateError);
+    }
     
     // Emit real-time payment update
     await PaymentService.emitPaymentUpdate(updatedPayment);
@@ -174,7 +153,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error verifying payment:", error);
     return NextResponse.json(
-      { error: "Failed to verify payment" }, 
+      { error: "Failed to verify payment", details: error instanceof Error ? error.message : 'Unknown error' }, 
       { status: 500 }
     );
   }

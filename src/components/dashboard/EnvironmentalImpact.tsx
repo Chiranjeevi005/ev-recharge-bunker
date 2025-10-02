@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 
 interface EnvironmentalStat {
   id: string;
@@ -13,10 +13,11 @@ interface EnvironmentalStat {
 }
 
 export const EnvironmentalImpact: React.FC = () => {
+  const { data: session } = useSession();
   const [stats, setStats] = useState<EnvironmentalStat[]>([
     {
       id: 'co2',
-      name: 'CO2 Saved',
+      name: 'Total CO2 Saved',
       value: 0,
       unit: 'kg',
       icon: (
@@ -28,7 +29,7 @@ export const EnvironmentalImpact: React.FC = () => {
     },
     {
       id: 'sessions',
-      name: 'Sessions',
+      name: 'Sessions Completed',
       value: 0,
       unit: '',
       icon: (
@@ -40,7 +41,7 @@ export const EnvironmentalImpact: React.FC = () => {
     },
     {
       id: 'energy',
-      name: 'kWh Charged',
+      name: 'Total kWh Charged',
       value: 0,
       unit: 'kWh',
       icon: (
@@ -52,7 +53,7 @@ export const EnvironmentalImpact: React.FC = () => {
     },
     {
       id: 'trees',
-      name: 'Trees Saved',
+      name: 'Equivalent Trees Saved 🌳',
       value: 0,
       unit: '',
       icon: (
@@ -63,63 +64,56 @@ export const EnvironmentalImpact: React.FC = () => {
       color: 'from-emerald-500 to-green-400'
     }
   ]);
+  const [loading, setLoading] = useState(true);
 
-  // Animate counters on mount
   useEffect(() => {
-    // In a real implementation, these would come from an API
-    const targetValues = [
-      { id: 'co2', value: 125 },      // CO2 Saved in kg
-      { id: 'sessions', value: 24 },   // Sessions Completed
-      { id: 'energy', value: 847 },    // kWh Charged
-      { id: 'trees', value: 3 }        // Trees Saved
-    ];
+    const fetchEnvironmentalImpact = async () => {
+      if (!session?.user?.id) return;
 
-    const timers = targetValues.map((target, index) => {
-      return setTimeout(() => {
-        const increment = Math.ceil(target.value / 50);
-        let currentValue = 0;
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/dashboard/environmental-impact?userId=${session.user.id}`);
         
-        const counter = setInterval(() => {
-          currentValue += increment;
-          if (currentValue >= target.value) {
-            currentValue = target.value;
-            clearInterval(counter);
+        if (!response.ok) {
+          throw new Error('Failed to fetch environmental impact data');
+        }
+        
+        const data = await response.json();
+        
+        // Update stats with real data
+        setStats(prevStats => prevStats.map(stat => {
+          switch (stat.id) {
+            case 'co2':
+              return { ...stat, value: data.co2Saved };
+            case 'sessions':
+              return { ...stat, value: data.sessionsCompleted };
+            case 'energy':
+              return { ...stat, value: Math.round(data.totalEnergyKWh) };
+            case 'trees':
+              return { ...stat, value: data.treesSaved };
+            default:
+              return stat;
           }
-          
-          setStats(prevStats => 
-            prevStats.map(stat => 
-              stat.id === target.id 
-                ? { ...stat, value: currentValue } 
-                : stat
-            )
-          );
-        }, 20);
-      }, index * 200);
-    });
-
-    return () => {
-      timers.forEach(timer => clearTimeout(timer));
+        }));
+      } catch (error) {
+        console.error("Error fetching environmental impact:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-  }, []);
+
+    fetchEnvironmentalImpact();
+  }, [session]);
 
   return (
-    <motion.div 
-      className="glass rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden mb-10"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-    >
-      <div className="absolute inset-0 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.15)] pointer-events-none"></div>
-      
+    <div className="rounded-2xl p-6 shadow-lg border border-[#475569]/50 bg-[#1E293B]/50">
       <h2 className="text-2xl font-bold text-[#F1F5F9] mb-6">Your Environmental Impact</h2>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <motion.div 
+        {stats.map((stat) => (
+          <div 
             key={stat.id}
-            className="bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 rounded-xl p-4 border border-[#475569]/50 backdrop-blur-sm text-center relative"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            className="bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 rounded-xl p-4 border border-[#475569]/50 text-center relative"
           >
             {/* Glowing badge in top right corner */}
             <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center">
@@ -131,11 +125,13 @@ export const EnvironmentalImpact: React.FC = () => {
                 {stat.icon}
               </div>
             </div>
-            <div className="text-2xl font-bold text-[#10B981] glow-text">{stat.value} {stat.unit}</div>
+            <div className="text-2xl font-bold text-[#10B981] mb-1">
+              {loading ? '...' : stat.value} {stat.unit}
+            </div>
             <div className="text-sm text-[#CBD5E1]">{stat.name}</div>
-          </motion.div>
+          </div>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 };
