@@ -169,6 +169,13 @@ export default function ClientDashboard() {
     }
   }, [status, session, fetchDashboardData, hideLoader]);
 
+  // Show loader immediately when component mounts to prevent background flash
+  useEffect(() => {
+    if (status === "authenticated") {
+      showLoader("Loading your dashboard...");
+    }
+  }, [status, showLoader]);
+
   // Handle book slot action
   const handleBookSlot = () => {
     // Redirect to find-bunks page for booking

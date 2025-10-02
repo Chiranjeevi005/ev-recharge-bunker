@@ -1,7 +1,10 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
+// Removed motion import since we're removing motion components
+import maplibregl from 'maplibre-gl';
+// @ts-ignore
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Navbar } from '@/components/landing/Navbar';
@@ -22,6 +25,62 @@ const ContactPage = () => {
   } = useContactForm();
   
   const { showLoader, hideLoader } = useLoader(); // Added loader context
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+
+  // Initialize the map for headquarters location
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    // Clean up any existing map instance
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    // Create map instance centered on Bangalore headquarters
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [77.5946, 12.9716], // Bangalore coordinates
+      zoom: 14,
+      attributionControl: false
+    });
+
+    mapRef.current = map;
+
+    // Add navigation controls
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    // Add marker for headquarters
+    const el = document.createElement('div');
+    el.className = 'headquarters-marker';
+    el.innerHTML = `
+      <div class="relative">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] border-2 border-white flex items-center justify-center shadow-lg">
+          <span class="text-white text-lg font-bold">⚡</span>
+        </div>
+        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-[#1E293B] text-white text-xs font-bold px-2 py-1 rounded whitespace-nowrap">
+          EV Bunker HQ
+        </div>
+      </div>
+    `;
+
+    new maplibregl.Marker({
+      element: el,
+      anchor: 'center'
+    })
+      .setLngLat([77.5946, 12.9716]) // Bangalore coordinates
+      .addTo(map);
+
+    // Clean up on unmount
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,18 +133,18 @@ const ContactPage = () => {
       title: "Emergency Help",
       description: "24/7 assistance for urgent issues",
       icon: "🆘",
-      action: "+1 (800) EV-CHARGE"
+      action: "+91 9876543210" 
     }
   ];
 
   // Deterministic particle positions to avoid hydration errors
   const particlePositions = [
-    { left: 10, top: 10, delay: 0 },
-    { left: 25, top: 25, delay: 0.3 },
-    { left: 40, top: 40, delay: 0.6 },
-    { left: 55, top: 55, delay: 0.9 },
-    { left: 70, top: 70, delay: 1.2 },
-    { left: 85, top: 85, delay: 1.5 },
+    { left: 10, top: 10 },
+    { left: 25, top: 25 },
+    { left: 40, top: 40 },
+    { left: 55, top: 55 },
+    { left: 70, top: 70 },
+    { left: 85, top: 85 },
   ];
 
   return (
@@ -106,21 +165,15 @@ const ContactPage = () => {
           <div className="absolute inset-0">
             {/* Predefined particle positions to ensure SSR/CSR consistency */}
             {particlePositions.map((pos, i) => (
-              <motion.div
+              // Replaced motion.div with regular div and kept essential animations
+              <div
                 key={i}
-                className="absolute w-1 h-1 bg-[#8B5CF6] rounded-full"
+                className="absolute w-1 h-1 bg-[#8B5CF6] rounded-full animate-bounce"
                 style={{
                   left: `${pos.left}%`,
                   top: `${pos.top}%`,
-                }}
-                animate={{
-                  y: [0, -20, 0],
-                  opacity: [0, 1, 0],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: pos.delay,
+                  animationDelay: `${i * 0.2}s`,
+                  animationDuration: '2s'
                 }}
               />
             ))}
@@ -130,30 +183,21 @@ const ContactPage = () => {
         <Navbar />
         
         <div className="relative container mx-auto px-4 py-20 md:py-32">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto"
-          >
+          <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               Let's Power the Future <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] to-[#10B981]">Together</span>
             </h1>
             <p className="text-xl text-[#CBD5E1] mb-10">
               Reach out for support, partnerships, or inquiries. We're here to keep your EV journey seamless.
             </p>
-          </motion.div>
+          </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
+          <div>
             <Card className="bg-[#1E293B]/50 backdrop-blur-xl border border-[#475569]/50 p-8 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-2">Get in Touch</h2>
               <p className="text-[#94A3B8] mb-8">We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
@@ -242,57 +286,44 @@ const ContactPage = () => {
                   )}
                 </Button>
                 
+                {/* Replaced motion.div with regular div */}
                 {submitStatus === 'success' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-6 bg-green-500/20 border border-green-500/50 rounded-xl text-green-300 text-center"
-                  >
+                  <div className="mt-4 p-6 bg-green-500/20 border border-green-500/50 rounded-xl text-green-300 text-center animate-fadeIn">
                     <div className="flex justify-center mb-4">
                       <svg className="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
                     </div>
                     <p className="mt-2">Message sent successfully! We'll get back to you soon.</p>
-                  </motion.div>
+                  </div>
                 )}
                 
+                {/* Replaced motion.div with regular div */}
                 {submitStatus === 'error' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-6 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-center"
-                  >
+                  <div className="mt-4 p-6 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-center animate-fadeIn">
                     <div className="flex justify-center mb-4">
                       <svg className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
                     </div>
                     <p className="mt-2">Oops! Something went wrong. Please try again.</p>
-                  </motion.div>
+                  </div>
                 )}
               </form>
             </Card>
-          </motion.div>
+          </div>
           
           {/* Quick Contact Options */}
           <div className="space-y-8">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
+            <div>
               <h2 className="text-3xl font-bold text-white mb-6">Quick Contact</h2>
               <p className="text-[#94A3B8] mb-8">Need immediate assistance? Reach out through these channels:</p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-6">
                 {contactOptions.map((option, index) => (
-                  <motion.div
+                  // Replaced motion.div with regular div
+                  <div
                     key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                    whileHover={{ y: -5 }}
                     className="bg-[#1E293B]/50 backdrop-blur-xl border border-[#475569]/50 rounded-2xl p-6 shadow-xl hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all duration-300 group"
                   >
                     <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -305,74 +336,17 @@ const ContactPage = () => {
                     <div className="text-[#8B5CF6] font-medium group-hover:text-[#A78BFA] transition-colors duration-300">
                       {option.action}
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
             
             {/* Map Section */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="bg-[#1E293B]/50 backdrop-blur-xl border border-[#475569]/50 rounded-2xl p-6 shadow-xl"
-            >
+            <div className="bg-[#1E293B]/50 backdrop-blur-xl border border-[#475569]/50 rounded-2xl p-6 shadow-xl">
               <h3 className="text-2xl font-bold text-white mb-4">Find Us on the Map</h3>
-              <div className="relative rounded-xl overflow-hidden border border-[#475569] shadow-lg">
-                {/* Futuristic map background */}
-                <div className="relative h-64 bg-gradient-to-br from-[#334155] to-[#1E293B]">
-                  {/* Grid lines */}
-                  <div className="absolute inset-0 opacity-20">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="absolute top-0 bottom-0 w-px bg-[#8B5CF6]/20" style={{ left: `${i * 12.5}%` }}></div>
-                    ))}
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="absolute left-0 right-0 h-px bg-[#10B981]/20" style={{ top: `${i * 16.66}%` }}></div>
-                    ))}
-                  </div>
-                  
-                  {/* Connection lines */}
-                  <div className="absolute inset-0">
-                    <div className="absolute top-1/3 left-1/4 w-1/2 h-px bg-[#8B5CF6]/30"></div>
-                    <div className="absolute top-2/3 left-1/3 w-1/3 h-px bg-[#10B981]/30"></div>
-                  </div>
-                  
-                  {/* Main location marker */}
-                  <motion.div
-                    className="absolute w-8 h-8 rounded-full bg-[#10B981] border-2 border-[#F1F5F9] flex items-center justify-center"
-                    style={{ left: "50%", top: "50%" }}
-                    animate={{ 
-                      scale: [1, 1.2, 1],
-                      boxShadow: [
-                        "0 0 0 0 rgba(16, 185, 129, 0.7)",
-                        "0 0 0 10px rgba(16, 185, 129, 0)",
-                        "0 0 0 0 rgba(16, 185, 129, 0.7)"
-                      ]
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <div className="w-4 h-4 rounded-full bg-[#F1F5F9]"></div>
-                  </motion.div>
-                  
-                  {/* Secondary markers - using deterministic positions */}
-                  <motion.div
-                    className="absolute w-5 h-5 rounded-full bg-[#8B5CF6] border border-[#F1F5F9] flex items-center justify-center"
-                    style={{ left: "30%", top: "30%" }}
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-[#F1F5F9]"></div>
-                  </motion.div>
-                  
-                  <motion.div
-                    className="absolute w-5 h-5 rounded-full bg-[#F59E0B] border border-[#F1F5F9] flex items-center justify-center"
-                    style={{ left: "70%", top: "40%" }}
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-[#F1F5F9]"></div>
-                  </motion.div>
-                </div>
+              <div className="relative rounded-xl overflow-hidden border border-[#475569] shadow-lg h-80">
+                {/* Map container */}
+                <div ref={mapContainerRef} className="w-full h-full" />
                 
                 {/* Location info */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#1E293B]/90 to-transparent p-4">
@@ -380,7 +354,7 @@ const ContactPage = () => {
                   <div className="text-[#94A3B8] text-sm">Bangalore, India</div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
@@ -388,13 +362,7 @@ const ContactPage = () => {
       {/* CTA Footer */}
       <div className="bg-gradient-to-r from-[#0F172A] to-[#1E293B] border-t border-[#334155]/50 py-16">
         <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="max-w-3xl mx-auto"
-          >
+          <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
               We're charging the future, one connection at a time.
             </h2>
@@ -408,7 +376,7 @@ const ContactPage = () => {
             >
               Get Started
             </Button>
-          </motion.div>
+          </div>
         </div>
       </div>
       

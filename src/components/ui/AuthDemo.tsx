@@ -3,17 +3,27 @@
 import { useAuth } from "@/lib/useAuth";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
+import { useLoader } from "@/lib/LoaderContext"; // Added import
 
 export function AuthDemo() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const { showLoader, hideLoader } = useLoader(); // Added loader context
 
   if (loading) {
-    return <div className="text-[#F1F5F9] p-4">Loading...</div>;
+    showLoader("Loading authentication..."); // Show loader
+    return null; // Return null since we're using the global loader
   }
 
   const handleLogin = () => {
+    showLoader("Redirecting to login..."); // Show loader
     router.push("/login");
+  };
+
+  const handleLogout = () => {
+    showLoader("Logging out..."); // Show loader
+    logout();
+    hideLoader(); // Hide loader
   };
 
   return (
@@ -25,7 +35,7 @@ export function AuthDemo() {
           <p className="text-[#CBD5E1] text-sm sm:text-base">Welcome, {user.name || user.email}!</p>
           <p className="text-[#94A3B8] text-sm sm:text-base">Role: <span className="text-[#10B981]">{user.role}</span></p>
           <Button 
-            onClick={logout} 
+            onClick={handleLogout} 
             variant="secondary"
             size="sm"
             className="w-full sm:w-auto"

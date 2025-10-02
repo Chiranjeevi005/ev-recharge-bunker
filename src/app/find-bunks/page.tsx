@@ -220,7 +220,7 @@ export default function FindBunksPage() {
       if (orderData.orderId) {
         // Initialize Razorpay
         const options = {
-          key: process.env.NEXT_PUBLIC_RZP_KEY_ID || 'rzp_test_example',
+          key: process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example',
           amount: orderData.amount,
           currency: orderData.currency,
           name: "EV Bunker",

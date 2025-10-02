@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
 import { signOut, useSession } from "next-auth/react";
 import Image from 'next/image';
+import { useLoader } from '@/lib/LoaderContext'; // Import the universal loader context
 
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
   const loading = status === "loading";
   const router = useRouter();
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const { showLoader, hideLoader } = useLoader(); // Use the loader context
 
   // Load user avatar from localStorage or session
   useEffect(() => {
@@ -60,17 +61,18 @@ export const Navbar: React.FC = () => {
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    // Prevent loading screen from showing on logo click
-    localStorage.setItem('hasSeenLoadingScreen', 'true');
-    sessionStorage.setItem('fromLogoClick', 'true'); // Flag to indicate logo click redirection
-    localStorage.removeItem('showLoadingAfterLogin');
-    localStorage.removeItem('userSession');
-    // Navigate to home page
+    // For logo click, we want to navigate without showing the loading screen
+    // Set flag to indicate navigation is from logo click
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('fromLogoClick', 'true');
+    }
     router.push("/");
   };
 
   const handleLogout = async () => {
     try {
+      showLoader("Logging out..."); // Show loader during logout
+      
       // Clear loading screen flags from localStorage
       localStorage.removeItem('hasSeenLoadingScreen');
       localStorage.removeItem('showLoadingAfterLogin');
@@ -78,10 +80,35 @@ export const Navbar: React.FC = () => {
       localStorage.removeItem('userProfile'); // Clear user profile data
       
       await signOut({ redirect: false });
-      window.location.href = "/"; // Redirect to home page
+      
+      // Small delay to ensure state is properly set
+      setTimeout(() => {
+        hideLoader(); // Hide loader after logout
+        window.location.href = "/"; // Redirect to home page
+      }, 300);
     } catch (error) {
       console.error("Logout failed:", error);
+      hideLoader(); // Hide loader even if there's an error
     }
+  };
+
+  // Handle navigation with universal loader and smooth transition
+  const handleNavigation = (path: string, loadingMessage: string = "Loading page...") => {
+    // Show loader immediately for better user feedback
+    showLoader(loadingMessage);
+    
+    // Close mobile menu if open
+    setIsMenuOpen(false);
+    
+    // Navigate immediately without delay to ensure fast response
+    router.push(path);
+    
+    // Hide loader after a reasonable time to ensure smooth transition
+    // This gives time for the page to load and render
+    // Reduced timeout to minimize flash - pages will show their own loaders
+    setTimeout(() => {
+      hideLoader();
+    }, 100); // Reduced from 600ms to 100ms to minimize background flash
   };
 
   // Close mobile menu when resizing to desktop
@@ -100,7 +127,7 @@ export const Navbar: React.FC = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1E293B]/80 backdrop-blur-md border-b border-[#334155]/50">
       <div className="container mx-auto">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo - redirect to main page without loader */}
+          {/* Logo - redirect to main page */}
           <div 
             className="flex items-center space-x-2 cursor-pointer"
             onClick={handleLogoClick}
@@ -110,15 +137,19 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
-            <Link href="/find-bunks" className="text-[#CBD5E1] hover:text-white transition-colors text-sm lg:text-base">
+            <button 
+              onClick={() => handleNavigation("/find-bunks", "Finding charging stations...")}
+              className="text-[#CBD5E1] hover:text-white transition-all duration-300 text-sm lg:text-base nav-item-hover"
+            >
               Find Bunks
-            </Link>
-            <Link href="#history" className="text-[#CBD5E1] hover:text-white transition-colors text-sm lg:text-base">
-              Payments
-            </Link>
-            <Link href="/contact" className="text-[#CBD5E1] hover:text-white transition-colors text-sm lg:text-base">
+            </button>
+            {/* Removed Payments nav item as it is not required */}
+            <button 
+              onClick={() => handleNavigation("/contact", "Loading contact page...")}
+              className="text-[#CBD5E1] hover:text-white transition-all duration-300 text-sm lg:text-base nav-item-hover"
+            >
               Contact
-            </Link>
+            </button>
           </div>
 
           {/* Profile Dropdown */}
@@ -126,12 +157,12 @@ export const Navbar: React.FC = () => {
             {session?.user ? (
               <div className="flex items-center space-x-2 sm:space-x-3">
                 {/* CHANGED: Direct link to dashboard instead of redirect page */}
-                <Link 
-                  href="/dashboard" 
-                  className="text-[#8B5CF6] hover:text-[#A78BFA] transition-colors text-sm font-medium"
+                <button 
+                  onClick={() => handleNavigation("/dashboard", "Loading your dashboard...")}
+                  className="text-[#8B5CF6] hover:text-[#A78BFA] transition-all duration-300 text-sm font-medium nav-item-hover"
                 >
                   Dashboard
-                </Link>
+                </button>
                 <div className="text-[#CBD5E1] text-xs sm:text-sm max-w-[100px] sm:max-w-[150px] truncate">
                   Welcome, {session.user.name || session.user.email}
                 </div>
@@ -152,15 +183,15 @@ export const Navbar: React.FC = () => {
                     </div>
                   )}
                   <div className="absolute right-0 mt-1 w-40 sm:w-48 bg-[#1E293B] border border-[#334155] rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <Link 
-                      href="/profile" 
-                      className="block px-3 py-2 text-xs sm:text-sm text-[#CBD5E1] hover:bg-[#334155] hover:text-white"
+                    <button 
+                      onClick={() => handleNavigation("/profile", "Loading profile settings...")}
+                      className="block w-full text-left px-3 py-2 text-xs sm:text-sm text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 transition-all duration-300"
                     >
                       Profile Settings
-                    </Link>
+                    </button>
                     <button 
                       onClick={handleLogout}
-                      className="block w-full text-left px-3 py-2 text-xs sm:text-sm text-[#CBD5E1] hover:bg-[#334155] hover:text-white"
+                      className="block w-full text-left px-3 py-2 text-xs sm:text-sm text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 transition-all duration-300"
                     >
                       Logout
                     </button>
@@ -169,50 +200,39 @@ export const Navbar: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <motion.div
-                  whileHover={{ 
-                    scale: 1.05,
-                    boxShadow: "0 0 10px rgba(139, 92, 246, 0.5), 0 0 15px rgba(16, 185, 129, 0.5)"
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Link href="/register">
+                <div className="transition-all duration-300 hover:opacity-90">
+                  {/* Replaced nested button with div */}
+                  <div onClick={() => handleNavigation("/register", "Creating account...")}>
                     <Button 
                       variant="outline" 
-                      className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-gradient-to-r hover:from-[#8B5CF6]/20 hover:to-[#10B981]/20 text-white text-xs sm:text-sm"
+                      className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-gradient-to-r hover:from-[#8B5CF6]/20 hover:to-[#10B981]/20 text-white text-xs sm:text-sm transition-all duration-300"
                       size="sm"
                     >
                       Register
                     </Button>
-                  </Link>
-                </motion.div>
-                <motion.div
-                  whileHover={{ 
-                    scale: 1.05,
-                    boxShadow: "0 0 10px rgba(139, 92, 246, 0.5), 0 0 15px rgba(16, 185, 129, 0.5)"
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Link href="/login">
+                  </div>
+                </div>
+                <div className="transition-all duration-300 hover:opacity-90">
+                  {/* Replaced nested button with div */}
+                  <div onClick={() => handleNavigation("/login", "Signing in...")}>
                     <Button 
                       variant="outline" 
-                      className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-gradient-to-r hover:from-[#8B5CF6]/20 hover:to-[#10B981]/20 text-white text-xs sm:text-sm"
+                      className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-gradient-to-r hover:from-[#8B5CF6]/20 hover:to-[#10B981]/20 text-white text-xs sm:text-sm transition-all duration-300"
                       size="sm"
                     >
                       Login
                     </Button>
-                  </Link>
-                </motion.div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-[#CBD5E1] hover:text-white focus:outline-none p-1 sm:p-2"
+              className="text-[#CBD5E1] hover:text-white focus:outline-none p-1 sm:p-2 transition-all duration-300"
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
               <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,40 +242,32 @@ export const Navbar: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 )}
               </svg>
-            </motion.button>
+            </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-[#1E293B] border-t border-[#334155]/50"
-          >
+          <div 
+            className="md:hidden bg-[#1E293B] border-t border-[#334155]/50 overflow-hidden transition-all duration-300 ease-in-out"
+            style={{ maxHeight: isMenuOpen ? '500px' : '0px' }}
+
+
+>
             <div className="px-3 py-2 sm:px-4 sm:py-3 space-y-1">
-              <Link 
-                href="/find-bunks" 
-                className="block px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 text-sm"
-                onClick={() => setIsMenuOpen(false)}
+              <button 
+                onClick={() => handleNavigation("/find-bunks", "Finding charging stations...")}
+                className="block w-full text-left px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 transition-all duration-300"
               >
                 Find Bunks
-              </Link>
-              <Link 
-                href="#history" 
-                className="block px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 text-sm"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Payments
-              </Link>
-              <Link 
-                href="/contact" 
-                className="block px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 text-sm"
-                onClick={() => setIsMenuOpen(false)}
+              </button>
+              {/* Removed Payments nav item as it is not required */}
+              <button 
+                onClick={() => handleNavigation("/contact", "Loading contact page...")}
+                className="block w-full text-left px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 transition-all duration-300"
               >
                 Contact
-              </Link>
+              </button>
               
               <div className="pt-2 pb-1 border-t border-[#334155]/50 mt-1">
                 {session?.user ? (
@@ -264,51 +276,47 @@ export const Navbar: React.FC = () => {
                       Welcome, {session.user.name || session.user.email}
                     </div>
                     {/* CHANGED: Direct link to dashboard instead of redirect page */}
-                    <Link 
-                      href="/dashboard" 
-                      className="block px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm"
-                      onClick={() => setIsMenuOpen(false)}
+                    <button 
+                      onClick={() => handleNavigation("/dashboard", "Loading your dashboard...")}
+                      className="block w-full text-left px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm hover:opacity-90 transition-all duration-300"
                     >
                       Dashboard
-                    </Link>
-                    <Link 
-                      href="/profile" 
-                      className="block px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 text-sm"
-                      onClick={() => setIsMenuOpen(false)}
+                    </button>
+                    <button 
+                      onClick={() => handleNavigation("/profile", "Loading profile settings...")}
+                      className="block w-full text-left px-3 py-2 rounded-md text-[#CBD5E1] hover:text-white hover:bg-[#334155]/50 transition-all duration-300"
                     >
                       Profile Settings
-                    </Link>
+                    </button>
                     <button 
                       onClick={() => {
                         handleLogout();
                         setIsMenuOpen(false);
                       }}
-                      className="block w-full text-left px-3 py-2 rounded-md bg-gradient-to-r from-[#EF4444] to-[#F87171] text-white font-medium text-sm"
+                      className="block w-full text-left px-3 py-2 rounded-md bg-gradient-to-r from-[#EF4444] to-[#F87171] text-white font-medium text-sm hover:opacity-90 transition-all duration-300"
                     >
                       Logout
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <Link 
-                      href="/register" 
-                      className="block w-full text-center px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm"
-                      onClick={() => setIsMenuOpen(false)}
+                    <button 
+                      onClick={() => handleNavigation("/register", "Creating account...")}
+                      className="block w-full text-center px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm hover:opacity-90 transition-all duration-300"
                     >
                       Register
-                    </Link>
-                    <Link 
-                      href="/login" 
-                      className="block w-full text-center px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm"
-                      onClick={() => setIsMenuOpen(false)}
+                    </button>
+                    <button 
+                      onClick={() => handleNavigation("/login", "Signing in...")}
+                      className="block w-full text-center px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm hover:opacity-90 transition-all duration-300"
                     >
                       Login
-                    </Link>
+                    </button>
                   </div>
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </nav>

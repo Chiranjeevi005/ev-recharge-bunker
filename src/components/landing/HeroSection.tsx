@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
+import { useSession } from "next-auth/react";
+import { useRouter } from 'next/navigation';
+import { useLoader } from '@/lib/LoaderContext'; // Import the universal loader context
 
 // Predefined positions for particles to ensure SSR/CSR consistency
 const particlePositions = [
@@ -39,12 +42,39 @@ const particleAnimations = [
 ];
 
 export const HeroSection: React.FC = () => {
-  const handleContactClick = () => {
-    // Scroll to footer
-    const footer = document.querySelector('footer');
-    if (footer) {
-      footer.scrollIntoView({ behavior: 'smooth' });
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { showLoader, hideLoader } = useLoader(); // Use the loader context
+
+  const handleBookSlotClick = () => {
+    // Show loader immediately for better user feedback
+    showLoader("Preparing your charging experience...");
+    
+    // If user is logged in, redirect to find-bunks page
+    // If not logged in, redirect to login page
+    if (session?.user) {
+      router.push("/find-bunks");
+    } else {
+      router.push("/login");
     }
+    
+    // Hide loader after a reasonable time to ensure smooth transition
+    setTimeout(() => {
+      hideLoader();
+    }, 800);
+  };
+
+  const handleContactClick = () => {
+    // Show loader immediately for better user feedback
+    showLoader("Loading contact page...");
+    
+    // Redirect to contact page
+    router.push("/contact");
+    
+    // Hide loader after a reasonable time to ensure smooth transition
+    setTimeout(() => {
+      hideLoader();
+    }, 800);
   };
 
   return (
@@ -70,28 +100,32 @@ export const HeroSection: React.FC = () => {
         
         {/* Floating particles */}
         <div className="absolute inset-0 overflow-hidden">
-          {particlePositions.map((pos, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-[#8B5CF6]/30"
-              style={{
-                width: pos.width,
-                height: pos.height,
-                top: pos.top,
-                left: pos.left,
-              }}
-              animate={{
-                y: particleAnimations[i].y,
-                x: particleAnimations[i].x,
-                opacity: [0.3, 0.7, 0.3],
-              }}
-              transition={{
-                duration: particleAnimations[i].duration,
-                repeat: Infinity,
-                delay: particleAnimations[i].delay,
-              }}
-            />
-          ))}
+          {particlePositions.map((pos, i) => {
+            const animation = particleAnimations[i];
+            if (!animation) return null;
+            return (
+              <motion.div
+                key={i}
+                className="absolute rounded-full bg-[#8B5CF6]/30"
+                style={{
+                  width: pos.width,
+                  height: pos.height,
+                  top: pos.top,
+                  left: pos.left,
+                }}
+                animate={{
+                  y: animation.y,
+                  x: animation.x,
+                  opacity: [0.3, 0.7, 0.3],
+                }}
+                transition={{
+                  duration: animation.duration,
+                  repeat: Infinity,
+                  delay: animation.delay,
+                }}
+              />
+            );
+          })}
         </div>
         
         {/* Grid pattern */}
@@ -122,15 +156,14 @@ export const HeroSection: React.FC = () => {
               Join the green revolution across the nation.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/login">
-                <Button 
-                  size="md" 
-                  glow
-                  className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white hover:from-[#7C3AED] hover:to-[#059669] w-full sm:w-auto"
-                >
-                  Book a Slot
-                </Button>
-              </Link>
+              <Button 
+                size="md" 
+                glow
+                className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white hover:from-[#7C3AED] hover:to-[#059669] w-full sm:w-auto"
+                onClick={handleBookSlotClick}
+              >
+                Book a Slot
+              </Button>
               <Button 
                 variant="outline" 
                 size="md" 

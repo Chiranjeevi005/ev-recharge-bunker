@@ -1,4 +1,3 @@
-import { useLoader } from '../LoaderContext';
 import { connectToDatabase } from './connection';
 
 interface QueryOptions {

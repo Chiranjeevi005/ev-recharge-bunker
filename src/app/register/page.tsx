@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
+import { useLoader } from "@/lib/LoaderContext"; 
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
   const nameRef = useRef<HTMLInputElement>(null);
+  const { showLoader, hideLoader } = useLoader(); 
 
   // Focus on name field when page loads
   useEffect(() => {
@@ -38,17 +40,20 @@ export default function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    showLoader("Creating your account..."); // Show loader
 
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
+      hideLoader(); // Hide loader
       return;
     }
 
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long");
       setIsLoading(false);
+      hideLoader(); // Hide loader
       return;
     }
 
@@ -70,16 +75,19 @@ export default function RegisterPage() {
 
       if (response.ok) {
         setSuccess(true);
+        hideLoader(); // Hide loader
         // After 2 seconds, redirect to login page with pre-filled credentials
         setTimeout(() => {
           router.push(`/login?email=${encodeURIComponent(formData.email)}`);
         }, 2000);
       } else {
         setError(data.error || "Registration failed");
+        hideLoader(); // Hide loader
       }
     } catch (err) {
       setError("An unexpected error occurred");
       console.error("Registration error:", err);
+      hideLoader(); // Hide loader
     } finally {
       setIsLoading(false);
     }
