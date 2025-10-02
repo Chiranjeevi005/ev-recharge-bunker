@@ -7,53 +7,6 @@ interface MapOptions {
 }
 
 /**
- * Utility function to load map data with loader integration
- * @param loadFn - The map data loading function
- * @param options - Options for loader messages
- * @returns The result of the load function
- */
-export async function loadMapDataWithLoader<T>(
-  loadFn: () => Promise<T>,
-  options: MapOptions = {}
-) {
-  const {
-    loadingMessage = "Loading map data...",
-    successMessage = "Map data loaded successfully",
-    errorMessage = "Failed to load map data"
-  } = options;
-
-  const { showLoader, hideLoader, updateLoader } = useLoader();
-
-  try {
-    // Show loading state
-    showLoader(loadingMessage, 'loading');
-    
-    // Execute the map data loading function
-    const result = await loadFn();
-    
-    // Update loader to success state
-    updateLoader(successMessage, 'success');
-    
-    // Hide loader after delay
-    setTimeout(() => {
-      hideLoader();
-    }, 1000);
-    
-    return result;
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Map data loading failed';
-    updateLoader(`${errorMessage}: ${errorMsg}`, 'error');
-    
-    // Hide loader after delay
-    setTimeout(() => {
-      hideLoader();
-    }, 2000);
-    
-    throw error;
-  }
-}
-
-/**
  * Custom hook for loading map data with the universal loader
  * @returns Object with map loading functions and state
  */

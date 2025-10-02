@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
+// @ts-ignore
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useRouter } from 'next/navigation';
 
 interface ChargingStation {
   id: string;
@@ -23,7 +25,9 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
   const [chargingStations, setChargingStations] = useState<ChargingStation[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const markerRefs = useRef<maplibregl.Marker[]>([]);
+  const router = useRouter();
 
   console.log('FuturisticMap: Component rendered with userId:', userId, 'refreshKey:', refreshKey);
 
@@ -165,7 +169,7 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
       }
 
       // Create map instance with center based on stations or default to Delhi
-      const defaultCenter: [number, number] = chargingStations.length > 0 
+      const defaultCenter: [number, number] = chargingStations.length > 0 && chargingStations[0] 
         ? [chargingStations[0].lng, chargingStations[0].lat] 
         : [77.2090, 28.6139];
       
@@ -287,6 +291,119 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
     });
   }, [selectedStation]);
 
+  // Handle booking
+  const handleBookNow = async () => {
+    if (!selectedStation || !userId) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Get the first available slot
+      const availableSlot = selectedStation.slots.find(slot => slot.status === 'available');
+      
+      if (!availableSlot) {
+        alert('No available slots at this station');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Create a payment order
+      const response = await fetch('/api/payment/order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stationId: selectedStation.id,
+          slotId: availableSlot.slotId,
+          duration: 1, // Default to 1 hour
+          amount: availableSlot.pricePerHour, // ₹ per hour
+          userId: userId
+        }),
+      });
+      
+      const orderData = await response.json();
+      
+      if (!response.ok || orderData.error) {
+        throw new Error(orderData.error || 'Failed to create payment order');
+      }
+      
+      // Load Razorpay script
+      const loadRazorpay = () => {
+        return new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = () => {
+            resolve(true);
+          };
+          script.onerror = () => {
+            resolve(false);
+          };
+          document.body.appendChild(script);
+        });
+      };
+      
+      const res = await loadRazorpay();
+      if (!res) {
+        throw new Error('Failed to load payment gateway');
+      }
+      
+      // Initialize Razorpay
+      const options = {
+        key: process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example',
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'EV Bunker',
+        description: `Booking at ${selectedStation.name}`,
+        order_id: orderData.orderId,
+        handler: async function (response: any) {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            
+            const verifyData = await verifyResponse.json();
+            
+            if (verifyData.success) {
+              // Redirect to confirmation page
+              router.push(`/confirmation?bookingId=${verifyData.bookingId}&paymentId=${verifyData.paymentId}`);
+            } else {
+              alert(`Payment verification failed: ${verifyData.error}`);
+            }
+          } catch (verifyError) {
+            console.error('Error verifying payment:', verifyError);
+            alert('Error verifying payment');
+          }
+        },
+        prefill: {
+          name: 'User',
+          email: 'user@example.com',
+        },
+        theme: {
+          color: '#10B981',
+        },
+      };
+      
+      // @ts-ignore
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error('Error booking slot:', error);
+      alert(`Error booking slot: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="map-container rounded-xl overflow-hidden border border-[#475569]">
       {/* Map container */}
@@ -324,8 +441,12 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
           </div>
           
           <div className="mt-4">
-            <button className="w-full py-2 px-4 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity">
-              Book Now
+            <button 
+              onClick={handleBookNow}
+              disabled={isLoading}
+              className="w-full py-2 px-4 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {isLoading ? 'Processing...' : 'Book Now'}
             </button>
           </div>
         </div>

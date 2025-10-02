@@ -22,21 +22,9 @@ interface ChargingStatusCardProps {
 }
 
 const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCancelSession }) => {
+  // If there's no active session, render nothing
   if (!session) {
-    return (
-      <div className="rounded-2xl p-8 text-center shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
-        <h2 className="text-2xl font-bold text-[#F1F5F9] mb-2">No Active Charging Session</h2>
-        <p className="text-[#CBD5E1] mb-6">
-          You don't have any active charging sessions right now
-        </p>
-        <Button
-          onClick={() => window.location.href = "/find-bunks"}
-          className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white px-6 py-3"
-        >
-          Find a Charging Station
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   // Format time for display
@@ -98,7 +86,7 @@ const ChargingStatusCard: React.FC<ChargingStatusCardProps> = ({ session, onCanc
 
         <div className="bg-[#475569]/30 rounded-xl p-5 border border-[#64748B]/30 backdrop-blur-sm flex flex-col items-center justify-center">
           <div className="relative w-32 h-32 mb-4">
-            {/* Circular progress bar */}`
+            {/* Circular progress bar */}
             <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"

@@ -16,12 +16,13 @@ interface Booking {
   updatedAt?: Date;
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { db } = await connectToDatabase();
     
     // Validate booking ID
-    if (!ObjectId.isValid(params.id)) {
+    if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid booking ID" }, 
         { status: 400 }
@@ -30,7 +31,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     
     // Fetch specific booking
     const booking = await db.collection<Booking>("bookings").findOne({ 
-      _id: new ObjectId(params.id) 
+      _id: new ObjectId(id) 
     });
     
     if (!booking) {

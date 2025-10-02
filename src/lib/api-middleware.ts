@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-// Extend the Request interface to include user property
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      AUTH_SECRET: string;
-    }
-  }
-}
-
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
     id: string;
@@ -35,7 +26,7 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
       const token = authHeader.substring(7); // Remove "Bearer " prefix
       
       // Verify the token
-      const decoded = jwt.verify(token, process.env.AUTH_SECRET!) as {
+      const decoded = jwt.verify(token, process.env["AUTH_SECRET"]!) as {
         id: string;
         email: string;
         role: string;
@@ -49,7 +40,7 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
     } catch (error) {
       console.error("Authentication error:", error);
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { error: "Invalid or expired token: " + (error as Error).message },
         { status: 401 }
       );
     }

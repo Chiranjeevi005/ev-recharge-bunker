@@ -5,5 +5,5 @@ export { default as NotificationBanner } from './NotificationBanner';
 export { QuickStats } from './QuickStats';
 export { PastBookings } from './PastBookings';
 export { MapSection } from './MapSection';
-export { EnvironmentalImpact } from './EnvironmentalImpact';
-export { EcoHighlights } from './EcoHighlights';
+export { BusinessStats } from './BusinessStats';
+export { EcoJourneyHighlights } from './EcoJourneyHighlights';

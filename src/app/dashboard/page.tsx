@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
@@ -8,12 +8,11 @@ import { useRouter } from 'next/navigation';
 import io from 'socket.io-client';
 import { 
   ChargingStatusCard, 
-  SlotAvailabilityCard, 
   PaymentHistoryCard, 
   NotificationBanner,
   MapSection,
-  EnvironmentalImpact,
-  EcoHighlights
+  BusinessStats,
+  EcoJourneyHighlights
 } from '@/components/dashboard';
 import { useLoader } from '@/lib/LoaderContext'; 
 
@@ -30,10 +29,6 @@ interface ChargingSession {
   progress: number;
   timeRemaining: number;
   energyConsumed: number;
-  id?: string;
-  status?: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 interface Payment {
@@ -77,13 +72,36 @@ export default function ClientDashboard() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
+      // Hide loader and redirect to login
+      hideLoader();
+      setLoading(false);
       router.push("/login");
     }
-  }, [status, router]);
+  }, [status, router, hideLoader]);
+
+  // Show loader immediately when component mounts and user is authenticated
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.id && !dataFetchedRef.current) {
+      showLoader("Loading your dashboard...");
+      setLoading(true);
+    }
+  }, [status, session, showLoader]);
+
+  // Cleanup function to ensure loader is hidden when component unmounts
+  useEffect(() => {
+    return () => {
+      hideLoader();
+    };
+  }, [hideLoader]);
 
   // Fetch initial dashboard data
   const fetchDashboardData = useCallback(async () => {
     if (status !== "authenticated" || !session?.user?.id) {
+      // Hide loader if not authenticated
+      if (loading) {
+        hideLoader();
+        setLoading(false);
+      }
       return;
     }
 
@@ -91,7 +109,16 @@ export default function ClientDashboard() {
       setError(null);
       
       // Show loader during data fetching
-      showLoader("Loading your dashboard...");
+      if (!loading) {
+        showLoader("Loading your dashboard...");
+        setLoading(true);
+      }
+      
+      // Add timeout to ensure loader doesn't stay visible indefinitely
+      const timeoutId = setTimeout(() => {
+        hideLoader();
+        setLoading(false);
+      }, 10000); // 10 second timeout
       
       // Fetch active charging session
       const sessionResponse = await fetch(`/api/dashboard/session?userId=${session.user.id}`);
@@ -117,6 +144,9 @@ export default function ClientDashboard() {
       const slotData = await slotResponse.json();
       setSlotAvailability(slotData);
 
+      // Clear timeout if data fetching completes successfully
+      clearTimeout(timeoutId);
+      
       setLoading(false);
       hideLoader(); // Hide loader after data is fetched
     } catch (error) {
@@ -125,80 +155,19 @@ export default function ClientDashboard() {
       setLoading(false);
       hideLoader(); // Hide loader even if there's an error
     }
-  }, [status, session, showLoader, hideLoader]);
+  }, [status, session, showLoader, hideLoader, loading]);
 
-  // Initialize Socket.io connection and fetch initial data
+  // Fetch data on component mount
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.id) {
-      // Fetch initial data only once
-      if (!dataFetchedRef.current) {
-        dataFetchedRef.current = true;
-        fetchDashboardData();
-      }
-
-      // Initialize socket connection
-      socketRef.current = io({
-        path: "/api/socketio",
-        transports: ["polling", "websocket"],
-      });
-
-      // Join user room
-      socketRef.current.emit("join-user-room", session.user.id);
-
-      // Listen for charging session updates
-      socketRef.current.on("charging-session-update", (data: any) => {
-        console.log("Charging session update:", data);
-        if (data.userId === session.user.id) {
-          setActiveSession(data.session);
-        }
-      });
-
-      // Listen for payment updates
-      socketRef.current.on("payment-update", (data: any) => {
-        console.log("Payment update:", data);
-        if (data.userId === session.user.id) {
-          setNotification({ message: `Payment ${data.status}`, type: data.status });
-          // Update payment history with the new payment
-          setPaymentHistory(prev => {
-            // Check if payment already exists in history
-            const existingIndex = prev.findIndex(p => p.paymentId === data.payment.paymentId);
-            if (existingIndex >= 0) {
-              // Update existing payment
-              const updated = [...prev];
-              updated[existingIndex] = data.payment;
-              return updated;
-            }
-            // Add new payment to the beginning of the list
-            return [data.payment, ...prev].slice(0, 10); // Keep only last 10 payments
-          });
-        }
-      });
-
-      // Listen for slot availability updates
-      socketRef.current.on("slot-availability-update", (data: any) => {
-        console.log("Slot availability update:", data);
-        setSlotAvailability(prev => {
-          const existingIndex = prev.findIndex(s => s.stationId === data.stationId);
-          if (existingIndex >= 0) {
-            const updated = [...prev];
-            updated[existingIndex] = data;
-            return updated;
-          }
-          return [...prev, data];
-        });
-      });
-
-      // Listen for notifications
-      socketRef.current.on("notification", (data: any) => {
-        console.log("Notification:", data);
-        setNotification({ message: data.message, type: data.type });
-      });
-
-      return () => {
-        socketRef.current?.disconnect();
-      };
+    if (status === "authenticated" && session?.user?.id && !dataFetchedRef.current) {
+      dataFetchedRef.current = true;
+      fetchDashboardData();
+    } else if (status !== "loading" && !session?.user?.id) {
+      // Hide loader if not authenticated or session is not loading
+      hideLoader();
+      setLoading(false);
     }
-  }, [status, session, fetchDashboardData]);
+  }, [status, session, fetchDashboardData, hideLoader]);
 
   // Handle book slot action
   const handleBookSlot = () => {
@@ -213,8 +182,14 @@ export default function ClientDashboard() {
   };
 
   if (status === "loading" || loading) {
-    // Return null since we're using the global loader
-    return null;
+    // Don't return null, render the page with loader context handling it
+    // The loader will be displayed via LoaderContext
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
+        <Navbar />
+        {/* Loader will be displayed via LoaderContext */}
+      </div>
+    );
   }
 
   if (status === "unauthenticated") {
@@ -266,12 +241,12 @@ export default function ClientDashboard() {
 
           {/* Stats Section - Replacing 'No Active Charging Session' */}
           <div className="mb-10">
-            <EnvironmentalImpact />
+            <BusinessStats />
           </div>
 
           {/* Eco Journey Highlights - Replacing Quick Actions */}
           <div className="mb-10">
-            <EcoHighlights />
+            <EcoJourneyHighlights />
           </div>
 
           {/* Map Section */}
@@ -287,14 +262,6 @@ export default function ClientDashboard() {
                 // Implementation for canceling session
                 alert("Cancel session functionality would be implemented here");
               }} 
-            />
-          </div>
-
-          {/* Slot Availability with Icons */}
-          <div className="mb-10">
-            <SlotAvailabilityCard 
-              availability={slotAvailability} 
-              onBookSlot={handleBookSlot} 
             />
           </div>
 

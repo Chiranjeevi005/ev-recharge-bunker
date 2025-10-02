@@ -85,6 +85,8 @@ export default function Home() {
         // Clear session info if user is not logged in
         localStorage.removeItem('userSession');
       }
+      // Return a cleanup function even when not showing loading screen
+      return () => {};
     }
   }, [session?.user]);
 
