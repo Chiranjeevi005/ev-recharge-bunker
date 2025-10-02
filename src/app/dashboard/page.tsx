@@ -1,4 +1,4 @@
-"use client";
+﻿﻿﻿﻿﻿﻿﻿﻿﻿"use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -7,8 +7,18 @@ import { Button } from '@/components/ui/Button';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import io from 'socket.io-client';
-import { ChargingStatusCard, SlotAvailabilityCard, PaymentHistoryCard, NotificationBanner } from '@/components/dashboard';
-import { useLoader } from '@/lib/LoaderContext'; // Added import
+import { 
+  ChargingStatusCard, 
+  SlotAvailabilityCard, 
+  PaymentHistoryCard, 
+  NotificationBanner,
+  QuickStats,
+  PastBookings,
+  MapSection,
+  EnvironmentalImpact,
+  EcoHighlights
+} from '@/components/dashboard';
+import { useLoader } from '@/lib/LoaderContext'; 
 
 interface ChargingSession {
   userId: string;
@@ -25,7 +35,6 @@ interface ChargingSession {
   energyConsumed: number;
 }
 
-// Updated to match the actual data structure from the API
 interface Payment {
   userId: string;
   paymentId: string;
@@ -34,7 +43,7 @@ interface Payment {
   method: string;
   createdAt: string;
   updatedAt: string;
-  date?: string; // Optional field for backward compatibility
+  date?: string; 
 }
 
 interface SlotAvailability {
@@ -295,6 +304,22 @@ export default function ClientDashboard() {
             </p>
           </motion.div>
 
+          {/* Quick Stats */}
+          <div className="mb-10">
+            <QuickStats />
+          </div>
+
+          {/* Environmental Impact Section */}
+          <EnvironmentalImpact />
+
+          {/* Eco Journey Highlights */}
+          <EcoHighlights />
+
+          {/* Map Section */}
+          <div className="mb-10">
+            <MapSection onBookPay={handleBookSlot} />
+          </div>
+
           {/* Charging Session Tracker */}
           <div className="mb-10">
             <ChargingStatusCard 
@@ -362,6 +387,11 @@ export default function ClientDashboard() {
                 </Button>
               </div>
             </motion.div>
+          </div>
+
+          {/* Past Bookings */}
+          <div className="mb-10">
+            <PastBookings />
           </div>
 
           {/* Payment History */}

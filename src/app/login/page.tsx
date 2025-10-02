@@ -70,9 +70,14 @@ export default function LoginPage() {
       } else {
         // Set flag to show loading screen after login
         localStorage.setItem('showLoadingAfterLogin', 'true');
-        // Redirect to home page after successful login
-        router.push("/");
-        router.refresh(); // Refresh to update navbar
+        // Hide loader before redirect
+        hideLoader();
+        // Small delay to ensure state is properly set
+        setTimeout(() => {
+          // Redirect to home page after successful login
+          router.push("/");
+          router.refresh(); // Refresh to update navbar
+        }, 100);
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -104,9 +109,14 @@ export default function LoginPage() {
       } else {
         // Set flag to show loading screen after login
         localStorage.setItem('showLoadingAfterLogin', 'true');
-        // Redirect to home page after successful login
-        router.push("/");
-        router.refresh(); // Refresh to update navbar
+        // Hide loader before redirect
+        hideLoader();
+        // Small delay to ensure state is properly set
+        setTimeout(() => {
+          // Redirect to home page after successful login
+          router.push("/");
+          router.refresh(); // Refresh to update navbar
+        }, 100);
       }
     } catch (err) {
       setError("An unexpected error occurred");

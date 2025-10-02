@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import gsap from 'gsap';
 import Image from 'next/image';
 
 // Predefined particle positions and properties to avoid hydration issues
@@ -68,24 +69,57 @@ const energyLinePositions = [
   { angle: 337.5, color: "linear-gradient(90deg, rgba(139, 92, 246, 0.8), transparent)" },
 ];
 
-// Letter-by-letter animation component
+// GSAP-powered futuristic character-by-character animation with enhanced timing
 const AnimatedText: React.FC<{ text: string }> = ({ text }) => {
+  const textRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (textRef.current) {
+      // Get the original text content
+      const originalText = textRef.current.textContent || '';
+      
+      // Clear the content
+      textRef.current.innerHTML = '';
+      
+      // Create span for each character
+      originalText.split('').forEach((char, index) => {
+        const span = document.createElement('span');
+        span.textContent = char === ' ' ? '\u00A0' : char;
+        span.className = 'inline-block font-mono font-light tracking-wider';
+        span.style.cssText = `
+          text-shadow: 0 0 4px rgba(16, 185, 129, 0.8), 
+                       0 0 8px rgba(139, 92, 246, 0.6), 
+                       0 0 12px rgba(5, 150, 105, 0.4);
+          opacity: 0;
+          filter: blur(4px) brightness(2);
+        `;
+        textRef.current?.appendChild(span);
+      });
+      
+      // Animate each character with GSAP after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        const spans = textRef.current?.querySelectorAll('span');
+        if (spans) {
+          spans.forEach((span, index) => {
+            gsap.to(span, {
+              opacity: 1,
+              filter: 'blur(0px) brightness(1)',
+              duration: 0.6, // Increased duration for smoother transition
+              delay: index * 0.12, // Increased delay for more deliberate pacing
+              ease: 'power2.out'
+            });
+          });
+        }
+      }, 100); // Small delay to ensure DOM is ready
+    }
+  }, [text]);
+
   return (
-    <div className="flex justify-center">
-      {text.split("").map((char, index) => (
-        <motion.span
-          key={index}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.5,
-            delay: index * 0.1,
-          }}
-          className="inline-block"
-        >
-          {char === " " ? "\u00A0" : char}
-        </motion.span>
-      ))}
+    <div 
+      ref={textRef} 
+      className="flex justify-center"
+    >
+      {text}
     </div>
   );
 };
@@ -99,27 +133,6 @@ export const LoadingScreen: React.FC = () => {
         <div 
           className="absolute inset-0 opacity-20"
         />
-        
-        {/* Tech grid pattern matching website theme */}
-        <div className="absolute inset-0 opacity-10">
-          {/* Horizontal lines */}
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-0 bottom-0 w-px bg-[#8B5CF6]"
-              style={{ left: `${i * 5}%` }}
-            />
-          ))}
-          
-          {/* Vertical lines */}
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute left-0 right-0 h-px bg-[#10B981]"
-              style={{ top: `${i * 5}%` }}
-            />
-          ))}
-        </div>
       </div>
       
       {/* Particle system with predefined positions to avoid hydration issues */}

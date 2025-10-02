@@ -7,12 +7,56 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/ui/Logo';
 import { signOut, useSession } from "next-auth/react";
+import Image from 'next/image';
 
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
   const loading = status === "loading";
   const router = useRouter();
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
+  // Load user avatar from localStorage or session
+  useEffect(() => {
+    const loadAvatar = () => {
+      if (typeof window !== 'undefined') {
+        // First check localStorage for saved profile
+        const savedProfile = localStorage.getItem('userProfile');
+        if (savedProfile) {
+          try {
+            const parsedProfile = JSON.parse(savedProfile);
+            if (parsedProfile.avatar && parsedProfile.avatar !== '/assets/logo.png') {
+              setUserAvatar(parsedProfile.avatar);
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to parse saved profile data', e);
+          }
+        }
+        
+        // Fallback to session image
+        if (session?.user?.image && session.user.image !== '/assets/logo.png') {
+          setUserAvatar(session.user.image);
+          return;
+        }
+        
+        // If no custom avatar, set to null to show default
+        setUserAvatar(null);
+      }
+    };
+
+    loadAvatar();
+
+    // Listen for localStorage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userProfile') {
+        loadAvatar();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [session]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,6 +75,7 @@ export const Navbar: React.FC = () => {
       localStorage.removeItem('hasSeenLoadingScreen');
       localStorage.removeItem('showLoadingAfterLogin');
       localStorage.removeItem('userSession');
+      localStorage.removeItem('userProfile'); // Clear user profile data
       
       await signOut({ redirect: false });
       window.location.href = "/"; // Redirect to home page
@@ -91,9 +136,21 @@ export const Navbar: React.FC = () => {
                   Welcome, {session.user.name || session.user.email}
                 </div>
                 <div className="relative group">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white font-bold text-xs sm:text-sm cursor-pointer">
-                    {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
-                  </div>
+                  {userAvatar ? (
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-[#10B981]">
+                      <Image 
+                        src={userAvatar} 
+                        alt="Profile" 
+                        width={40} 
+                        height={40}
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white font-bold text-xs sm:text-sm cursor-pointer">
+                      {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
+                    </div>
+                  )}
                   <div className="absolute right-0 mt-1 w-40 sm:w-48 bg-[#1E293B] border border-[#334155] rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <Link 
                       href="/profile" 
