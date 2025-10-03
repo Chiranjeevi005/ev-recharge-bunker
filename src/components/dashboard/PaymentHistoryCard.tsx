@@ -104,13 +104,6 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
                         {payment.status}
                       </span>
-                      {payment.status.toLowerCase() === 'completed' && (
-                        <span className="ml-2 w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                        </span>
-                      )}
                     </div>
                   </td>
                 </tr>

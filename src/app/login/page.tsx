@@ -402,6 +402,11 @@ export default function LoginPage() {
                 onSubmit={handleAdminLogin}
               >
                 <div className="space-y-5 sm:space-y-6">
+                  <div className="bg-blue-900/20 border border-blue-900/30 rounded-lg p-3">
+                    <p className="text-xs text-blue-400 text-center">
+                      Only admin@ebunker.com with password admin123 is accepted for admin login
+                    </p>
+                  </div>
                   <div>
                     <label htmlFor="admin-email" className="block text-sm font-medium text-[#CBD5E1] mb-2">
                       Email Address
@@ -416,7 +421,7 @@ export default function LoginPage() {
                         ref={emailRef}
                         id="admin-email"
                         type="email"
-                        value={adminCredentials.email}
+                        value={adminCredentials.email || "admin@ebunker.com"}
                         onChange={(e) =>
                           setAdminCredentials({
                             ...adminCredentials,
@@ -447,7 +452,7 @@ export default function LoginPage() {
                       <input
                         id="admin-password"
                         type="password"
-                        value={adminCredentials.password}
+                        value={adminCredentials.password || "admin123"}
                         onChange={(e) =>
                           setAdminCredentials({
                             ...adminCredentials,

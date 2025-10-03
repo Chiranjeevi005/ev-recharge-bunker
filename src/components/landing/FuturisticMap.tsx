@@ -76,7 +76,17 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
         if (response.ok) {
           const stations = await response.json();
           console.log('FuturisticMap: Received stations:', stations);
-          setChargingStations(stations);
+          // Filter out stations with invalid coordinates
+          const validStations = stations.filter((station: any) => 
+            station.lat !== null && 
+            station.lat !== undefined && 
+            typeof station.lat === 'number' &&
+            station.lng !== null && 
+            station.lng !== undefined && 
+            typeof station.lng === 'number'
+          );
+          console.log('FuturisticMap: Valid stations after filtering:', validStations);
+          setChargingStations(validStations);
         } else {
           const errorText = await response.text();
           console.log('FuturisticMap: API failed with status:', response.status, 'error:', errorText);

@@ -84,7 +84,7 @@ export default function AdminInfoPage() {
               <div className="bg-blue-900/20 border border-blue-900/30 rounded-lg p-4">
                 <p className="text-sm text-blue-400">
                   <span className="font-medium">Note:</span> Only one admin account is permitted for security reasons. 
-                  Please use the credentials above to access the admin dashboard.
+                  Please use the credentials above to access the admin dashboard. Any other admin credentials will be rejected.
                 </p>
               </div>
               

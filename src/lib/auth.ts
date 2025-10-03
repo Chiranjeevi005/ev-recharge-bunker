@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { Adapter } from "next-auth/adapters";
+import type { Adapter } from "next-auth/adapters";
 import { MongoClient, ObjectId } from "mongodb";
 import { connectToDatabase } from "./db/connection";
 import { MongoDBAdapter } from "./db/adapter";
@@ -35,8 +35,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter() as Adapter,
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env['GOOGLE_CLIENT_ID'] || "",
+      clientSecret: process.env['GOOGLE_CLIENT_SECRET'] || "",
     }),
     Credentials({
       id: "admin-credentials",
@@ -73,10 +73,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         let admin = await db.collection("admins").findOne({ email: "admin@ebunker.com" });
 
         if (!admin) {
-          // Hash the password
+          // Hash the password for security
           const hashedPassword = await bcrypt.hash("admin123", 12);
           
-          // Create the admin user
+          // Create the admin user with fixed credentials
           const result = await db.collection("admins").insertOne({
             email: "admin@ebunker.com",
             hashedPassword,
@@ -86,6 +86,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           });
           
           admin = await db.collection("admins").findOne({ _id: result.insertedId });
+        } else {
+          // Ensure the admin user always has the correct email and role
+          // This prevents any potential database manipulation
+          if (admin['email'] !== "admin@ebunker.com" || admin['role'] !== "admin") {
+            await db.collection("admins").updateOne(
+              { _id: admin._id },
+              { 
+                $set: { 
+                  email: "admin@ebunker.com", 
+                  role: "admin",
+                  updatedAt: new Date()
+                } 
+              }
+            );
+            admin = await db.collection("admins").findOne({ _id: admin._id });
+          }
         }
 
         if (!admin) {
@@ -96,8 +112,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log("Admin authentication successful");
         return {
           id: admin._id.toString(),
-          email: admin.email,
-          role: admin.role,
+          email: admin['email'],
+          role: admin['role'],
         };
       }
     }),
@@ -134,7 +150,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // For email/password clients, check if they have a credentials-type googleId
         // In our implementation, clients with googleId starting with "credentials-" are email/password clients
-        if (!client.googleId?.startsWith("credentials-")) {
+        if (!client['googleId']?.startsWith("credentials-")) {
           console.log("Client is not a credentials-type client");
           // This is a Google OAuth client, they can't use password auth
           return null;
@@ -154,7 +170,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         } else {
           // Check if the provided password matches
           // In a real implementation, you would compare hashed passwords
-          if (existingAccount.access_token !== password) {
+          if (existingAccount['access_token'] !== password) {
             console.log("Password mismatch");
             return null; // Password doesn't match
           }
@@ -164,9 +180,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log("Client authentication successful");
         return {
           id: client._id.toString(),
-          email: client.email,
-          name: client.name,
-          role: client.role,
+          email: client['email'],
+          name: client['name'],
+          role: client['role'],
         };
       }
     })
@@ -184,8 +200,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       // If user exists, add role to the token
       if (user) {
-        token.role = user.role;
-        token.id = user.id;
+        if (user.role) {
+          token.role = user.role;
+        }
+        if (user.id) {
+          token.id = user.id;
+        }
       }
       return token;
     }
@@ -196,5 +216,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "jwt",
   },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env['AUTH_SECRET'] || "default_secret_key",
 });

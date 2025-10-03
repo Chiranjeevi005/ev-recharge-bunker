@@ -157,50 +157,100 @@ export default function ProfileSettings() {
       // Save to localStorage first
       localStorage.setItem('userProfile', JSON.stringify(profile));
       
-      // If we have a session, update the user's location in the database
-      if (session?.user?.id && profile.location) {
-        console.log('Profile: Updating location in database for user:', session.user.id, 'location:', profile.location);
+      // If we have a session, update the user's data in the database
+      if (session?.user?.id) {
+        console.log('Profile: Updating data in database for user:', session.user.id);
         
-        const response = await fetch(`/api/clients/${session.user.id}/location`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ location: profile.location }),
-        });
+        let hasError = false;
         
-        console.log('Profile: Location update response status:', response.status);
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("Failed to update client location in database:", {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData.error || 'Unknown error'
-          });
-          // Show error to user
-          alert(`Failed to update location: ${errorData.error || 'Unknown error'}`);
-          hideLoader();
-          return; // Exit early if location update failed
-        } else {
-          const updatedClient = await response.json();
-          console.log('Profile: Successfully updated client location in database:', updatedClient);
+        // Update location if provided
+        if (profile.location) {
+          console.log('Profile: Updating location in database for user:', session.user.id, 'location:', profile.location);
           
-          // Successfully updated location, dispatch custom event to notify other components
-          if (typeof window !== 'undefined') {
-            // Dispatch storage event for backward compatibility
-            window.dispatchEvent(new StorageEvent('storage', {
-              key: 'userProfile',
-              newValue: JSON.stringify(profile)
-            }));
-            
-            // Dispatch custom event for more reliable communication
+          const response = await fetch(`/api/clients/${session.user.id}/location`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ location: profile.location }),
+          });
+          
+          console.log('Profile: Location update response status:', response.status);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Failed to update client location in database:", {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorData.error || 'Unknown error'
+            });
+            // Show error to user
+            alert(`Failed to update location: ${errorData.error || 'Unknown error'}`);
+            hasError = true;
+          } else {
+            const updatedClient = await response.json();
+            console.log('Profile: Successfully updated client location in database:', updatedClient);
+          }
+        }
+        
+        // Update name if provided and different from current
+        if (profile.fullName && profile.fullName !== session.user.name) {
+          console.log('Profile: Updating name in database for user:', session.user.id, 'name:', profile.fullName);
+          
+          const response = await fetch(`/api/clients/${session.user.id}/name`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: profile.fullName }),
+          });
+          
+          console.log('Profile: Name update response status:', response.status);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Failed to update client name in database:", {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorData.error || 'Unknown error'
+            });
+            // Show error to user
+            alert(`Failed to update name: ${errorData.error || 'Unknown error'}`);
+            hasError = true;
+          } else {
+            const updatedClient = await response.json();
+            console.log('Profile: Successfully updated client name in database:', updatedClient);
+          }
+        }
+        
+        if (hasError) {
+          hideLoader();
+          return; // Exit early if any update failed
+        }
+        
+        // Successfully updated data, dispatch custom events to notify other components
+        if (typeof window !== 'undefined') {
+          // Dispatch storage event for backward compatibility
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'userProfile',
+            newValue: JSON.stringify(profile)
+          }));
+          
+          // Dispatch custom event for more reliable communication
+          if (profile.location) {
             window.dispatchEvent(new CustomEvent('locationUpdated', {
               detail: { userId: session.user.id, location: profile.location }
             }));
-            
-            console.log('Profile: Dispatched location update events');
           }
+          
+          // Dispatch custom event for name update
+          if (profile.fullName && profile.fullName !== session.user.name) {
+            window.dispatchEvent(new CustomEvent('profileUpdated', {
+              detail: { fullName: profile.fullName }
+            }));
+          }
+          
+          console.log('Profile: Dispatched update events');
         }
       }
       

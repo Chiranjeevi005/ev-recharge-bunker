@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
   const loading = status === "loading";
   const router = useRouter();
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null); // Added state for user name
   const { showLoader, hideLoader } = useLoader(); // Use the loader context
 
   // Load user avatar from localStorage or session
@@ -57,6 +58,65 @@ export const Navbar: React.FC = () => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, [session]);
+
+  // Load user name from localStorage or session
+  useEffect(() => {
+    const loadUserName = () => {
+      if (typeof window !== 'undefined') {
+        // First check localStorage for saved profile
+        const savedProfile = localStorage.getItem('userProfile');
+        if (savedProfile) {
+          try {
+            const parsedProfile = JSON.parse(savedProfile);
+            if (parsedProfile.fullName) {
+              setUserName(parsedProfile.fullName);
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to parse saved profile data', e);
+          }
+        }
+        
+        // Fallback to session name
+        if (session?.user?.name) {
+          setUserName(session.user.name);
+          return;
+        }
+        
+        // Fallback to session email
+        if (session?.user?.email) {
+          setUserName(session.user.email);
+          return;
+        }
+        
+        // Default fallback
+        setUserName(null);
+      }
+    };
+
+    loadUserName();
+
+    // Listen for localStorage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userProfile') {
+        loadUserName();
+      }
+    };
+
+    // Listen for profile updates
+    const handleProfileUpdate = (e: CustomEvent) => {
+      if (e.detail && e.detail.fullName) {
+        setUserName(e.detail.fullName);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('profileUpdated', handleProfileUpdate as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('profileUpdated', handleProfileUpdate as EventListener);
+    };
   }, [session]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -158,13 +218,19 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center space-x-2 sm:space-x-3">
                 {/* CHANGED: Direct link to dashboard instead of redirect page */}
                 <button 
-                  onClick={() => handleNavigation("/dashboard", "Loading your dashboard...")}
+                  onClick={() => {
+                    if (session.user?.role === "admin") {
+                      handleNavigation("/dashboard/admin", "Loading admin dashboard...");
+                    } else {
+                      handleNavigation("/dashboard", "Loading your dashboard...");
+                    }
+                  }}
                   className="text-[#8B5CF6] hover:text-[#A78BFA] transition-all duration-300 text-sm font-medium nav-item-hover"
                 >
                   Dashboard
                 </button>
                 <div className="text-[#CBD5E1] text-xs sm:text-sm max-w-[100px] sm:max-w-[150px] truncate">
-                  Welcome, {session.user.name || session.user.email}
+                  Welcome, {userName || session.user.name || session.user.email}
                 </div>
                 <div className="relative group">
                   {userAvatar ? (
@@ -179,7 +245,7 @@ export const Navbar: React.FC = () => {
                     </div>
                   ) : (
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white font-bold text-xs sm:text-sm cursor-pointer">
-                      {session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
+                      {userName?.charAt(0) || session.user.name?.charAt(0) || session.user.email?.charAt(0) || 'U'}
                     </div>
                   )}
                   <div className="absolute right-0 mt-1 w-40 sm:w-48 bg-[#1E293B] border border-[#334155] rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
@@ -273,11 +339,17 @@ export const Navbar: React.FC = () => {
                 {session?.user ? (
                   <div className="space-y-1">
                     <div className="px-3 py-2 text-[#CBD5E1] text-sm">
-                      Welcome, {session.user.name || session.user.email}
+                      Welcome, {userName || session.user.name || session.user.email}
                     </div>
                     {/* CHANGED: Direct link to dashboard instead of redirect page */}
                     <button 
-                      onClick={() => handleNavigation("/dashboard", "Loading your dashboard...")}
+                      onClick={() => {
+                        if (session.user?.role === "admin") {
+                          handleNavigation("/dashboard/admin", "Loading admin dashboard...");
+                        } else {
+                          handleNavigation("/dashboard", "Loading your dashboard...");
+                        }
+                      }}
                       className="block w-full text-left px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm hover:opacity-90 transition-all duration-300"
                     >
                       Dashboard

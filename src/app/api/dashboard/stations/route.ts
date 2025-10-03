@@ -110,7 +110,7 @@ export async function GET(request: Request) {
     
     // Use client's location or default to Delhi
     // Apply mapping if needed
-    const rawCity = client.location || "Delhi";
+    const rawCity = client['location'] || "Delhi";
     const city = CITY_NAME_MAPPING[rawCity] || rawCity;
     
     console.log('Stations API: Looking for stations in city:', city, 'rawCity:', rawCity);
@@ -122,12 +122,21 @@ export async function GET(request: Request) {
 
     console.log('Stations API: Found stations:', stations);
 
-    // Convert ObjectId to string for JSON serialization
-    const serializedStations = stations.map((station: any) => ({
-      ...station,
-      id: station._id.toString(),
-      _id: undefined
-    }));
+    // Convert ObjectId to string for JSON serialization and filter invalid stations
+    const serializedStations = stations
+      .filter((station: any) => 
+        station['lat'] !== null && 
+        station['lat'] !== undefined && 
+        typeof station['lat'] === 'number' &&
+        station['lng'] !== null && 
+        station['lng'] !== undefined && 
+        typeof station['lng'] === 'number'
+      )
+      .map((station: any) => ({
+        ...station,
+        id: station['_id'].toString(),
+        _id: undefined
+      }));
 
     console.log('Stations API: Returning serialized stations:', serializedStations);
     return NextResponse.json(serializedStations);
