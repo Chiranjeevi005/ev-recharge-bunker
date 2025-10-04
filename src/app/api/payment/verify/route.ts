@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
-import crypto from 'crypto';
 import { PaymentService } from '@/lib/payment';
 
 export async function POST(request: Request) {
@@ -20,7 +19,7 @@ export async function POST(request: Request) {
     });
     
     // Validate input
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!razorpay_order_id) {
       console.error("Missing required fields for payment verification:", {
         razorpay_order_id: !!razorpay_order_id,
         razorpay_payment_id: !!razorpay_payment_id,
@@ -32,19 +31,11 @@ export async function POST(request: Request) {
       );
     }
     
-    // Verify the payment signature with Razorpay
-    const shasum = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!);
-    shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-    const digest = shasum.digest('hex');
+    // Verify Razorpay signature
+    const isValid = await PaymentService.verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     
-    console.log("Signature verification:", {
-      generatedDigest: digest,
-      receivedSignature: razorpay_signature,
-      isMatch: digest === razorpay_signature
-    });
-    
-    if (digest !== razorpay_signature) {
-      console.error("Invalid payment signature. Expected:", digest, "Received:", razorpay_signature);
+    if (!isValid) {
+      console.error("Invalid Razorpay signature", { razorpay_order_id, razorpay_payment_id });
       return NextResponse.json(
         { error: "Invalid payment signature" }, 
         { status: 400 }
@@ -70,22 +61,22 @@ export async function POST(request: Request) {
     }
     
     console.log("Found payment record:", {
-      _id: paymentRecord._id,
-      orderId: paymentRecord.orderId,
-      userId: paymentRecord.userId,
-      stationId: paymentRecord.stationId,
-      slotId: paymentRecord.slotId,
-      amount: paymentRecord.amount,
-      duration: paymentRecord.duration,
-      status: paymentRecord.status,
-      createdAt: paymentRecord.createdAt
+      _id: paymentRecord['_id'],
+      orderId: paymentRecord['orderId'],
+      userId: paymentRecord['userId'],
+      stationId: paymentRecord['stationId'],
+      slotId: paymentRecord['slotId'],
+      amount: paymentRecord['amount'],
+      duration: paymentRecord['duration'],
+      status: paymentRecord['status'],
+      createdAt: paymentRecord['createdAt']
     });
     
     // Update payment status using the payment service
     console.log(`Updating payment status for orderId: '${razorpay_order_id}'`);
     const updatedPayment = await PaymentService.updatePaymentStatus(
       razorpay_order_id, 
-      razorpay_payment_id, 
+      razorpay_payment_id || `pay_${Date.now()}`, 
       'completed'
     );
     
@@ -103,16 +94,16 @@ export async function POST(request: Request) {
     
     // Create booking record with proper structure
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + paymentRecord.duration * 60 * 60 * 1000);
+    const endTime = new Date(startTime.getTime() + paymentRecord['duration'] * 60 * 60 * 1000);
     
     const bookingData = {
-      userId: paymentRecord.userId || "anonymous",
-      stationId: paymentRecord.stationId,
-      slotId: paymentRecord.slotId,
+      userId: paymentRecord['userId'] || "anonymous",
+      stationId: paymentRecord['stationId'],
+      slotId: paymentRecord['slotId'],
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      amount: paymentRecord.amount,
-      paymentId: razorpay_payment_id,
+      amount: paymentRecord['amount'],
+      paymentId: razorpay_payment_id || `pay_${Date.now()}`,
       status: 'confirmed',
       createdAt: new Date(),
       updatedAt: new Date()
@@ -124,9 +115,9 @@ export async function POST(request: Request) {
     
     // Update slot status to occupied
     try {
-      const stationFilter = ObjectId.isValid(paymentRecord.stationId) 
-        ? { _id: new ObjectId(paymentRecord.stationId), "slots.slotId": paymentRecord.slotId }
-        : { _id: paymentRecord.stationId, "slots.slotId": paymentRecord.slotId };
+      const stationFilter = ObjectId.isValid(paymentRecord['stationId']) 
+        ? { _id: new ObjectId(paymentRecord['stationId']), "slots.slotId": paymentRecord['slotId'] }
+        : { _id: paymentRecord['stationId'], "slots.slotId": paymentRecord['slotId'] };
       
       const updateResult = await db.collection("stations").updateOne(
         stationFilter,
@@ -148,7 +139,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       bookingId: bookingResult.insertedId.toString(),
-      paymentId: razorpay_payment_id
+      paymentId: razorpay_payment_id || `pay_${Date.now()}`
     });
   } catch (error) {
     console.error("Error verifying payment:", error);

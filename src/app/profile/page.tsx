@@ -182,10 +182,12 @@ export default function ProfileSettings() {
             console.error("Failed to update client location in database:", {
               status: response.status,
               statusText: response.statusText,
-              error: errorData.error || 'Unknown error'
+              error: errorData.error || 'Unknown error',
+              details: errorData.details,
+              clientId: session.user.id
             });
-            // Show error to user
-            alert(`Failed to update location: ${errorData.error || 'Unknown error'}`);
+            // Show error to user with more specific message
+            alert(`Failed to update location: ${errorData.error || errorData.details || 'Unknown error'}`);
             hasError = true;
           } else {
             const updatedClient = await response.json();
@@ -212,10 +214,12 @@ export default function ProfileSettings() {
             console.error("Failed to update client name in database:", {
               status: response.status,
               statusText: response.statusText,
-              error: errorData.error || 'Unknown error'
+              error: errorData.error || 'Unknown error',
+              details: errorData.details,
+              clientId: session.user.id
             });
-            // Show error to user
-            alert(`Failed to update name: ${errorData.error || 'Unknown error'}`);
+            // Show error to user with more specific message
+            alert(`Failed to update name: ${errorData.error || errorData.details || 'Unknown error'}`);
             hasError = true;
           } else {
             const updatedClient = await response.json();

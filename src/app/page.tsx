@@ -13,12 +13,16 @@ import {
   Footer
 } from '@/components/landing';
 import { useSession } from "next-auth/react";
+import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const { data: session, status } = useSession();
   const sessionLoading = status === "loading";
   const [wasLoggedIn, setWasLoggedIn] = useState(false);
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   useEffect(() => {
     // Check for manual trigger via URL parameter

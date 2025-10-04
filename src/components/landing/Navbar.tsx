@@ -8,6 +8,7 @@ import { Logo } from '@/components/ui/Logo';
 import { signOut, useSession } from "next-auth/react";
 import Image from 'next/image';
 import { useLoader } from '@/lib/LoaderContext'; // Import the universal loader context
+import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,6 +18,9 @@ export const Navbar: React.FC = () => {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null); // Added state for user name
   const { showLoader, hideLoader } = useLoader(); // Use the loader context
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   // Load user avatar from localStorage or session
   useEffect(() => {
@@ -154,25 +158,13 @@ export const Navbar: React.FC = () => {
 
   // Handle navigation with universal loader and smooth transition
   const handleNavigation = (path: string, loadingMessage: string = "Loading page...") => {
-    // Show loader immediately for better user feedback
-    showLoader(loadingMessage);
-    
     // Close mobile menu if open
     setIsMenuOpen(false);
     
-    // For dashboard navigation, we need to ensure the loader stays visible during the entire transition
-    const isDashboardNavigation = path.includes('/dashboard');
+    // Navigate to the path
+    router.push(path);
     
-    if (isDashboardNavigation) {
-      setTimeout(() => {
-        router.push(path);
-        setTimeout(() => {
-          hideLoader();
-        }, 800); 
-      }, 100); 
-    } else {
-      router.push(path);
-    }
+    // The route transition handler will take care of showing/hiding the loader
   };
 
   // Close mobile menu when resizing to desktop
@@ -224,10 +216,12 @@ export const Navbar: React.FC = () => {
                 <button 
                   onClick={() => {
                     if (session.user?.role === "admin") {
-                      handleNavigation("/dashboard/admin", "Loading admin dashboard...");
+                      router.push("/dashboard/admin");
                     } else {
-                      handleNavigation("/dashboard", "Loading your dashboard...");
+                      router.push("/dashboard");
                     }
+                    // Close mobile menu if open
+                    setIsMenuOpen(false);
                   }}
                   className="text-[#8B5CF6] hover:text-[#A78BFA] transition-all duration-300 text-sm font-medium nav-item-hover"
                 >
@@ -349,10 +343,12 @@ export const Navbar: React.FC = () => {
                     <button 
                       onClick={() => {
                         if (session.user?.role === "admin") {
-                          handleNavigation("/dashboard/admin", "Loading admin dashboard...");
+                          router.push("/dashboard/admin");
                         } else {
-                          handleNavigation("/dashboard", "Loading your dashboard...");
+                          router.push("/dashboard");
                         }
+                        // Close mobile menu if open
+                        setIsMenuOpen(false);
                       }}
                       className="block w-full text-left px-3 py-2 rounded-md bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white font-medium text-sm hover:opacity-90 transition-all duration-300"
                     >

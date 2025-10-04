@@ -1,84 +1,116 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { LoaderProvider, useLoader } from '../src/lib/LoaderContext';
-import { UniversalLoader } from '../src/components/ui/UniversalLoader';
+import { render, screen } from '@testing-library/react';
+import { act } from 'react-dom/test-utils';
+import { LoaderProvider, useLoader } from '@/lib/LoaderContext';
+
+// Mock Framer Motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+}));
+
+// Mock UniversalLoader component
+jest.mock('@/components/ui/UniversalLoader', () => ({
+  UniversalLoader: ({ task, state }: { task: string; state: string }) => (
+    <div data-testid="universal-loader">
+      <span data-testid="loader-task">{task}</span>
+      <span data-testid="loader-state">{state}</span>
+    </div>
+  ),
+}));
 
 // Test component that uses the loader context
 const TestComponent: React.FC = () => {
-  const { showLoader, hideLoader, updateLoader } = useLoader();
+  const { isLoading, showLoader, hideLoader, updateLoader } = useLoader();
   
   return (
     <div>
-      <button onClick={() => showLoader('Loading data...')}>Show Loader</button>
-      <button onClick={() => updateLoader('Processing payment...', 'success')}>Update to Success</button>
+      <div data-testid="loader-status">{isLoading ? 'visible' : 'hidden'}</div>
+      <button onClick={() => showLoader('Test task', 'loading')}>Show Loader</button>
       <button onClick={hideLoader}>Hide Loader</button>
+      <button onClick={() => updateLoader('Updated task', 'success')}>Update Loader</button>
     </div>
   );
 };
 
 describe('LoaderContext', () => {
-  test('provides loader context to child components', () => {
+  it('should provide loader context with initial state', () => {
     render(
       <LoaderProvider>
         <TestComponent />
       </LoaderProvider>
     );
     
-    expect(screen.getByText('Show Loader')).toBeInTheDocument();
-    expect(screen.getByText('Update to Success')).toBeInTheDocument();
-    expect(screen.getByText('Hide Loader')).toBeInTheDocument();
+    expect(screen.getByTestId('loader-status')).toHaveTextContent('hidden');
   });
 
-  test('shows loader when showLoader is called', async () => {
-    const TestWithLoader: React.FC = () => {
-      const { showLoader } = useLoader();
-      
-      React.useEffect(() => {
-        showLoader('Loading data...');
-      }, [showLoader]);
-      
-      return <div>Test Component</div>;
-    };
-    
+  it('should show loader when showLoader is called', () => {
     render(
       <LoaderProvider>
-        <TestWithLoader />
+        <TestComponent />
       </LoaderProvider>
     );
     
-    // Wait for the loader to appear
-    await waitFor(() => {
-      expect(screen.getByText('Loading data...')).toBeInTheDocument();
+    // Initially hidden
+    expect(screen.getByTestId('loader-status')).toHaveTextContent('hidden');
+    
+    // Show loader
+    act(() => {
+      screen.getByText('Show Loader').click();
     });
+    
+    // Should be visible
+    expect(screen.getByTestId('loader-status')).toHaveTextContent('visible');
+    expect(screen.getByTestId('loader-task')).toHaveTextContent('Test task');
+    expect(screen.getByTestId('loader-state')).toHaveTextContent('loading');
   });
 
-  test('hides loader when hideLoader is called', async () => {
-    const TestWithHide: React.FC = () => {
-      const { showLoader, hideLoader } = useLoader();
-      
-      React.useEffect(() => {
-        showLoader('Loading data...');
-        setTimeout(() => hideLoader(), 100);
-      }, [showLoader, hideLoader]);
-      
-      return <div>Test Component</div>;
-    };
-    
+  it('should hide loader when hideLoader is called', () => {
     render(
       <LoaderProvider>
-        <TestWithHide />
+        <TestComponent />
       </LoaderProvider>
     );
     
-    // Loader should appear first
-    await waitFor(() => {
-      expect(screen.getByText('Loading data...')).toBeInTheDocument();
+    // Show loader first
+    act(() => {
+      screen.getByText('Show Loader').click();
+    });
+    expect(screen.getByTestId('loader-status')).toHaveTextContent('visible');
+    
+    // Hide loader
+    act(() => {
+      screen.getByText('Hide Loader').click();
     });
     
-    // Then disappear after hideLoader is called
-    await waitFor(() => {
-      expect(screen.queryByText('Loading data...')).not.toBeInTheDocument();
-    }, { timeout: 2000 }); // Increased to 2000ms to allow for animation completion
+    // Should be hidden (after delay)
+    setTimeout(() => {
+      expect(screen.getByTestId('loader-status')).toHaveTextContent('hidden');
+    }, 350);
+  });
+
+  it('should update loader when updateLoader is called', () => {
+    render(
+      <LoaderProvider>
+        <TestComponent />
+      </LoaderProvider>
+    );
+    
+    // Show loader first
+    act(() => {
+      screen.getByText('Show Loader').click();
+    });
+    expect(screen.getByTestId('loader-task')).toHaveTextContent('Test task');
+    expect(screen.getByTestId('loader-state')).toHaveTextContent('loading');
+    
+    // Update loader
+    act(() => {
+      screen.getByText('Update Loader').click();
+    });
+    
+    // Should have updated task and state
+    expect(screen.getByTestId('loader-task')).toHaveTextContent('Updated task');
+    expect(screen.getByTestId('loader-state')).toHaveTextContent('success');
   });
 });

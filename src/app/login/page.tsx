@@ -8,6 +8,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLoader } from "@/lib/LoaderContext";
+import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"admin" | "client">("client"); // Changed default to client
@@ -25,6 +26,9 @@ export default function LoginPage() {
   const emailRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
   const { showLoader, hideLoader } = useLoader();
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   // Focus on email field when tab is selected and pre-fill email from query params
   useEffect(() => {

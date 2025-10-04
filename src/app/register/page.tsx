@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
-import { useLoader } from "@/lib/LoaderContext"; 
+import { useLoader } from "@/lib/LoaderContext";
+import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -19,14 +20,20 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
   const nameRef = useRef<HTMLInputElement>(null);
-  const { showLoader, hideLoader } = useLoader(); 
+  const { showLoader, hideLoader } = useLoader();
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   // Focus on name field when page loads
   useEffect(() => {
+    // Ensure loader is hidden when page loads
+    hideLoader();
+    
     if (nameRef.current) {
       nameRef.current.focus();
     }
-  }, []);
+  }, []); // Empty dependency array is fine here
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;

@@ -1,14 +1,16 @@
-import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import redis from '@/lib/redis';
 
-export async function GET(request: Request) {
+/**
+ * Update dashboard stats in Redis cache
+ * This function is meant to be called periodically to keep stats up to date
+ */
+export async function updateDashboardStats() {
   try {
-    // Try to get stats from Redis cache first
-    const cachedStats = await redis.get('dashboard_stats');
-    if (cachedStats) {
-      console.log('Returning cached stats from Redis');
-      return NextResponse.json(JSON.parse(cachedStats));
+    // Only run if Redis is available
+    if (!redis.isAvailable()) {
+      console.log('Redis not available, skipping stats update');
+      return;
     }
 
     const { db } = await connectToDatabase();
@@ -70,24 +72,33 @@ export async function GET(request: Request) {
 
     // Cache stats in Redis for 5 minutes
     await redis.setex('dashboard_stats', 300, JSON.stringify(stats));
-
-    return NextResponse.json(stats);
+    
+    // Publish stats update to Redis channel for real-time updates
+    await redis.publish('stats_update', JSON.stringify(stats));
+    
+    console.log('Dashboard stats updated successfully');
+    return stats;
   } catch (error: any) {
-    console.error("Error fetching dashboard stats:", error);
-    
-    // Provide more specific error messages
-    let errorMessage = "Failed to fetch dashboard stats";
-    if (error.message && error.message.includes('Authentication failed')) {
-      errorMessage = "Database authentication failed. Please check your MongoDB credentials.";
-    } else if (error.message && error.message.includes('connect ECONNREFUSED')) {
-      errorMessage = "Database connection refused. Please check if your MongoDB server is running.";
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    return NextResponse.json(
-      { error: errorMessage }, 
-      { status: 500 }
-    );
+    console.error('Error updating dashboard stats:', error);
+    throw error;
   }
+}
+
+/**
+ * Set up periodic stats updates
+ * This function sets up an interval to update stats every 30 seconds
+ */
+export function setupPeriodicStatsUpdates() {
+  // Update stats immediately
+  updateDashboardStats().catch(console.error);
+  
+  // Update stats every 30 seconds
+  const intervalId = setInterval(() => {
+    updateDashboardStats().catch(console.error);
+  }, 30000); // 30 seconds
+  
+  // Return cleanup function
+  return () => {
+    clearInterval(intervalId);
+  };
 }

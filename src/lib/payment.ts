@@ -2,6 +2,7 @@ import { connectToDatabase } from './db/connection';
 import redis from './redis';
 import { getIO } from './socket';
 import { ObjectId } from 'mongodb';
+import crypto from 'crypto';
 
 export interface Payment {
   _id?: ObjectId;
@@ -21,6 +22,25 @@ export interface Payment {
 }
 
 export class PaymentService {
+  static async verifyRazorpaySignature(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string): Promise<boolean> {
+    try {
+      const secret = process.env.RAZORPAY_KEY_SECRET;
+      if (!secret) {
+        console.error('Razorpay key secret not found in environment variables');
+        return false;
+      }
+      
+      const signature = razorpay_signature;
+      const shasum = crypto.createHmac('sha256', secret);
+      shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+      const digest = shasum.digest('hex');
+      
+      return digest === signature;
+    } catch (error) {
+      console.error('Error verifying Razorpay signature:', error);
+      return false;
+    }
+  }
   /**
    * Create a new payment record
    */

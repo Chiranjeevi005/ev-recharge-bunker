@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useContactForm } from '@/hooks/useContactForm';
-import { useLoader } from '@/lib/LoaderContext'; // Added import
+import { useRouteTransition } from '@/hooks/useRouteTransition'; // Added import
 
 const ContactPage = () => {
   const {
@@ -24,9 +24,11 @@ const ContactPage = () => {
     resetForm
   } = useContactForm();
   
-  const { showLoader, hideLoader } = useLoader(); // Added loader context
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   // Initialize the map for headquarters location
   useEffect(() => {
@@ -86,8 +88,7 @@ const ContactPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
-    showLoader("Sending your message..."); // Show loader
-    
+    // Show loader during form submission
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
@@ -101,7 +102,6 @@ const ContactPage = () => {
         // Reset form
         resetForm();
         setSubmitStatus('success');
-        hideLoader(); // Hide loader
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to send message');
@@ -109,7 +109,6 @@ const ContactPage = () => {
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitStatus('error');
-      hideLoader(); // Hide loader
     } finally {
       setIsSubmitting(false);
     }

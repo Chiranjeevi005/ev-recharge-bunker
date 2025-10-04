@@ -3,6 +3,7 @@ import { Inter, Poppins, Roboto } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { LoaderProvider } from "@/lib/LoaderContext";
+import { RouteTransitionHandler } from '@/components/RouteTransitionHandler';
 
 // Initialize real-time features
 import '@/lib/startup';
@@ -46,6 +47,7 @@ export default function RootLayout({
       >
         <SessionProvider>
           <LoaderProvider>
+            <RouteTransitionHandler />
             {children}
           </LoaderProvider>
         </SessionProvider>

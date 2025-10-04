@@ -182,15 +182,6 @@ export default function FindBunksPage() {
     try {
       showLoader("Processing payment..."); // Show loader
       
-      // Load Razorpay script first
-      const res = await loadRazorpay();
-      
-      if (!res) {
-        hideLoader(); // Hide loader
-        alert('Failed to load Razorpay. Please try again.');
-        return;
-      }
-      
       // Create booking order
       console.log("Creating payment order with:", {
         userId: user.id,
@@ -218,28 +209,27 @@ export default function FindBunksPage() {
       console.log("Payment order response:", orderData);
       
       if (orderData.orderId) {
-        // Initialize Razorpay
-        const options = {
-          key: process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example',
-          amount: orderData.amount,
-          currency: orderData.currency,
-          name: "EV Bunker",
-          description: `Booking for ${selectedStation.name}`,
-          order_id: orderData.orderId,
-          handler: async function (response: any) {
-            console.log("Razorpay response received:", response);
-            
+        // Check if we're using test credentials
+        const razorpayKey = process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example';
+        const isTestMode = razorpayKey.includes('rzp_test_') || razorpayKey.includes('XXXXXXXX');
+        
+        if (isTestMode) {
+          // Mock payment flow for testing
+          console.log("Using mock payment flow for testing");
+          
+          // Simulate successful payment
+          setTimeout(async () => {
             try {
-              // Verify payment
+              // Verify payment with mock data
               const verifyResponse = await fetch("/api/payment/verify", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
+                  razorpay_order_id: orderData.orderId,
+                  razorpay_payment_id: `pay_${Date.now()}`,
+                  razorpay_signature: "test_signature",
                 }),
               });
               
@@ -260,19 +250,64 @@ export default function FindBunksPage() {
               console.error("Error verifying payment:", verifyError);
               alert("Failed to verify payment. Please contact support.");
             }
-          },
-          prefill: {
-            name: user.name || "",
-            email: user.email || "",
-          },
-          theme: {
-            color: "#10B981",
-          },
-        };
-        
-        // @ts-ignore
-        const rzp = new window.Razorpay(options);
-        rzp.open();
+          }, 1500); // Simulate 1.5 second payment processing
+        } else {
+          // Initialize Razorpay for real payments
+          const options = {
+            key: razorpayKey,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: "EV Bunker",
+            description: `Booking for ${selectedStation.name}`,
+            order_id: orderData.orderId,
+            handler: async function (response: any) {
+              console.log("Razorpay response received:", response);
+              
+              try {
+                // Verify payment
+                const verifyResponse = await fetch("/api/payment/verify", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                  }),
+                });
+                
+                const verifyData = await verifyResponse.json();
+                console.log("Payment verification response:", verifyData);
+                
+                if (verifyData.success) {
+                  hideLoader(); // Hide loader
+                  // Redirect to confirmation page
+                  router.push(`/confirmation?bookingId=${verifyData.bookingId}`);
+                } else {
+                  hideLoader(); // Hide loader
+                  console.error("Payment verification failed:", verifyData.error);
+                  alert("Payment verification failed. Please contact support.");
+                }
+              } catch (verifyError) {
+                hideLoader(); // Hide loader
+                console.error("Error verifying payment:", verifyError);
+                alert("Failed to verify payment. Please contact support.");
+              }
+            },
+            prefill: {
+              name: user.name || "",
+              email: user.email || "",
+            },
+            theme: {
+              color: "#10B981",
+            },
+          };
+          
+          // @ts-ignore
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+        }
       }
     } catch (error) {
       hideLoader(); // Hide loader

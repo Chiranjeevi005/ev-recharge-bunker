@@ -1,29 +1,25 @@
-import { initRealTimeFeatures } from '@/lib/initRealTime';
+import redis from './redis';
+import { setupPeriodicStatsUpdates } from './updateStats';
 
-// Initialize real-time features when the application starts
 export async function startup() {
-  console.log('Starting up application...');
+  console.log('Starting up application services...');
   
-  try {
-    // Initialize real-time features
-    const initialized = await initRealTimeFeatures();
+  // Initialize Redis if available
+  if (redis.isAvailable()) {
+    console.log('Redis is available, setting up services...');
     
-    if (initialized) {
-      console.log('✅ Application startup completed successfully');
-    } else {
-      console.warn('⚠️ Application startup completed with warnings');
-    }
-  } catch (error: any) {
-    console.error('❌ Error during application startup:', error);
+    // Set up periodic stats updates
+    const cleanupStats = setupPeriodicStatsUpdates();
     
-    // Provide more specific error messages
-    if (error.message && error.message.includes('Authentication failed')) {
-      console.error('MongoDB authentication failed. Please check your credentials in .env.local');
-    } else if (error.message && error.message.includes('connect ECONNREFUSED')) {
-      console.error('MongoDB connection refused. Please check if your MongoDB server is running');
-    }
+    // Return cleanup functions
+    return () => {
+      console.log('Cleaning up application services...');
+      cleanupStats();
+    };
+  } else {
+    console.log('Redis not available, running in fallback mode');
+    return () => {
+      console.log('Cleaning up application services...');
+    };
   }
 }
-
-// Run startup immediately
-startup();

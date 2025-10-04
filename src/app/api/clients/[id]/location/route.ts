@@ -53,33 +53,38 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     console.log('Location API: Update result:', result);
 
     // Check if the operation was successful
-    if (!result || !result.value) {
+    if (!result || !result['value']) {
       // Even if findOneAndUpdate didn't return the updated document, 
       // let's fetch the client to verify the update
       const updatedClient = await db.collection("clients").findOne({ _id: objectId });
       console.log('Location API: Updated client verification:', updatedClient);
       
-      if (updatedClient && updatedClient.location === location) {
+      if (updatedClient && updatedClient['location'] === location) {
         // Convert ObjectId to string for JSON serialization
         const serializedClient = {
           ...updatedClient,
-          id: updatedClient._id.toString(),
+          id: updatedClient['_id'].toString(),
           _id: undefined
         };
         console.log('Location API: Successfully updated client location');
         return NextResponse.json(serializedClient);
       }
       
+      // Provide more detailed error information
       return NextResponse.json(
-        { error: "Failed to update client location" },
+        { 
+          error: "Failed to update client location",
+          details: "Database update operation failed",
+          clientId: id
+        },
         { status: 500 }
       );
     }
 
     // Convert ObjectId to string for JSON serialization
     const updatedClient = {
-      ...result.value,
-      id: result.value._id.toString(),
+      ...result['value'],
+      id: result['value']['_id'].toString(),
       _id: undefined
     };
 

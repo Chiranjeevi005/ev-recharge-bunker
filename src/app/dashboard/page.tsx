@@ -14,7 +14,9 @@ import {
   BusinessStats,
   EcoJourneyHighlights
 } from '@/components/dashboard';
-import { useLoader } from '@/lib/LoaderContext'; 
+import { useLoader } from '@/lib/LoaderContext';
+import { useRouteTransition } from '@/hooks/useRouteTransition';
+import { FetchingAnimation } from '@/components/ui/FetchingAnimation';
 
 interface ChargingSession {
   userId: string;
@@ -68,6 +70,9 @@ export default function ClientDashboard() {
   const socketRef = useRef<any>(null);
   const { showLoader, hideLoader } = useLoader();
   const dataFetchedRef = useRef(false);
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -103,7 +108,7 @@ export default function ClientDashboard() {
       // Mark data as fetched to prevent multiple calls
       dataFetchedRef.current = true;
       
-      // Show loader during data fetching
+      // Show loader during data fetching (if not already shown)
       if (!loading) {
         showLoader("Loading your dashboard...");
         setLoading(true);
@@ -113,7 +118,7 @@ export default function ClientDashboard() {
       const timeoutId = setTimeout(() => {
         hideLoader();
         setLoading(false);
-      }, 10000); // 10 second timeout
+      }, 15000); // 15 second timeout
       
       // Fetch active charging session
       const sessionResponse = await fetch(`/api/dashboard/session?userId=${session.user.id}`);
@@ -143,12 +148,19 @@ export default function ClientDashboard() {
       clearTimeout(timeoutId);
       
       setLoading(false);
-      hideLoader(); // Hide loader after data is fetched
+      // Keep the loader visible until the component is fully rendered
+      // This ensures smooth transition without any background flash
+      setTimeout(() => {
+        hideLoader(); // Hide loader after data is fetched and UI is ready
+      }, 500);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       setError("Failed to load dashboard data. Please try again later.");
       setLoading(false);
-      hideLoader(); // Hide loader even if there's an error
+      // Keep the loader visible a bit longer to show error state
+      setTimeout(() => {
+        hideLoader(); // Hide loader even if there's an error
+      }, 500);
     }
   }, [status, session, showLoader, hideLoader, loading]);
 
@@ -178,12 +190,23 @@ export default function ClientDashboard() {
   };
 
   if (status === "loading" || loading) {
-    // Don't return null, render the page with loader context handling it
-    // The loader will be displayed via LoaderContext
+    // Show fetching animation during loading
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
         <Navbar />
-        {/* Loader will be displayed via LoaderContext */}
+        <main className="pt-20 pb-12">
+          <div className="container mx-auto px-4">
+            <div className="mb-10 rounded-2xl bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 p-6 border border-[#475569]/50">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#F1F5F9] mb-2">
+                Welcome back, {session?.user?.name || 'User'}
+              </h1>
+              <p className="text-[#CBD5E1]">
+                Proud to be part of the EV revolution – Together reducing CO2 and building a greener future.
+              </p>
+            </div>
+            <FetchingAnimation />
+          </div>
+        </main>
       </div>
     );
   }

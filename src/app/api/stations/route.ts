@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { MongoClient, Document } from 'mongodb';
+import { MongoClient } from 'mongodb';
+import type { Document } from 'mongodb';
 // Load environment variables
 import dotenv from 'dotenv';
 dotenv.config();
@@ -59,8 +60,8 @@ export async function GET() {
   
   try {
     console.log('Creating new MongoDB client for stations API');
-    console.log('DATABASE_URL:', process.env.DATABASE_URL);
-    client = new MongoClient(process.env.DATABASE_URL!);
+    console.log('DATABASE_URL:', process.env['DATABASE_URL']);
+    client = new MongoClient(process.env['DATABASE_URL']!);
     await client.connect();
     console.log('Connected to MongoDB for stations API');
     
@@ -76,8 +77,13 @@ export async function GET() {
     let stations: Document[] = [];
     try {
       console.log('Attempting to fetch from "stations" collection');
-      stations = await db.collection("stations").find({}).toArray();
+      const stationsCollection = db.collection("stations");
+      stations = await stationsCollection.find({}).toArray();
       console.log('Found stations in "stations" collection:', stations.length);
+      
+      // Log the cities found in the database
+      const cities = [...new Set(stations.map((station: any) => station.city))];
+      console.log('Cities found in database:', cities);
     } catch (collectionError) {
       console.log('Error fetching from "stations" collection:', collectionError);
     }
@@ -117,6 +123,9 @@ export async function GET() {
     }));
     
     console.log('Returning', serializedStations.length, 'stations from API');
+    // Log cities in the response
+    const responseCities = [...new Set(serializedStations.map((station: any) => station.city))];
+    console.log('Cities in response:', responseCities);
     return NextResponse.json(serializedStations);
   } catch (error: any) {
     console.error("Error fetching stations:", error);
@@ -135,7 +144,7 @@ export async function POST(request: Request) {
   let client: MongoClient | null = null;
   
   try {
-    client = new MongoClient(process.env.DATABASE_URL!);
+    client = new MongoClient(process.env['DATABASE_URL']!);
     await client.connect();
     const db = client.db('ev_bunker');
     

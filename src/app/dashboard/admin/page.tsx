@@ -8,6 +8,8 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useRouter } from 'next/navigation';
 import { useLoader } from '@/lib/LoaderContext';
+import { useRouteTransition } from '@/hooks/useRouteTransition';
+import { FetchingAnimation } from '@/components/ui/FetchingAnimation';
 
 interface User {
   id: string;
@@ -87,6 +89,9 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
   const dataFetchedRef = useRef(false);
+  
+  // Initialize route transition handler
+  useRouteTransition();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardSubTab, setDashboardSubTab] = useState('overview');
@@ -118,6 +123,12 @@ export default function AdminDashboard() {
       
       // Show loader during data fetching
       showLoader("Loading dashboard data...");
+      
+      // Add timeout to ensure loader doesn't stay visible indefinitely
+      const timeoutId = setTimeout(() => {
+        hideLoader();
+        setLoading(false);
+      }, 15000); // 15 second timeout
       
       // Fetch dashboard stats
       const statsRes = await fetch('/api/dashboard/stats');
@@ -164,17 +175,23 @@ export default function AdminDashboard() {
       setStations(stationsData);
       setSessionsData(sessionsData);
       
-      // Add a small delay to ensure smooth transition and prevent white flash
+      // Clear timeout if data fetching completes successfully
+      clearTimeout(timeoutId);
+      
+      setLoading(false);
+      // Keep the loader visible until the component is fully rendered
+      // This ensures smooth transition without any background flash
       setTimeout(() => {
-        hideLoader();
-        setLoading(false);
-      }, 300); // Slightly longer delay for smoother transitions
+        hideLoader(); // Hide loader after data is fetched and UI is ready
+      }, 500);
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
       setError(err.message || 'Failed to fetch dashboard data');
-      // Hide loader even if there's an error
-      hideLoader();
       setLoading(false);
+      // Keep the loader visible a bit longer to show error state
+      setTimeout(() => {
+        hideLoader(); // Hide loader even if there's an error
+      }, 500);
     }
   }, [status, session, showLoader, hideLoader]);
 
@@ -212,11 +229,20 @@ export default function AdminDashboard() {
   };
 
   if (status === 'loading' || loading) {
-    // Return null since we're using the universal loader
-    // Ensure proper background color to prevent white flash
+    // Show fetching animation during loading
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
-        {/* Keep the component mounted but visually empty while loading */}
+        <Navbar />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 w-full pt-20">
+          <div className="max-w-full mx-auto w-full">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-white mb-2">Admin Powerhouse</h1>
+              <p className="text-[#94A3B8] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
+              <p className="text-[#94A3B8] mt-2">Welcome, {session?.user?.name || 'Admin'}. Loading your dashboard...</p>
+            </div>
+            <FetchingAnimation />
+          </div>
+        </main>
       </div>
     );
   }
@@ -384,7 +410,7 @@ export default function AdminDashboard() {
                   {/* Dashboard content based on sub-tab */}
                   {dashboardSubTab === 'overview' && (
                     <div className="w-full">
-                      {/* Stats cards - Mobile-first responsive design */}
+                      {/* Stats cards - Updated to show Users, Stations, Locations, Revenue */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
                         {stats.map((stat) => (
                           <Card key={stat.id} className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">

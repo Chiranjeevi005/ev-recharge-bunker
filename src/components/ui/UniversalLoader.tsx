@@ -40,6 +40,34 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
   
   const currentSize = sizeClasses[size];
   const energyCount = 12;
+  
+  // Predefined positions for energy particles to ensure SSR/CSR consistency
+  const energyPositions: { left: number; background: number }[] = [
+    { left: 45, background: 0 }, // white
+    { left: 69, background: 1 }, // green
+    { left: 35, background: 2 }, // purple
+    { left: 57, background: 0 }, // white
+    { left: 48, background: 1 }, // green
+    { left: 34, background: 2 }, // purple
+    { left: 46, background: 0 }, // white
+    { left: 35, background: 1 }, // green
+    { left: 66, background: 2 }, // purple
+    { left: 55, background: 0 }, // white
+    { left: 46, background: 1 }, // green
+    { left: 33, background: 2 }  // purple
+  ];
+  
+  // Predefined positions for spark particles to ensure SSR/CSR consistency
+  const sparkPositions = [
+    { x: -10, y: -15 },
+    { x: 20, y: -25 },
+    { x: -30, y: 10 },
+    { x: 15, y: 30 },
+    { x: -25, y: -10 },
+    { x: 10, y: 20 },
+    { x: -15, y: 25 },
+    { x: 25, y: -20 }
+  ];
 
   // Initialize focused GSAP animations
   useEffect(() => {
@@ -167,48 +195,49 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
   }, [task]);
 
   return (
-    <AnimatePresence>
-      <motion.div 
-        ref={containerRef}
-        className={`flex flex-col items-center justify-center ${className}`}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-      >
-        {/* Logo with focused animations */}
-        <div className="relative flex items-center justify-center">
-          {/* Central glow effect - perfectly centered on logo */}
-          <motion.div
-            className="absolute inset-0 rounded-full blur-lg"
-            style={{
-              background: `radial-gradient(circle, ${stateGlowColors[state]})`,
-              width: currentSize.width * 1.4,
-              height: currentSize.height * 1.4,
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-            }}
-            animate={{
-              opacity: state === 'success' ? [0.4, 0.8, 0.4] : state === 'error' ? [0.3, 0.7, 0.3] : [0.2, 0.5, 0.2],
-              scale: [1, 1.05, 1],
-            }}
-            transition={{
-              opacity: {
-                duration: state === 'success' ? 1.5 : state === 'error' ? 1.8 : 2,
-                repeat: Infinity,
-              },
-              scale: {
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }
-            }}
-          />
-          
-          {/* Framer Motion animation for spark effects - only small particles */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            {Array.from({ length: 8 }).map((_, i) => (
+    <motion.div 
+      ref={containerRef}
+      className={`flex flex-col items-center justify-center ${className}`}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+    >
+      {/* Logo with focused animations */}
+      <div className="relative flex items-center justify-center">
+        {/* Central glow effect - perfectly centered on logo */}
+        <motion.div
+          className="absolute inset-0 rounded-full blur-lg"
+          style={{
+            background: `radial-gradient(circle, ${stateGlowColors[state]})`,
+            width: currentSize.width * 1.4,
+            height: currentSize.height * 1.4,
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+          animate={{
+            opacity: state === 'success' ? [0.4, 0.8, 0.4] : state === 'error' ? [0.3, 0.7, 0.3] : [0.2, 0.5, 0.2],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            opacity: {
+              duration: state === 'success' ? 1.5 : state === 'error' ? 1.8 : 2,
+              repeat: Infinity,
+            },
+            scale: {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }
+          }}
+        />
+        
+        {/* Framer Motion animation for spark effects - only small particles */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {Array.from({ length: 8 }).map((_, i) => {
+            const position = sparkPositions[i] || { x: 0, y: 0 };
+            return (
               <motion.div
                 key={`spark-${i}`}
                 className="absolute w-1 h-1 rounded-full"
@@ -221,8 +250,8 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
                 animate={{
                   scale: [0, 1, 0],
                   opacity: [0, 1, 0],
-                  x: [0, gsap.utils.random(-50, 50)],
-                  y: [0, gsap.utils.random(-50, 50)],
+                  x: [0, position.x],
+                  y: [0, position.y],
                 }}
                 transition={{
                   duration: 1.5,
@@ -231,22 +260,26 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
                   ease: "easeOut"
                 }}
               />
-            ))}
-          </div>
-          
-          {/* Retained bottom effects - energy flow particles */}
-          {Array.from({ length: energyCount }).map((_, i) => (
+            );
+          })}
+        </div>
+        
+        {/* Retained bottom effects - energy flow particles */}
+        {Array.from({ length: energyCount }).map((_, i) => {
+          // Ensure we have a valid position (energyPositions has 12 items, same as energyCount)
+          const position = energyPositions[i] || { left: 50, background: 0 }; // Default position as fallback
+          return (
             <motion.div
               key={`energy-${i}`}
               ref={(el) => { if (el) energyRefs.current[i] = el; }}
               className="absolute w-1.5 h-1.5 rounded-full"
               style={{
-                background: i % 3 === 0 
+                background: position.background === 0 
                   ? 'rgba(255, 255, 255, 0.9)' 
-                  : i % 3 === 1 
+                  : position.background === 1 
                     ? 'rgba(16, 185, 129, 0.9)' 
                     : 'rgba(139, 92, 246, 0.9)',
-                left: `${50 + gsap.utils.random(-20, 20)}%`,
+                left: `${position.left}%`,
                 top: '100%',
                 boxShadow: "0 0 4px currentColor",
               }}
@@ -261,52 +294,52 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
                 ease: "easeOut"
               }}
             />
-          ))}
-          
-          {/* Logo image - stable with subtle pulse */}
-          <motion.div 
-            ref={logoRef}
-            className="relative z-10"
-            animate={{
-              scale: [1, 1.05, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            <Image 
-              src="/assets/logo.png" 
-              alt="EV Bunker Logo" 
-              width={currentSize.width}
-              height={currentSize.height}
-              className="object-contain"
-            />
-          </motion.div>
-        </div>
+          );
+        })}
         
-        {/* Enhanced futuristic animated task text with additional effects */}
+        {/* Logo image - stable with subtle pulse */}
         <motion.div 
-          ref={textRef}
-          className="mt-8 text-center font-mono font-light tracking-wider relative"
-          style={{
-            color: state === 'success' 
-              ? '#10B981'
-              : state === 'error'
-              ? '#EF4444'
-              : 'var(--color-foreground, #F1F5F9)',
-            fontSize: size === 'sm' ? '0.875rem' : size === 'md' ? '1rem' : size === 'lg' ? '1.125rem' : '1.25rem',
-            fontFamily: 'monospace'
+          ref={logoRef}
+          className="relative z-10"
+          animate={{
+            scale: [1, 1.05, 1],
           }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
         >
-          {task}
+          <Image 
+            src="/assets/logo.png" 
+            alt="EV Bunker Logo" 
+            width={currentSize.width}
+            height={currentSize.height}
+            className="object-contain"
+          />
         </motion.div>
+      </div>
+      
+      {/* Enhanced futuristic animated task text with additional effects */}
+      <motion.div 
+        ref={textRef}
+        className="mt-8 text-center font-mono font-light tracking-wider relative"
+        style={{
+          color: state === 'success' 
+            ? '#10B981'
+            : state === 'error'
+            ? '#EF4444'
+            : 'var(--color-foreground, #F1F5F9)',
+          fontSize: size === 'sm' ? '0.875rem' : size === 'md' ? '1rem' : size === 'lg' ? '1.125rem' : '1.25rem',
+          fontFamily: 'monospace'
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {task}
       </motion.div>
-    </AnimatePresence>
+    </motion.div>
   );
 };
 

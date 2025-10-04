@@ -27,14 +27,6 @@ export default function TestPaymentPage() {
     setPaymentStatus('Creating payment order...');
     
     try {
-      // Load Razorpay script
-      const res = await loadRazorpay();
-      if (!res) {
-        setPaymentStatus('Failed to load Razorpay');
-        setIsLoading(false);
-        return;
-      }
-
       // Create a test payment order
       const response = await fetch('/api/payment/order', {
         method: 'POST',
@@ -61,28 +53,27 @@ export default function TestPaymentPage() {
       setOrderId(orderData.orderId);
       setPaymentStatus(`Order created: ${orderData.orderId}`);
 
-      // Initialize Razorpay
-      const options = {
-        key: process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example',
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'EV Bunker Test',
-        description: 'Test Payment',
-        order_id: orderData.orderId,
-        handler: async function (response: any) {
-          setPaymentStatus('Payment successful, verifying...');
-          
+      // Check if we're using test credentials
+      const razorpayKey = process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example';
+      const isTestMode = razorpayKey.includes('rzp_test_') || razorpayKey.includes('XXXXXXXX');
+      
+      if (isTestMode) {
+        // Mock payment flow for testing
+        setPaymentStatus('Processing mock payment...');
+        
+        // Simulate successful payment
+        setTimeout(async () => {
           try {
-            // Verify payment
+            // Verify payment with mock data
             const verifyResponse = await fetch('/api/payment/verify', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
+                razorpay_order_id: orderData.orderId,
+                razorpay_payment_id: `pay_${Date.now()}`,
+                razorpay_signature: "test_signature",
               }),
             });
             
@@ -95,23 +86,72 @@ export default function TestPaymentPage() {
             }
           } catch (verifyError) {
             setPaymentStatus(`Error verifying payment: ${verifyError}`);
+          } finally {
+            setIsLoading(false);
           }
-        },
-        prefill: {
-          name: 'Test User',
-          email: 'test@example.com',
-        },
-        theme: {
-          color: '#10B981',
-        },
-      };
-      
-      // @ts-ignore
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+        }, 1500); // Simulate 1.5 second payment processing
+      } else {
+        // Load Razorpay script for real payments
+        const res = await loadRazorpay();
+        if (!res) {
+          setPaymentStatus('Failed to load Razorpay');
+          setIsLoading(false);
+          return;
+        }
+
+        // Initialize Razorpay
+        const options = {
+          key: razorpayKey,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'EV Bunker Test',
+          description: 'Test Payment',
+          order_id: orderData.orderId,
+          handler: async function (response: any) {
+            setPaymentStatus('Payment successful, verifying...');
+            
+            try {
+              // Verify payment
+              const verifyResponse = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+              
+              const verifyData = await verifyResponse.json();
+              
+              if (verifyData.success) {
+                setPaymentStatus(`Payment verified successfully! Booking ID: ${verifyData.bookingId}`);
+              } else {
+                setPaymentStatus(`Payment verification failed: ${verifyData.error}`);
+              }
+            } catch (verifyError) {
+              setPaymentStatus(`Error verifying payment: ${verifyError}`);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+          prefill: {
+            name: 'Test User',
+            email: 'test@example.com',
+          },
+          theme: {
+            color: '#10B981',
+          },
+        };
+        
+        // @ts-ignore
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      }
     } catch (error) {
       setPaymentStatus(`Error: ${error}`);
-    } finally {
       setIsLoading(false);
     }
   };
