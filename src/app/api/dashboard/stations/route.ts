@@ -133,15 +133,26 @@ export async function GET(request: Request) {
         typeof station['lng'] === 'number'
       )
       .map((station: any) => ({
-        ...station,
         id: station['_id'].toString(),
-        _id: undefined
+        name: station['name'] || 'Unknown Station',
+        location: station['address'] || 'Unknown Location',
+        status: station['status'] || 'active',
+        slots: station['slots'] ? station['slots'].length : 0,
+        available: station['slots'] ? station['slots'].filter((slot: any) => slot.status === 'available').length : 0
       }));
 
     console.log('Stations API: Returning serialized stations:', serializedStations);
     return NextResponse.json(serializedStations);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching stations:", error);
+    
+    // Provide more specific error messages
+    if (error.message && error.message.includes('Authentication failed')) {
+      console.error("Database authentication failed. Please check your MongoDB credentials.");
+    } else if (error.message && error.message.includes('connect ECONNREFUSED')) {
+      console.error("Database connection refused. Please check if your MongoDB server is running.");
+    }
+    
     // Return default stations for Delhi in case of error
     const defaultStations = [
       {

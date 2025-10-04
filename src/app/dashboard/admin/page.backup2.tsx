@@ -236,6 +236,13 @@ export default function AdminDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
           </div>
+          <p className="text-red-400 text-lg font-bold mb-4">Error</p>
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+          </div>
           <h2 className="text-2xl font-bold text-white mb-2">Error Loading Dashboard</h2>
           <p className="text-[#94A3B8] mb-6">{error}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -251,7 +258,7 @@ export default function AdminDashboard() {
               Retry
             </button>
             <button 
-              onClick={() => router.push('/')} 
+              onClick={() => router.push('/')}
               className="px-4 py-2 bg-[#334155] text-white rounded-lg hover:bg-[#475569] transition-colors"
             >
               Go Home
@@ -312,6 +319,86 @@ export default function AdminDashboard() {
             >
               Reports
             </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                activeTab === 'dashboard' 
+                  ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]' 
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <span>Dashboard</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                activeTab === 'users' 
+                  ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]' 
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <span>Users</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('stations')}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                activeTab === 'stations' 
+                  ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]' 
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>Stations</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('sessions')}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                activeTab === 'sessions' 
+                  ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]' 
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Sessions</span>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                activeTab === 'reports' 
+                  ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]' 
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <span>Reports</span>
+              </div>
+            </button>
+            
             <button
               onClick={() => setActiveTab('settings')}
               className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
@@ -939,8 +1026,8 @@ export default function AdminDashboard() {
                     <p className="text-[#94A3B8] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
                   </div>
                   <div className="mb-4 md:mb-6">
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2">System Reports</h2>
-                    <p className="text-[#94A3B8] text-sm md:text-base">Detailed analytics and performance reports</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2">Reports & Analytics</h2>
+                    <p className="text-[#94A3B8] text-sm md:text-base">Detailed insights and performance metrics</p>
                   </div>
                   
                   {/* Sub-tabs for Reports - Mobile-first responsive design */}
@@ -976,131 +1063,13 @@ export default function AdminDashboard() {
                       >
                         Performance
                       </button>
-                      <button
-                        onClick={() => setReportsSubTab('export')}
-                        className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                          reportsSubTab === 'export'
-                            ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                            : 'text-[#94A3B8] hover:text-white'
-                        }`}
-                      >
-                        Export Data
-                      </button>
                     </nav>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-                    <Card className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">
-                      <div className="flex items-center justify-between mb-4 md:mb-6">
-                        <h3 className="text-lg font-bold text-white">Usage Statistics</h3>
-                        <Button variant="outline" size="sm">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                          </svg>
-                          <span className="hidden md:inline ml-1">Export</span>
-                        </Button>
-                      </div>
-                      <div className="h-64 md:h-80 flex items-center justify-center bg-[#334155]/30 rounded-lg border border-[#475569]">
-                        <p className="text-[#94A3B8]">Usage Statistics Chart</p>
-                      </div>
-                    </Card>
-                    
-                    <Card className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">
-                      <div className="flex items-center justify-between mb-4 md:mb-6">
-                        <h3 className="text-lg font-bold text-white">Revenue Analysis</h3>
-                        <Button variant="outline" size="sm">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                          </svg>
-                          <span className="hidden md:inline ml-1">Export</span>
-                        </Button>
-                      </div>
-                      <div className="h-64 md:h-80 flex items-center justify-center bg-[#334155]/30 rounded-lg border border-[#475569]">
-                        <p className="text-[#94A3B8]">Revenue Analysis Chart</p>
-                      </div>
-                    </Card>
-                  </div>
-                  
                   <Card className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">
-                    <div className="flex items-center justify-between mb-4 md:mb-6">
-                      <h3 className="text-lg font-bold text-white">Detailed Reports</h3>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                          </svg>
-                          <span className="hidden md:inline ml-1">Filter</span>
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                          </svg>
-                          <span className="hidden md:inline ml-1">Export</span>
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-[#475569]">
-                            <th className="py-2 md:py-3 text-left text-[#94A3B8] font-medium text-xs md:text-sm">Report</th>
-                            <th className="py-2 md:py-3 text-left text-[#94A3B8] font-medium text-xs md:text-sm">Date Range</th>
-                            <th className="py-2 md:py-3 text-left text-[#94A3B8] font-medium text-xs md:text-sm">Status</th>
-                            <th className="py-2 md:py-3 text-left text-[#94A3B8] font-medium text-xs md:text-sm">Generated</th>
-                            <th className="py-2 md:py-3 text-left text-[#94A3B8] font-medium text-xs md:text-sm">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-b border-[#475569] hover:bg-[#334155]/30">
-                            <td className="py-3 md:py-4 text-white text-sm md:text-base">Monthly Usage Report</td>
-                            <td className="py-3 md:py-4 text-[#94A3B8] text-xs md:text-sm">Jan 2023 - Dec 2023</td>
-                            <td className="py-3 md:py-4">
-                              <span className="px-2 py-1 text-xs rounded-full bg-green-900/30 text-green-400">Completed</span>
-                            </td>
-                            <td className="py-3 md:py-4 text-[#94A3B8] text-xs md:text-sm">Dec 31, 2023</td>
-                            <td className="py-3 md:py-4">
-                              <Button variant="outline" size="sm" className="text-xs md:text-sm">
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                                Download
-                              </Button>
-                            </td>
-                          </tr>
-                          <tr className="border-b border-[#475569] hover:bg-[#334155]/30">
-                            <td className="py-3 md:py-4 text-white text-sm md:text-base">Quarterly Financial Report</td>
-                            <td className="py-3 md:py-4 text-[#94A3B8] text-xs md:text-sm">Oct 2023 - Dec 2023</td>
-                            <td className="py-3 md:py-4">
-                              <span className="px-2 py-1 text-xs rounded-full bg-yellow-900/30 text-yellow-400">Processing</span>
-                            </td>
-                            <td className="py-3 md:py-4 text-[#94A3B8] text-xs md:text-sm">-</td>
-                            <td className="py-3 md:py-4">
-                              <Button variant="outline" size="sm" disabled className="text-xs md:text-sm">
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                                Download
-                              </Button>
-                            </td>
-                          </tr>
-                          <tr className="border-b border-[#475569] hover:bg-[#334155]/30">
-                            <td className="py-3 md:py-4 text-white text-sm md:text-base">Annual Performance Report</td>
-                            <td className="py-3 md:py-4 text-[#94A3B8] text-xs md:text-sm">Jan 2023 - Dec 2023</td>
-                            <td className="py-3 md:py-4">
-                              <span className="px-2 py-1 text-xs rounded-full bg-red-900/30 text-red-400">Failed</span>
-                            </td>
-                            <td className="py-3 md:py-4 text-[#94A3B8] text-xs md:text-sm">-</td>
-                            <td className="py-3 md:py-4">
-                              <Button variant="outline" size="sm" className="text-xs md:text-sm">
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                Retry
-                              </Button>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                    <h3 className="text-lg font-bold text-white mb-4 md:mb-6">Usage Statistics</h3>
+                    <div className="h-64 md:h-96 flex items-center justify-center bg-[#334155]/30 rounded-lg border border-[#475569]">
+                      <p className="text-[#94A3B8]">Usage Reports Dashboard</p>
                     </div>
                   </Card>
                 </div>
@@ -1115,7 +1084,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="mb-4 md:mb-6">
                     <h2 className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2">System Settings</h2>
-                    <p className="text-[#94A3B8] text-sm md:text-base">Configure application behavior and preferences</p>
+                    <p className="text-[#94A3B8] text-sm md:text-base">Configure application preferences and policies</p>
                   </div>
                   
                   {/* Sub-tabs for Settings - Mobile-first responsive design */}
@@ -1151,124 +1120,51 @@ export default function AdminDashboard() {
                       >
                         Notifications
                       </button>
-                      <button
-                        onClick={() => setSettingsSubTab('integrations')}
-                        className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                          settingsSubTab === 'integrations'
-                            ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                            : 'text-[#94A3B8] hover:text-white'
-                        }`}
-                      >
-                        Integrations
-                      </button>
                     </nav>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                    <div className="lg:col-span-2">
-                      <Card className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 md:mb-6">General Settings</h3>
-                        <div className="space-y-4 md:space-y-6">
-                          <div>
-                            <label className="block text-sm font-medium text-[#94A3B8] mb-1">Application Name</label>
-                            <input
-                              type="text"
-                              defaultValue="EV Bunker Admin"
-                              className="w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-white placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-[#94A3B8] mb-1">Contact Email</label>
-                            <input
-                              type="email"
-                              defaultValue="admin@evbunker.com"
-                              className="w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-white placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-[#94A3B8] mb-1">Timezone</label>
-                            <select className="w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-white focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent">
-                              <option>UTC</option>
-                              <option>IST (UTC+5:30)</option>
-                              <option>PST (UTC-8)</option>
-                              <option>EST (UTC-5)</option>
-                            </select>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-white font-medium">Maintenance Mode</p>
-                              <p className="text-[#94A3B8] text-sm">Temporarily disable the application for maintenance</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input type="checkbox" className="sr-only peer" />
-                              <div className="w-11 h-6 bg-[#334155] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
-                            </label>
-                          </div>
-                        </div>
-                        <div className="mt-6">
-                          <Button className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white">
-                            Save Changes
-                          </Button>
-                        </div>
-                      </Card>
+                  <Card className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">
+                    <h3 className="text-lg font-bold text-white mb-4 md:mb-6">General Settings</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#94A3B8] mb-1">Application Name</label>
+                        <input
+                          type="text"
+                          defaultValue="EV Bunker Admin"
+                          className="block w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-white placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#94A3B8] mb-1">Timezone</label>
+                        <select className="block w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-white focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent">
+                          <option>UTC</option>
+                          <option>GMT</option>
+                          <option>EST</option>
+                          <option>PST</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="maintenance-mode"
+                          className="h-4 w-4 text-[#8B5CF6] rounded focus:ring-[#8B5CF6] border-[#475569] bg-[#334155]"
+                        />
+                        <label htmlFor="maintenance-mode" className="ml-2 block text-sm text-[#94A3B8]">
+                          Maintenance Mode
+                        </label>
+                      </div>
+                      <Button className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white">
+                        Save Changes
+                      </Button>
                     </div>
-                    
-                    <div>
-                      <Card className="bg-[#1E293B]/50 border border-[#475569] rounded-xl p-4 md:p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 md:mb-6">Quick Actions</h3>
-                        <div className="space-y-3 md:space-y-4">
-                          <button className="w-full text-left px-4 py-3 rounded-lg bg-[#334155]/50 hover:bg-[#334155] border border-[#475569] transition-colors">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/20 flex items-center justify-center mr-3">
-                                <svg className="w-4 h-4 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-white font-medium text-sm">Clear Cache</p>
-                                <p className="text-[#94A3B8] text-xs">Clear application cache and temporary files</p>
-                              </div>
-                            </div>
-                          </button>
-                          <button className="w-full text-left px-4 py-3 rounded-lg bg-[#334155]/50 hover:bg-[#334155] border border-[#475569] transition-colors">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 rounded-lg bg-[#10B981]/20 flex items-center justify-center mr-3">
-                                <svg className="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-white font-medium text-sm">Backup Data</p>
-                                <p className="text-[#94A3B8] text-xs">Create a backup of all application data</p>
-                              </div>
-                            </div>
-                          </button>
-                          <button className="w-full text-left px-4 py-3 rounded-lg bg-[#334155]/50 hover:bg-[#334155] border border-[#475569] transition-colors">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/20 flex items-center justify-center mr-3">
-                                <svg className="w-4 h-4 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-white font-medium text-sm">Security Check</p>
-                                <p className="text-[#94A3B8] text-xs">Run a security audit of the application</p>
-                              </div>
-                            </div>
-                          </button>
-                        </div>
-                      </Card>
-                    </div>
-                  </div>
+                  </Card>
                 </div>
               )}
             </div>
           </main>
+          <Footer />
         </div>
       </div>
-      
-      {/* Default Footer */}
-      <Footer />
     </div>
   );
 }

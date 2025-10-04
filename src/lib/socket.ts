@@ -1,8 +1,6 @@
 import { Server as SocketIOServer } from "socket.io";
 import redis from '@/lib/redis';
 
-type SocketIOApiResponse = any;
-
 let io: SocketIOServer | null = null;
 
 export function initSocket(server: any) {
@@ -31,6 +29,7 @@ export function initSocket(server: any) {
 
     // Only subscribe to Redis channels if Redis is available
     if (redis.isAvailable()) {
+      // Subscribe to existing channels
       redis.subscribe("charging-session-update")
         .then(count => {
           console.log(`Subscribed to charging-session-update channel. ${count} total subscriptions`);
@@ -55,6 +54,15 @@ export function initSocket(server: any) {
           console.error("Error subscribing to slot-availability-update:", err);
         });
 
+      // Subscribe to the new client activity channel
+      redis.subscribe("client_activity_channel")
+        .then(count => {
+          console.log(`Subscribed to client_activity_channel. ${count} total subscriptions`);
+        })
+        .catch(err => {
+          console.error("Error subscribing to client_activity_channel:", err);
+        });
+
       // Handle Redis messages and broadcast to Socket.io clients
       redis.on("message", (channel, message) => {
         try {
@@ -70,6 +78,35 @@ export function initSocket(server: any) {
             case "slot-availability-update":
               // Broadcast to all users or specific users based on your needs
               io?.emit("slot-availability-update", data);
+              break;
+            case "client_activity_channel":
+              // Handle new real-time events from MongoDB change streams
+              switch (data.event) {
+                case 'client_update':
+                  // Broadcast to admin dashboard
+                  io?.emit("client-update", data);
+                  break;
+                case 'charging_session_update':
+                  // Broadcast to admin dashboard and specific user
+                  io?.emit("charging-session-update", data);
+                  if (data.fullDocument?.userId) {
+                    io?.to(`user-${data.fullDocument.userId}`).emit("user-charging-session-update", data);
+                  }
+                  break;
+                case 'payment_update':
+                  // Broadcast to admin dashboard and specific user
+                  io?.emit("payment-update", data);
+                  if (data.fullDocument?.userId) {
+                    io?.to(`user-${data.fullDocument.userId}`).emit("user-payment-update", data);
+                  }
+                  break;
+                case 'eco_stats_update':
+                  // Broadcast to admin dashboard
+                  io?.emit("eco-stats-update", data);
+                  break;
+                default:
+                  console.log(`Unknown client activity event: ${data.event}`);
+              }
               break;
             default:
               console.log(`Unknown channel: ${channel}`);

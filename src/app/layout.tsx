@@ -4,6 +4,9 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { LoaderProvider } from "@/lib/LoaderContext";
 
+// Initialize real-time features
+import '@/lib/startup';
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",

@@ -79,14 +79,6 @@ export default function ClientDashboard() {
     }
   }, [status, router, hideLoader]);
 
-  // Show loader immediately when component mounts and user is authenticated
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.id && !dataFetchedRef.current) {
-      showLoader("Loading your dashboard...");
-      setLoading(true);
-    }
-  }, [status, session, showLoader]);
-
   // Cleanup function to ensure loader is hidden when component unmounts
   useEffect(() => {
     return () => {
@@ -94,9 +86,9 @@ export default function ClientDashboard() {
     };
   }, [hideLoader]);
 
-  // Fetch initial dashboard data
+  // Fetch initial dashboard data - using useCallback to prevent recreation
   const fetchDashboardData = useCallback(async () => {
-    if (status !== "authenticated" || !session?.user?.id) {
+    if (status !== "authenticated" || !session?.user?.id || dataFetchedRef.current) {
       // Hide loader if not authenticated
       if (loading) {
         hideLoader();
@@ -107,6 +99,9 @@ export default function ClientDashboard() {
 
     try {
       setError(null);
+      
+      // Mark data as fetched to prevent multiple calls
+      dataFetchedRef.current = true;
       
       // Show loader during data fetching
       if (!loading) {
@@ -157,24 +152,18 @@ export default function ClientDashboard() {
     }
   }, [status, session, showLoader, hideLoader, loading]);
 
-  // Fetch data on component mount
+  // Fetch data on component mount - with proper dependencies
   useEffect(() => {
     if (status === "authenticated" && session?.user?.id && !dataFetchedRef.current) {
       dataFetchedRef.current = true;
+      showLoader("Loading your dashboard...");
       fetchDashboardData();
     } else if (status !== "loading" && !session?.user?.id) {
       // Hide loader if not authenticated or session is not loading
       hideLoader();
       setLoading(false);
     }
-  }, [status, session, fetchDashboardData, hideLoader]);
-
-  // Show loader immediately when component mounts to prevent background flash
-  useEffect(() => {
-    if (status === "authenticated") {
-      showLoader("Loading your dashboard...");
-    }
-  }, [status, showLoader]);
+  }, [status, session, fetchDashboardData, hideLoader, showLoader]);
 
   // Handle book slot action
   const handleBookSlot = () => {

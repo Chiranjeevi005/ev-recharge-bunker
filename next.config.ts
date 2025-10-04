@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // Enable Turbopack for faster builds (already enabled in scripts)
   experimental: {
     // Enable the latest React features
-    reactCompiler: true,
+    reactCompiler: false, // Disabled due to missing dependency
     // Optimize server actions
     serverActions: {
       bodySizeLimit: "2mb",

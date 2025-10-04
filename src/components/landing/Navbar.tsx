@@ -160,15 +160,19 @@ export const Navbar: React.FC = () => {
     // Close mobile menu if open
     setIsMenuOpen(false);
     
-    // Navigate immediately without delay to ensure fast response
-    router.push(path);
+    // For dashboard navigation, we need to ensure the loader stays visible during the entire transition
+    const isDashboardNavigation = path.includes('/dashboard');
     
-    // Hide loader after a reasonable time to ensure smooth transition
-    // This gives time for the page to load and render
-    // Reduced timeout to minimize flash - pages will show their own loaders
-    setTimeout(() => {
-      hideLoader();
-    }, 100); // Reduced from 600ms to 100ms to minimize background flash
+    if (isDashboardNavigation) {
+      setTimeout(() => {
+        router.push(path);
+        setTimeout(() => {
+          hideLoader();
+        }, 800); 
+      }, 100); 
+    } else {
+      router.push(path);
+    }
   };
 
   // Close mobile menu when resizing to desktop

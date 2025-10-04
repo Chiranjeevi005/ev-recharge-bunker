@@ -7,7 +7,7 @@ declare global {
   var mongoClient: MongoClient | undefined;
 }
 
-const MONGODB_URI = process.env.DATABASE_URL;
+const MONGODB_URI = process.env['DATABASE_URL'];
 
 if (!MONGODB_URI) {
   throw new Error('Please define the DATABASE_URL environment variable');
@@ -49,8 +49,16 @@ export async function connectToDatabase() {
     }
 
     return { client: cachedClient, db: cachedDb };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error connecting to database:', error);
-    throw new Error('Failed to connect to database');
+    
+    // Provide more specific error messages
+    if (error.name === 'MongoServerError' && error.code === 8000) {
+      throw new Error('Authentication failed. Please check your MongoDB credentials in .env.local');
+    } else if (error.name === 'MongoNetworkError') {
+      throw new Error('Network error. Please check your MongoDB connection');
+    } else {
+      throw new Error(`Failed to connect to database: ${error.message}`);
+    }
   }
 }
