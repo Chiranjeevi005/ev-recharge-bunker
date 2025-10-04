@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const { location } = await request.json();
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
+    const { id } = params;
 
     console.log('Location API: Updating location for client ID:', id, 'to location:', location);
 
@@ -43,38 +42,40 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // Update client's location
-    const result = await db.collection("clients").findOneAndUpdate(
+    // Update client's location - ensure we're handling the case where location field doesn't exist yet
+    const result = await db.collection("clients").updateOne(
       { _id: objectId },
-      { $set: { location, updatedAt: new Date() } },
-      { returnDocument: 'after' }
+      { 
+        $set: { 
+          location: location, 
+          updatedAt: new Date() 
+        } 
+      }
     );
 
     console.log('Location API: Update result:', result);
 
     // Check if the operation was successful
-    if (!result || !result['value']) {
-      // Even if findOneAndUpdate didn't return the updated document, 
-      // let's fetch the client to verify the update
-      const updatedClient = await db.collection("clients").findOne({ _id: objectId });
-      console.log('Location API: Updated client verification:', updatedClient);
-      
-      if (updatedClient && updatedClient['location'] === location) {
-        // Convert ObjectId to string for JSON serialization
-        const serializedClient = {
-          ...updatedClient,
-          id: updatedClient['_id'].toString(),
-          _id: undefined
-        };
-        console.log('Location API: Successfully updated client location');
-        return NextResponse.json(serializedClient);
-      }
-      
+    if (!result || result.modifiedCount === 0) {
       // Provide more detailed error information
       return NextResponse.json(
         { 
           error: "Failed to update client location",
-          details: "Database update operation failed",
+          details: "Database update operation failed - no documents were modified",
+          clientId: id
+        },
+        { status: 500 }
+      );
+    }
+
+    // Fetch the updated client to return the full document
+    const updatedClient = await db.collection("clients").findOne({ _id: objectId });
+    
+    if (!updatedClient) {
+      return NextResponse.json(
+        { 
+          error: "Failed to fetch updated client",
+          details: "Client was updated but could not be retrieved",
           clientId: id
         },
         { status: 500 }
@@ -82,14 +83,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Convert ObjectId to string for JSON serialization
-    const updatedClient = {
-      ...result['value'],
-      id: result['value']['_id'].toString(),
+    const serializedClient = {
+      ...updatedClient,
+      id: updatedClient['_id'].toString(),
       _id: undefined
     };
 
-    console.log('Location API: Successfully updated client location:', updatedClient);
-    return NextResponse.json(updatedClient);
+    console.log('Location API: Successfully updated client location:', serializedClient);
+    return NextResponse.json(serializedClient);
   } catch (error: any) {
     console.error("Error updating client location:", {
       message: error.message,

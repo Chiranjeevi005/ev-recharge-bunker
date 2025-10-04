@@ -69,7 +69,6 @@ export default function ClientDashboard() {
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
   const { showLoader, hideLoader } = useLoader();
-  const dataFetchedRef = useRef(false);
   
   // Initialize route transition handler
   useRouteTransition();
@@ -91,91 +90,102 @@ export default function ClientDashboard() {
     };
   }, [hideLoader]);
 
-  // Fetch initial dashboard data - using useCallback to prevent recreation
-  const fetchDashboardData = useCallback(async () => {
-    if (status !== "authenticated" || !session?.user?.id || dataFetchedRef.current) {
-      // Hide loader if not authenticated
-      if (loading) {
-        hideLoader();
-        setLoading(false);
-      }
-      return;
-    }
-
-    try {
-      setError(null);
-      
-      // Mark data as fetched to prevent multiple calls
-      dataFetchedRef.current = true;
-      
-      // Show loader during data fetching (if not already shown)
-      if (!loading) {
-        showLoader("Loading your dashboard...");
-        setLoading(true);
-      }
-      
-      // Add timeout to ensure loader doesn't stay visible indefinitely
-      const timeoutId = setTimeout(() => {
-        hideLoader();
-        setLoading(false);
-      }, 15000); // 15 second timeout
-      
-      // Fetch active charging session
-      const sessionResponse = await fetch(`/api/dashboard/session?userId=${session.user.id}`);
-      if (!sessionResponse.ok) {
-        throw new Error('Failed to fetch session data');
-      }
-      const sessionData = await sessionResponse.json();
-      setActiveSession(sessionData);
-
-      // Fetch payment history
-      const paymentResponse = await fetch(`/api/dashboard/payments?userId=${session.user.id}`);
-      if (!paymentResponse.ok) {
-        throw new Error('Failed to fetch payment data');
-      }
-      const paymentData = await paymentResponse.json();
-      setPaymentHistory(paymentData);
-
-      // Fetch slot availability
-      const slotResponse = await fetch(`/api/dashboard/slots?userId=${session.user.id}`);
-      if (!slotResponse.ok) {
-        throw new Error('Failed to fetch slot availability data');
-      }
-      const slotData = await slotResponse.json();
-      setSlotAvailability(slotData);
-
-      // Clear timeout if data fetching completes successfully
-      clearTimeout(timeoutId);
-      
-      setLoading(false);
-      // Keep the loader visible until the component is fully rendered
-      // This ensures smooth transition without any background flash
-      setTimeout(() => {
-        hideLoader(); // Hide loader after data is fetched and UI is ready
-      }, 500);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      setError("Failed to load dashboard data. Please try again later.");
-      setLoading(false);
-      // Keep the loader visible a bit longer to show error state
-      setTimeout(() => {
-        hideLoader(); // Hide loader even if there's an error
-      }, 500);
-    }
-  }, [status, session, showLoader, hideLoader, loading]);
-
-  // Fetch data on component mount - with proper dependencies
+  // Fetch initial dashboard data - simplified version
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.id && !dataFetchedRef.current) {
-      dataFetchedRef.current = true;
-      showLoader("Loading your dashboard...");
-      fetchDashboardData();
+    let isMounted = true;
+    
+    const fetchData = async () => {
+      if (status !== "authenticated" || !session?.user?.id) {
+        return;
+      }
+
+      try {
+        if (isMounted) {
+          setError(null);
+          
+          // Show loader during data fetching
+          showLoader("Loading your dashboard...");
+          setLoading(true);
+        }
+
+        // Fetch active charging session
+        const sessionResponse = await fetch(`/api/dashboard/session?userId=${session.user.id}`);
+        if (!sessionResponse.ok) {
+          throw new Error('Failed to fetch session data');
+        }
+        const sessionData = await sessionResponse.json();
+        
+        if (isMounted) {
+          setActiveSession(sessionData);
+        }
+
+        // Fetch payment history
+        const paymentResponse = await fetch(`/api/dashboard/payments?userId=${session.user.id}`);
+        if (!paymentResponse.ok) {
+          throw new Error('Failed to fetch payment data');
+        }
+        const paymentData = await paymentResponse.json();
+        
+        // Transform payment data to ensure it matches the expected structure
+        const transformedPaymentData = Array.isArray(paymentData) ? paymentData.map((payment: any) => ({
+          // Ensure all required fields are present with proper defaults
+          userId: payment.userId || session.user.id || '',
+          paymentId: payment.paymentId || payment.id || payment._id || '',
+          amount: payment.amount || 0,
+          status: payment.status || 'unknown',
+          method: payment.method || 'unknown',
+          createdAt: payment.createdAt || payment.updatedAt || new Date().toISOString(),
+          updatedAt: payment.updatedAt || payment.createdAt || new Date().toISOString(),
+          // Optional fields
+          date: payment.date || payment.createdAt || payment.updatedAt || '',
+          stationId: payment.stationId || '',
+          stationName: payment.stationName || 'Unknown Station',
+          slotId: payment.slotId || '',
+          duration: payment.duration || 0,
+          orderId: payment.orderId || '',
+          currency: payment.currency || 'INR',
+          // Use _id as id if id is not present
+          id: payment.id || payment._id || payment.paymentId || ''
+        })) : [];
+        
+        if (isMounted) {
+          setPaymentHistory(transformedPaymentData);
+        }
+
+        // Fetch slot availability
+        const slotResponse = await fetch(`/api/dashboard/slots?userId=${session.user.id}`);
+        if (!slotResponse.ok) {
+          throw new Error('Failed to fetch slot availability data');
+        }
+        const slotData = await slotResponse.json();
+        
+        if (isMounted) {
+          setSlotAvailability(slotData);
+          setLoading(false);
+          hideLoader();
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        if (isMounted) {
+          setError("Failed to load dashboard data. Please try again later.");
+          setLoading(false);
+          hideLoader();
+        }
+      }
+    };
+
+    if (status === "authenticated" && session?.user?.id) {
+      fetchData();
     } else if (status !== "loading" && !session?.user?.id) {
       // Hide loader if not authenticated or session is not loading
       hideLoader();
       setLoading(false);
     }
-  }, [status, session, fetchDashboardData, hideLoader, showLoader]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [status, session?.user?.id]); // Simplified dependencies
 
   // Handle book slot action
   const handleBookSlot = () => {
@@ -185,7 +195,7 @@ export default function ClientDashboard() {
 
   // Handle view history action
   const handleViewHistory = () => {
-    // Navigate to payment history page
+    // Navigate to payment history page (original)
     router.push('/dashboard/client/payment-history');
   };
 
@@ -285,7 +295,7 @@ export default function ClientDashboard() {
           </div>
 
           {/* Payment History */}
-          <PaymentHistoryCard payments={paymentHistory} onViewAll={handleViewHistory} />
+          <PaymentHistoryCard payments={Array.isArray(paymentHistory) ? paymentHistory : []} onViewAll={handleViewHistory} />
         </div>
       </main>
     </div>

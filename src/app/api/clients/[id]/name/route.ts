@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const { name } = await request.json();
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
+    const { id } = params;
 
     console.log('Name API: Updating name for client ID:', id, 'to name:', name);
 
@@ -43,48 +42,49 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // Update client's name
-    const result = await db.collection("clients").findOneAndUpdate(
+    // Update client's name - use updateOne for more reliable operation
+    const result = await db.collection("clients").updateOne(
       { _id: objectId },
-      { $set: { name, updatedAt: new Date() } },
-      { returnDocument: 'after' }
+      { $set: { name, updatedAt: new Date() } }
     );
 
     console.log('Name API: Update result:', result);
 
     // Check if the operation was successful
-    if (!result || !result['value']) {
-      // Even if findOneAndUpdate didn't return the updated document, 
-      // let's fetch the client to verify the update
-      const updatedClient = await db.collection("clients").findOne({ _id: objectId });
-      console.log('Name API: Updated client verification:', updatedClient);
-      
-      if (updatedClient && updatedClient['name'] === name) {
-        // Convert ObjectId to string for JSON serialization
-        const serializedClient = {
-          ...updatedClient,
-          id: updatedClient['_id'].toString(),
-          _id: undefined
-        };
-        console.log('Name API: Successfully updated client name');
-        return NextResponse.json(serializedClient);
-      }
-      
+    if (!result || result.modifiedCount === 0) {
       return NextResponse.json(
-        { error: "Failed to update client name" },
+        { 
+          error: "Failed to update client name",
+          details: "Database update operation failed - no documents were modified",
+          clientId: id
+        },
+        { status: 500 }
+      );
+    }
+
+    // Fetch the updated client to return the full document
+    const updatedClient = await db.collection("clients").findOne({ _id: objectId });
+    
+    if (!updatedClient) {
+      return NextResponse.json(
+        { 
+          error: "Failed to fetch updated client",
+          details: "Client was updated but could not be retrieved",
+          clientId: id
+        },
         { status: 500 }
       );
     }
 
     // Convert ObjectId to string for JSON serialization
-    const updatedClient = {
-      ...result['value'],
-      id: result['value']['_id'].toString(),
+    const serializedClient = {
+      ...updatedClient,
+      id: updatedClient['_id'].toString(),
       _id: undefined
     };
 
-    console.log('Name API: Successfully updated client name:', updatedClient);
-    return NextResponse.json(updatedClient);
+    console.log('Name API: Successfully updated client name:', serializedClient);
+    return NextResponse.json(serializedClient);
   } catch (error: any) {
     console.error("Error updating client name:", {
       message: error.message,

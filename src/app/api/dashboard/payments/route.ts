@@ -15,6 +15,9 @@ export async function GET(request: Request) {
 
     // Fetch payment history using the payment service
     const payments = await PaymentService.getPaymentHistory(userId, 10);
+    
+    // Debugging: Log the payments data
+    console.log('API Route - Payments data for user', userId, ':', JSON.stringify(payments, null, 2));
 
     return NextResponse.json(payments);
   } catch (error) {

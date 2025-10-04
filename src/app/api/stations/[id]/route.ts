@@ -21,23 +21,24 @@ interface Station {
   updatedAt?: Date;
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { db } = await connectToDatabase();
+    const resolvedParams = await params;
     
     let station = null;
     
     // Try to find by ObjectId first
-    if (ObjectId.isValid(params.id)) {
+    if (ObjectId.isValid(resolvedParams.id)) {
       station = await db.collection<Station>("stations").findOne({ 
-        _id: new ObjectId(params.id) 
+        _id: new ObjectId(resolvedParams.id) 
       });
     }
     
     // If not found and it's not a valid ObjectId, try as string
     if (!station) {
       station = await db.collection<Station>("stations").findOne({ 
-        _id: params.id 
+        _id: resolvedParams.id 
       });
     }
     

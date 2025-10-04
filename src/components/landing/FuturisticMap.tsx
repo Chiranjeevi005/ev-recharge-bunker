@@ -20,7 +20,7 @@ interface ChargingStation {
   }[];
 }
 
-export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> = ({ userId, refreshKey = 0 }) => {
+export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: string | null; refreshKey?: number }> = ({ userId, location = null, refreshKey = 0 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
@@ -33,7 +33,7 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
 
   // Fetch charging stations based on user ID
   useEffect(() => {
-    console.log('FuturisticMap: useEffect triggered with userId:', userId, 'refreshKey:', refreshKey);
+    console.log('FuturisticMap: useEffect triggered with userId:', userId, 'location:', location, 'refreshKey:', refreshKey);
     
     const fetchStations = async () => {
       try {
@@ -69,8 +69,14 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
           return;
         }
         
-        console.log('FuturisticMap: Fetching stations for userId:', userId);
-        const response = await fetch(`/api/dashboard/stations?userId=${encodeURIComponent(userId)}`);
+        // Build API URL with userId and location if available
+        let apiUrl = `/api/dashboard/stations?userId=${encodeURIComponent(userId)}`;
+        if (location) {
+          apiUrl += `&location=${encodeURIComponent(location)}`;
+        }
+        
+        console.log('FuturisticMap: Fetching stations with URL:', apiUrl);
+        const response = await fetch(apiUrl);
         console.log('FuturisticMap: API response status:', response.status);
         
         if (response.ok) {
@@ -151,7 +157,7 @@ export const FuturisticMap: React.FC<{ userId?: string; refreshKey?: number }> =
     };
 
     fetchStations();
-  }, [userId, refreshKey]);
+  }, [userId, location, refreshKey]);
 
   // Initialize the map and update markers when stations change
   useEffect(() => {

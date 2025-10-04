@@ -27,6 +27,7 @@ export default function TestPaymentPage() {
     setPaymentStatus('Creating payment order...');
     
     try {
+      console.log('Creating payment order');
       // Create a test payment order
       const response = await fetch('/api/payment/order', {
         method: 'POST',
@@ -42,7 +43,9 @@ export default function TestPaymentPage() {
         }),
       });
 
+      console.log('Order creation response status:', response.status);
       const orderData = await response.json();
+      console.log('Order creation response data:', orderData);
       
       if (!response.ok || orderData.error) {
         setPaymentStatus(`Error creating order: ${orderData.error}`);
@@ -52,19 +55,30 @@ export default function TestPaymentPage() {
 
       setOrderId(orderData.orderId);
       setPaymentStatus(`Order created: ${orderData.orderId}`);
+      console.log('Order created successfully:', orderData.orderId);
 
       // Check if we're using test credentials
-      const razorpayKey = process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example';
-      const isTestMode = razorpayKey.includes('rzp_test_') || razorpayKey.includes('XXXXXXXX');
+      // In a real application, you would check the actual environment
+      // For this test, we'll assume we're in test mode
+      const isTestMode = true;
+      const razorpayKey = 'rzp_test_example'; // Not used in test mode
+      console.log('Is test mode:', isTestMode);
       
       if (isTestMode) {
         // Mock payment flow for testing
         setPaymentStatus('Processing mock payment...');
         
         // Simulate successful payment
+        console.log('Starting mock payment simulation');
         setTimeout(async () => {
           try {
+            console.log('Mock payment simulation completed');
+            // In a real browser environment, we can't generate the proper signature
+            // For testing purposes, we'll skip signature verification in the API
+            // or use a special test endpoint that bypasses signature verification
+            
             // Verify payment with mock data
+            console.log('Sending verification request');
             const verifyResponse = await fetch('/api/payment/verify', {
               method: 'POST',
               headers: {
@@ -74,10 +88,13 @@ export default function TestPaymentPage() {
                 razorpay_order_id: orderData.orderId,
                 razorpay_payment_id: `pay_${Date.now()}`,
                 razorpay_signature: "test_signature",
+                is_test: true, // Flag to indicate this is a test
               }),
             });
             
+            console.log('Verification response status:', verifyResponse.status);
             const verifyData = await verifyResponse.json();
+            console.log('Verification response data:', verifyData);
             
             if (verifyData.success) {
               setPaymentStatus(`Payment verified successfully! Booking ID: ${verifyData.bookingId}`);
@@ -85,8 +102,10 @@ export default function TestPaymentPage() {
               setPaymentStatus(`Payment verification failed: ${verifyData.error}`);
             }
           } catch (verifyError) {
+            console.error('Error in verification:', verifyError);
             setPaymentStatus(`Error verifying payment: ${verifyError}`);
           } finally {
+            console.log('Finished mock payment simulation');
             setIsLoading(false);
           }
         }, 1500); // Simulate 1.5 second payment processing
@@ -151,6 +170,7 @@ export default function TestPaymentPage() {
         rzp.open();
       }
     } catch (error) {
+      console.error('Error in handleTestPayment:', error);
       setPaymentStatus(`Error: ${error}`);
       setIsLoading(false);
     }

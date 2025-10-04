@@ -71,7 +71,8 @@ export const MapSection: React.FC<MapSectionProps> = ({ onBookPay }) => {
       <h2 className="text-2xl font-bold text-[#F1F5F9] mb-6">Charging Stations Near You</h2>
       <div className="px-4 py-6 h-[450px]">
         <FuturisticMap 
-          userId={session?.user?.id} 
+          {...(session?.user?.id && { userId: session.user.id })}
+          location={location}
           refreshKey={refreshKey} 
         />
       </div>

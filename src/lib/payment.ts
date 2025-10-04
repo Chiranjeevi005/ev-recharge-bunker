@@ -4,6 +4,13 @@ import { getIO } from './socket';
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
 
+// Add this interface for station data
+interface Station {
+  _id: string | ObjectId;
+  name: string;
+  // ... other station properties
+}
+
 export interface Payment {
   _id?: ObjectId;
   id?: string;
@@ -19,12 +26,13 @@ export interface Payment {
   currency: string;
   createdAt: Date;
   updatedAt: Date;
+  stationName?: string; // Add this field
 }
 
 export class PaymentService {
   static async verifyRazorpaySignature(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string): Promise<boolean> {
     try {
-      const secret = process.env.RAZORPAY_KEY_SECRET;
+      const secret = process.env['RAZORPAY_KEY_SECRET'];
       if (!secret) {
         console.error('Razorpay key secret not found in environment variables');
         return false;
@@ -88,19 +96,19 @@ export class PaymentService {
       
       console.log("Existing payment record:", {
         _id: existingRecord._id,
-        orderId: existingRecord.orderId,
-        userId: existingRecord.userId,
-        stationId: existingRecord.stationId,
-        slotId: existingRecord.slotId,
-        amount: existingRecord.amount,
-        duration: existingRecord.duration,
-        status: existingRecord.status,
-        paymentId: existingRecord.paymentId,
-        createdAt: existingRecord.createdAt
+        orderId: existingRecord['orderId'],
+        userId: existingRecord['userId'],
+        stationId: existingRecord['stationId'],
+        slotId: existingRecord['slotId'],
+        amount: existingRecord['amount'],
+        duration: existingRecord['duration'],
+        status: existingRecord['status'],
+        paymentId: existingRecord['paymentId'],
+        createdAt: existingRecord['createdAt']
       });
       
       // If the record already has the desired status and paymentId, return it
-      if (existingRecord.status === status && existingRecord.paymentId === paymentId) {
+      if ((existingRecord as any).status === status && (existingRecord as any).paymentId === paymentId) {
         console.log(`Payment record already has desired status '${status}' and paymentId '${paymentId}'`);
         return {
           ...existingRecord,
@@ -110,7 +118,7 @@ export class PaymentService {
       }
       
       // If the record already has the desired status but different paymentId, update the paymentId
-      if (existingRecord.status === status && paymentId && !existingRecord.paymentId) {
+      if (existingRecord['status'] === status && paymentId && !existingRecord['paymentId']) {
         console.log(`Updating paymentId for record with existing status '${status}'`);
         const result = await db.collection('payments').findOneAndUpdate(
           { orderId: orderId },
@@ -125,16 +133,16 @@ export class PaymentService {
         
         console.log("findOneAndUpdate result for paymentId update:", result);
         
-        if (!result || !result.value) {
+        if (!result || !(result as any).value) {
           console.error(`Failed to update paymentId for orderId: '${orderId}'`);
           return null;
         }
         
         console.log(`Successfully updated paymentId for orderId: '${orderId}'`);
         return {
-          ...result.value,
-          id: result.value._id.toString(),
-          _id: result.value._id
+          ...result['value'],
+          id: result['value']._id.toString(),
+          _id: result['value']._id
         } as Payment;
       }
       
@@ -156,7 +164,7 @@ export class PaymentService {
       
       // Check if a document was found and updated
       // The result object has a 'value' property that contains the updated document
-      if (!result || !result.value) {
+      if (!result || !result['value']) {
         console.error(`Payment record not found for orderId: '${orderId}' after update attempt`);
         // Let's try one more time with a direct update operation
         try {
@@ -193,9 +201,9 @@ export class PaymentService {
       console.log(`Successfully updated payment status for orderId: '${orderId}'`);
       
       return {
-        ...result.value,
-        id: result.value._id.toString(),
-        _id: result.value._id
+        ...(result as any).value,
+        id: (result as any).value._id.toString(),
+        _id: (result as any).value._id
       } as Payment;
     } catch (error) {
       console.error("Error updating payment status:", error);
@@ -214,6 +222,7 @@ export class PaymentService {
         const cachedPayments = await redis.get(paymentKey);
         
         if (cachedPayments) {
+          console.log('PaymentService - Returning cached payments for user', userId);
           return JSON.parse(cachedPayments);
         }
       } catch (redisError) {
@@ -229,23 +238,66 @@ export class PaymentService {
       .limit(limit)
       .toArray();
     
-    // Convert ObjectId to string for JSON serialization
-    const serializedPayments = payments.map(payment => ({
-      ...payment,
-      id: payment._id.toString(),
-      _id: payment._id
+    console.log('PaymentService - Raw payments from DB for user', userId, ':', JSON.stringify(payments, null, 2));
+    
+    // Fetch station names for each payment only if stationName is not already set
+    const enrichedPayments = await Promise.all(payments.map(async (payment: any) => {
+      // Use existing stationName if available, otherwise try to fetch it
+      let stationName = payment.stationName || 'Unknown Station';
+      
+      // Only try to fetch station info if stationName is still 'Unknown Station' and we have a stationId
+      if (stationName === 'Unknown Station' && payment['stationId']) {
+        try {
+          // Try to fetch station information
+          // First, try to find by ObjectId if stationId looks like an ObjectId
+          if (typeof payment['stationId'] === 'string' && /^[0-9a-fA-F]{24}$/.test(payment['stationId'])) {
+            // It looks like an ObjectId, try to find by ObjectId
+            try {
+              const station = await db.collection('stations').findOne({ _id: new ObjectId(payment['stationId']) });
+              if (station) {
+                stationName = station['name'];
+              }
+            } catch (objectIdError) {
+              console.error("Error fetching station by ObjectId:", objectIdError);
+            }
+          }
+          
+          // If we still don't have a station name, try to find by string ID
+          if (stationName === 'Unknown Station') {
+            try {
+              const station = await db.collection('stations').findOne({ _id: payment['stationId'] });
+              if (station) {
+                stationName = station['name'];
+              }
+            } catch (stringError) {
+              console.error("Error fetching station with string ID:", stringError);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching station name for payment:", error);
+        }
+      }
+      
+      return {
+        ...payment,
+        stationName,
+        id: payment._id.toString(),
+        _id: payment._id
+      };
     }));
+    
+    console.log('PaymentService - Enriched payments for user', userId, ':', JSON.stringify(enrichedPayments, null, 2));
     
     // Cache in Redis for 5 minutes (if available)
     if (redis.isAvailable()) {
       try {
-        await redis.setex(`payment:history:${userId}`, 300, JSON.stringify(serializedPayments));
+        await redis.setex(`payment:history:${userId}`, 300, JSON.stringify(enrichedPayments));
       } catch (redisError) {
         console.error("Error caching payments in Redis:", redisError);
       }
     }
     
-    return serializedPayments as Payment[];
+    return enrichedPayments as Payment[];
   }
   
   /**
