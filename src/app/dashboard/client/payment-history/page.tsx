@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/Navbar';
 import { Button } from '@/components/ui/Button';
 import { Footer } from '@/components/landing/Footer';
-import { useLoader } from '@/lib/LoaderContext'; // Added import
+import { useLoader } from '@/lib/LoaderContext';
 
 interface Payment {
   _id: string;
@@ -18,6 +18,7 @@ interface Payment {
   status: string;
   method: string;
   stationId: string;
+  stationName?: string;
   slotId: string;
   duration: number;
   currency: string;
@@ -31,7 +32,7 @@ export default function PaymentHistoryPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { showLoader, hideLoader } = useLoader(); // Added loader context
+  const { showLoader, hideLoader } = useLoader();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function PaymentHistoryPage() {
         try {
           setLoading(true);
           setError(null);
-          showLoader("Loading payment history..."); // Show loader
+          showLoader("Loading payment history...");
           
           const response = await fetch(`/api/payments?userId=${session.user.id}`);
           if (!response.ok) {
@@ -56,11 +57,11 @@ export default function PaymentHistoryPage() {
           
           const data = await response.json();
           setPayments(data);
-          hideLoader(); // Hide loader
+          hideLoader();
         } catch (err) {
           console.error("Error fetching payment history:", err);
           setError("Failed to load payment history. Please try again later.");
-          hideLoader(); // Hide loader
+          hideLoader();
         } finally {
           setLoading(false);
         }
@@ -108,13 +109,18 @@ export default function PaymentHistoryPage() {
     }
   };
 
+  const getStationName = (payment: Payment) => {
+    if (payment.stationName) return payment.stationName;
+    if (payment.stationId) return `Station ${payment.stationId.substring(0, 8)}`;
+    return 'Unknown Station';
+  };
+
   if (status === "loading") {
-    // Return null since we're using the global loader
     return null;
   }
 
   if (status === "unauthenticated") {
-    return null; // Will be redirected
+    return null;
   }
 
   return (
@@ -159,14 +165,15 @@ export default function PaymentHistoryPage() {
           )}
 
           <motion.div
-            className="glass rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden"
+            className="glass rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {loading ? (
-              // Return null since we're using the global loader
-              null
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]"></div>
+              </div>
             ) : payments.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -185,21 +192,23 @@ export default function PaymentHistoryPage() {
                     {payments.map((payment, index) => (
                       <motion.tr
                         key={payment._id || index}
-                        className="border-b border-[#64748B]/50 hover:bg-[#475569]/30"
+                        className="border-b border-[#64748B]/50 hover:bg-[#475569]/30 backdrop-blur-sm"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.1 * index }}
                       >
-                        <td className="py-4 text-[#F1F5F9]">Delhi Metro Station</td>
+                        <td className="py-4 text-[#F1F5F9] max-w-[150px] truncate" title={getStationName(payment)}>
+                          {getStationName(payment)}
+                        </td>
                         <td className="py-4 text-[#F1F5F9]">₹{payment.amount}</td>
-                        <td className="py-4 text-[#F1F5F9]">{payment.duration} hour(s)</td>
-                        <td className="py-4 text-[#CBD5E1] font-mono text-sm">
+                        <td className="py-4 text-[#F1F5F9]">{payment.duration} hour{payment.duration !== 1 ? 's' : ''}</td>
+                        <td className="py-4 text-[#CBD5E1] font-mono text-sm max-w-[120px] truncate" title={payment.paymentId}>
                           {formatPaymentId(payment.paymentId)}
                         </td>
-                        <td className="py-4 text-[#CBD5E1] font-mono text-sm">
+                        <td className="py-4 text-[#CBD5E1] font-mono text-sm max-w-[120px] truncate" title={payment.orderId}>
                           {formatPaymentId(payment.orderId)}
                         </td>
-                        <td className="py-4 text-[#CBD5E1] text-sm">
+                        <td className="py-4 text-[#CBD5E1] text-sm max-w-[150px] truncate">
                           {formatDate(payment.createdAt)}
                         </td>
                         <td className="py-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Button } from '@/components/ui/Button';
 import { useSession } from 'next-auth/react';
@@ -45,6 +45,7 @@ interface Payment {
   id?: string;
   orderId?: string;
   stationId?: string;
+  stationName?: string;
   slotId?: string;
   duration?: number;
   currency?: string;
@@ -87,8 +88,96 @@ export default function ClientDashboard() {
   useEffect(() => {
     return () => {
       hideLoader();
+      // Disconnect socket on component unmount
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, [hideLoader]);
+
+  // Initialize socket connection and set up listeners
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.id) {
+      // Initialize socket connection
+      socketRef.current = io({
+        path: "/api/socketio"
+      });
+
+      // Join user room
+      socketRef.current.emit("join-user-room", session.user.id);
+
+      // Listen for payment updates
+      socketRef.current.on("payment-update", (data: any) => {
+        console.log("Received payment update:", data);
+        
+        // Create a new payment object from the update data
+        const updatedPayment: Payment = {
+          userId: data.payment.userId,
+          paymentId: data.payment.paymentId,
+          amount: data.payment.amount,
+          status: data.payment.status,
+          method: data.payment.method,
+          createdAt: data.payment.date,
+          updatedAt: data.payment.date,
+          date: data.payment.date,
+          stationName: data.payment.stationName,
+          // Add other fields with default values
+          orderId: '',
+          stationId: '',
+          slotId: '',
+          duration: 1,
+          currency: 'INR',
+          id: data.payment.paymentId
+        };
+
+        // Update payment history with the new payment
+        setPaymentHistory(prevPayments => {
+          // Create a new array with the updated payment
+          const updatedPayments = [...prevPayments];
+          
+          // Check if this payment already exists in the list
+          const existingIndex = updatedPayments.findIndex(
+            p => p.paymentId === updatedPayment.paymentId
+          );
+          
+          if (existingIndex !== -1) {
+            // Update existing payment
+            updatedPayments[existingIndex] = updatedPayment;
+          } else {
+            // Add new payment to the beginning of the list
+            updatedPayments.unshift(updatedPayment);
+          }
+          
+          // Sort by date (newest first) and keep only the 5 most recent
+          return updatedPayments
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5);
+        });
+        
+        // Show notification for payment update
+        setNotification({
+          message: `Payment ${data.status.toLowerCase()} - ₹${data.payment.amount}`,
+          type: data.status.toLowerCase() === 'completed' ? 'success' : 'info'
+        });
+        
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => {
+          setNotification(null);
+        }, 5000);
+      });
+
+      // Clean up socket listeners
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.off("payment-update");
+          socketRef.current.disconnect();
+        }
+      };
+    }
+    
+    // Return a no-op cleanup function for cases where the effect doesn't run
+    return () => {};
+  }, [status, session?.user?.id]);
 
   // Fetch initial dashboard data - simplified version
   useEffect(() => {
@@ -149,7 +238,11 @@ export default function ClientDashboard() {
         })) : [];
         
         if (isMounted) {
-          setPaymentHistory(transformedPaymentData);
+          // Sort by date (newest first) and keep only the 5 most recent
+          const sortedPayments = transformedPaymentData
+            .sort((a: Payment, b: Payment) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5);
+          setPaymentHistory(sortedPayments);
         }
 
         // Fetch slot availability
@@ -294,7 +387,7 @@ export default function ClientDashboard() {
             />
           </div>
 
-          {/* Payment History */}
+          {/* Payment History - Now with real-time updates */}
           <PaymentHistoryCard payments={Array.isArray(paymentHistory) ? paymentHistory : []} onViewAll={handleViewHistory} />
         </div>
       </main>

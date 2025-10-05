@@ -9,8 +9,20 @@ interface Payment {
   amount: number;
   currency: string;
   status: string;
+  userId: string;
+  stationId: string;
+  stationName?: string;
+  slotId: string;
+  duration: number;
+  method: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+interface Station {
+  _id: ObjectId | string;
+  name: string;
+  // ... other station properties
 }
 
 export async function GET(request: Request) {
@@ -33,13 +45,38 @@ export async function GET(request: Request) {
       userId: userId 
     }).sort({ createdAt: -1 }).toArray();
     
-    // Convert ObjectId to string for JSON serialization
-    const serializedPayments = payments.map(payment => ({
-      ...payment,
-      _id: payment._id.toString()
+    // Enhance payments with station names if not already present
+    const enhancedPayments = await Promise.all(payments.map(async (payment) => {
+      // If stationName is not already set, try to fetch it
+      let stationName = payment.stationName || 'Unknown Station';
+      
+      if (stationName === 'Unknown Station' && payment.stationId) {
+        try {
+          // Try to find station by ObjectId
+          let station;
+          if (ObjectId.isValid(payment.stationId)) {
+            station = await db.collection<Station>('stations').findOne({ _id: new ObjectId(payment.stationId) });
+          } else {
+            // Try to find by string ID
+            station = await db.collection<Station>('stations').findOne({ _id: payment.stationId } as any);
+          }
+          
+          if (station && station['name']) {
+            stationName = station['name'];
+          }
+        } catch (error) {
+          console.error("Error fetching station name:", error);
+        }
+      }
+      
+      return {
+        ...payment,
+        stationName,
+        _id: payment._id.toString()
+      };
     }));
     
-    return NextResponse.json(serializedPayments);
+    return NextResponse.json(enhancedPayments);
   } catch (error) {
     console.error("Error fetching payments:", error);
     return NextResponse.json(

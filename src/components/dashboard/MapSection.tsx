@@ -68,7 +68,15 @@ export const MapSection: React.FC<MapSectionProps> = ({ onBookPay }) => {
 
   return (
     <div className="rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
-      <h2 className="text-2xl font-bold text-[#F1F5F9] mb-6">Charging Stations Near You</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-[#F1F5F9]">Charging Stations Near You</h2>
+        <button 
+          onClick={onBookPay}
+          className="px-4 py-2 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity text-sm"
+        >
+          View All Stations
+        </button>
+      </div>
       <div className="px-4 py-6 h-[450px]">
         <FuturisticMap 
           {...(session?.user?.id && { userId: session.user.id })}

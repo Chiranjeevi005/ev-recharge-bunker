@@ -68,7 +68,7 @@ export const ProfessionalPaymentHistoryCard: React.FC<ProfessionalPaymentHistory
         minute: '2-digit',
         hour12: true
       });
-    } catch (_e) {
+    } catch (e) {
       return 'Invalid Date';
     }
   };
@@ -118,16 +118,16 @@ export const ProfessionalPaymentHistoryCard: React.FC<ProfessionalPaymentHistory
                   <td className="py-4 text-[#F1F5F9]">
                     {payment.duration ? `${payment.duration} hr${payment.duration > 1 ? 's' : ''}` : 'N/A'}
                   </td>
-                  <td className="py-4 text-[#CBD5E1] font-mono text-sm max-w-[120px] truncate" title={payment.paymentId}>
-                    {formatPaymentId(payment.paymentId)}
+                  <td className="py-4 text-[#CBD5E1] font-mono text-sm max-w-[120px] truncate" title={payment.paymentId || payment.id || ''}>
+                    {formatPaymentId(payment.paymentId || payment.id || '')}
                   </td>
                   <td className="py-4 text-[#CBD5E1] text-sm max-w-[150px] truncate">
                     {formatDate(payment)}
                   </td>
                   <td className="py-4">
                     <div className="flex items-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
-                        {payment.status}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status || 'unknown')}`}>
+                        {payment.status || 'unknown'}
                       </span>
                     </div>
                   </td>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { motion } from 'framer-motion';
 
 interface Payment {
   userId: string;
@@ -74,7 +75,12 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
   };
 
   return (
-    <div className="rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
+    <motion.div 
+      className="rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#F1F5F9]">Recent Payments</h2>
         <Button 
@@ -101,9 +107,12 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
           <tbody>
             {payments && Array.isArray(payments) && payments.length > 0 ? (
               payments.slice(0, 5).map((payment, index) => (
-                <tr
+                <motion.tr
                   key={payment.paymentId || payment.id || index}
                   className="border-b border-[#64748B]/50 hover:bg-[#475569]/30 backdrop-blur-sm"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
                   <td className="py-4 text-[#F1F5F9] max-w-[150px] truncate" title={getStationName(payment)}>{getStationName(payment)}</td>
                   <td className="py-4 text-[#F1F5F9]">₹{payment.amount}</td>
@@ -121,7 +130,7 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
                       </span>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))
             ) : (
               <tr>
@@ -130,7 +139,7 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
                     <svg className="w-12 h-12 text-[#475569] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <p>No payment history available</p>
+                    <p className="text-lg font-medium">No payment history available</p>
                     <p className="text-sm mt-1">Your payment transactions will appear here</p>
                   </div>
                 </td>
@@ -139,7 +148,7 @@ const PaymentHistoryCard: React.FC<PaymentHistoryCardProps> = ({ payments, onVie
           </tbody>
         </table>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

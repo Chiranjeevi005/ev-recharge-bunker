@@ -5,6 +5,7 @@ import maplibregl from 'maplibre-gl';
 // @ts-ignore
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 interface ChargingStation {
   id: string;
@@ -28,6 +29,7 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
   const [isLoading, setIsLoading] = useState(false);
   const markerRefs = useRef<maplibregl.Marker[]>([]);
   const router = useRouter();
+  const { data: session } = useSession();
 
   console.log('FuturisticMap: Component rendered with userId:', userId, 'refreshKey:', refreshKey);
 
@@ -82,15 +84,25 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
         if (response.ok) {
           const stations = await response.json();
           console.log('FuturisticMap: Received stations:', stations);
-          // Filter out stations with invalid coordinates
-          const validStations = stations.filter((station: any) => 
-            station.lat !== null && 
-            station.lat !== undefined && 
-            typeof station.lat === 'number' &&
-            station.lng !== null && 
-            station.lng !== undefined && 
-            typeof station.lng === 'number'
-          );
+          // Filter out stations with invalid coordinates and map _id to id
+          const validStations = stations
+            .filter((station: any) => 
+              station.lat !== null && 
+              station.lat !== undefined && 
+              typeof station.lat === 'number' &&
+              station.lng !== null && 
+              station.lng !== undefined && 
+              typeof station.lng === 'number'
+            )
+            .map((station: any) => ({
+              // Map _id to id to match the ChargingStation interface
+              id: station._id || station.id,
+              name: station.name || 'Unknown Station',
+              address: station.address || 'Unknown Location',
+              lat: station.lat,
+              lng: station.lng,
+              slots: station.slots || []
+            }));
           console.log('FuturisticMap: Valid stations after filtering:', validStations);
           setChargingStations(validStations);
         } else {
@@ -309,7 +321,11 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
 
   // Handle booking
   const handleBookNow = async () => {
-    if (!selectedStation || !userId) return;
+    if (!selectedStation || !userId) {
+      // Redirect to login if not authenticated
+      router.push('/login');
+      return;
+    }
     
     setIsLoading(true);
     
@@ -366,7 +382,7 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       
       // Initialize Razorpay
       const options = {
-        key: process.env["NEXT_PUBLIC_RZP_KEY_ID"] || 'rzp_test_example',
+        key: process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example',
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'EV Bunker',
@@ -401,12 +417,18 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
           }
         },
         prefill: {
-          name: 'User',
-          email: 'user@example.com',
+          name: session?.user?.name || 'User',
+          email: session?.user?.email || 'user@example.com',
         },
         theme: {
           color: '#10B981',
         },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment dialog closed by user');
+            setIsLoading(false);
+          }
+        }
       };
       
       // @ts-ignore
@@ -415,7 +437,6 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
     } catch (error) {
       console.error('Error booking slot:', error);
       alert(`Error booking slot: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
       setIsLoading(false);
     }
   };

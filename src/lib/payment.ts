@@ -314,7 +314,8 @@ export class PaymentService {
           amount: payment.amount,
           status: payment.status,
           method: payment.method || 'Razorpay',
-          date: payment.updatedAt.toISOString()
+          date: payment.updatedAt.toISOString(),
+          stationName: payment.stationName || 'Unknown Station'
         },
         status: payment.status
       };
