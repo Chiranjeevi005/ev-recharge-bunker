@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
-import { validateStation } from '@/lib/db/schemas/validation';
+import { validateClient } from '@/lib/db/schemas/validation';
+import { clientSchema } from '@/lib/validation/client';
+import { withPermission, withValidation } from '@/lib/middleware/rbac';
 import redis from '@/lib/redis';
 
 export async function GET(request: Request) {
@@ -10,16 +12,16 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
-    const city = searchParams.get('city');
+    const role = searchParams.get('role');
     
     // Create cache key based on parameters
-    const cacheKey = `stations:${page}:${limit}:${status || 'all'}:${city || 'all'}`;
+    const cacheKey = `clients:${page}:${limit}:${status || 'all'}:${role || 'all'}`;
     
     // Try to get data from Redis cache first
     if (redis.isAvailable()) {
       const cachedData = await redis.get(cacheKey);
       if (cachedData) {
-        console.log('Returning cached stations data');
+        console.log('Returning cached clients data');
         return NextResponse.json(JSON.parse(cachedData));
       }
     }
@@ -29,13 +31,13 @@ export async function GET(request: Request) {
     // Build filter query
     const filter: any = {};
     if (status) filter.status = status;
-    if (city) filter.city = city;
+    if (role) filter.role = role;
     
     // Calculate pagination
     const skip = (page - 1) * limit;
     
-    // Fetch stations with pagination
-    const stations = await db.collection("stations")
+    // Fetch clients with pagination
+    const clients = await db.collection("clients")
       .find(filter)
       .skip(skip)
       .limit(limit)
@@ -43,19 +45,20 @@ export async function GET(request: Request) {
       .toArray();
     
     // Get total count for pagination
-    const total = await db.collection("stations").countDocuments(filter);
+    const total = await db.collection("clients").countDocuments(filter);
     
     // Convert ObjectId to string for JSON serialization
-    const serializedStations = stations.map((station: any) => ({
-      ...station,
-      _id: station._id.toString(),
-      createdAt: station.createdAt,
-      updatedAt: station.updatedAt
+    const serializedClients = clients.map((client: any) => ({
+      ...client,
+      _id: client._id.toString(),
+      createdAt: client.createdAt,
+      updatedAt: client.updatedAt,
+      lastLogin: client.lastLogin
     }));
     
     const response = {
       success: true,
-      data: serializedStations,
+      data: serializedClients,
       pagination: {
         page,
         limit,
@@ -71,9 +74,9 @@ export async function GET(request: Request) {
     
     return NextResponse.json(response);
   } catch (error: any) {
-    console.error("Error fetching stations:", error);
+    console.error("Error fetching clients:", error);
     return NextResponse.json(
-      { error: "Failed to fetch stations" },
+      { error: "Failed to fetch clients" },
       { status: 500 }
     );
   }
@@ -83,29 +86,41 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // Validate station data
-    if (!validateStation(body)) {
+    // Validate client data
+    if (!validateClient(body)) {
       return NextResponse.json(
-        { error: "Invalid station data" },
+        { error: "Invalid client data" },
         { status: 400 }
       );
     }
     
     const { db } = await connectToDatabase();
     
-    // Insert new station
-    const { _id, ...stationData } = body;
+    // Check if client with email already exists
+    const existingClient = await db.collection("clients").findOne({ 
+      email: body.email 
+    });
     
-    const result: any = await db.collection("stations").insertOne({
-      ...stationData,
+    if (existingClient) {
+      return NextResponse.json(
+        { error: "Client with this email already exists" },
+        { status: 409 }
+      );
+    }
+    
+    // Insert new client
+    const { _id, ...clientData } = body;
+    
+    const result: any = await db.collection("clients").insertOne({
+      ...clientData,
       createdAt: new Date(),
       updatedAt: new Date()
     });
     
     // Publish update to Redis for real-time sync
     if (redis.isAvailable()) {
-      const stationData = {
-        event: 'station_update',
+      const clientData = {
+        event: 'client_update',
         operationType: 'insert',
         documentKey: result.insertedId.toString(),
         fullDocument: {
@@ -117,7 +132,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(stationData));
+      await redis.publish('client_activity_channel', JSON.stringify(clientData));
     }
     
     return NextResponse.json({ 
@@ -125,9 +140,9 @@ export async function POST(request: Request) {
       id: result.insertedId.toString() 
     });
   } catch (error: any) {
-    console.error("Error creating station:", error);
+    console.error("Error creating client:", error);
     return NextResponse.json(
-      { error: "Failed to create station" },
+      { error: "Failed to create client" },
       { status: 500 }
     );
   }
@@ -140,25 +155,25 @@ export async function PUT(request: Request) {
     
     if (!id || !ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: "Invalid station ID" },
+        { error: "Invalid client ID" },
         { status: 400 }
       );
     }
     
     const body = await request.json();
     
-    // Validate station data
-    if (!validateStation(body)) {
+    // Validate client data
+    if (!validateClient(body)) {
       return NextResponse.json(
-        { error: "Invalid station data" },
+        { error: "Invalid client data" },
         { status: 400 }
       );
     }
     
     const { db } = await connectToDatabase();
     
-    // Update station
-    const result: any = await db.collection("stations").findOneAndUpdate(
+    // Update client
+    const result: any = await db.collection("clients").findOneAndUpdate(
       { _id: new ObjectId(id) },
       { 
         $set: {
@@ -169,17 +184,17 @@ export async function PUT(request: Request) {
       { returnDocument: 'after' }
     );
     
-    if (!result || !result['ok']) {
+    if (!result || !result.ok) {
       return NextResponse.json(
-        { error: "Station not found" },
+        { error: "Client not found" },
         { status: 404 }
       );
     }
     
     // Publish update to Redis for real-time sync
     if (redis.isAvailable()) {
-      const stationData = {
-        event: 'station_update',
+      const clientData = {
+        event: 'client_update',
         operationType: 'update',
         documentKey: id,
         fullDocument: {
@@ -190,7 +205,7 @@ export async function PUT(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(stationData));
+      await redis.publish('client_activity_channel', JSON.stringify(clientData));
     }
     
     return NextResponse.json({ 
@@ -201,9 +216,9 @@ export async function PUT(request: Request) {
       }
     });
   } catch (error: any) {
-    console.error("Error updating station:", error);
+    console.error("Error updating client:", error);
     return NextResponse.json(
-      { error: "Failed to update station" },
+      { error: "Failed to update client" },
       { status: 500 }
     );
   }
@@ -216,45 +231,45 @@ export async function DELETE(request: Request) {
     
     if (!id || !ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: "Invalid station ID" },
+        { error: "Invalid client ID" },
         { status: 400 }
       );
     }
     
     const { db } = await connectToDatabase();
     
-    // Delete station
-    const result = await db.collection("stations").deleteOne({
+    // Delete client
+    const result = await db.collection("clients").deleteOne({
       _id: new ObjectId(id)
     });
     
     if (result.deletedCount === 0) {
       return NextResponse.json(
-        { error: "Station not found" },
+        { error: "Client not found" },
         { status: 404 }
       );
     }
     
     // Publish update to Redis for real-time sync
     if (redis.isAvailable()) {
-      const stationData = {
-        event: 'station_update',
+      const clientData = {
+        event: 'client_update',
         operationType: 'delete',
         documentKey: id,
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(stationData));
+      await redis.publish('client_activity_channel', JSON.stringify(clientData));
     }
     
     return NextResponse.json({ 
       success: true,
-      message: "Station deleted successfully"
+      message: "Client deleted successfully"
     });
   } catch (error: any) {
-    console.error("Error deleting station:", error);
+    console.error("Error deleting client:", error);
     return NextResponse.json(
-      { error: "Failed to delete station" },
+      { error: "Failed to delete client" },
       { status: 500 }
     );
   }

@@ -1,3 +1,4 @@
+import type { Payment } from '../types/payment';
 import { connectToDatabase } from '@/lib/db/connection';
 import redis from '@/lib/redis';
 
@@ -13,26 +14,48 @@ export async function updateDashboardStats() {
       return;
     }
 
-    const { db } = await connectToDatabase();
+    // Add timeout to database connection
+    const dbPromise = connectToDatabase();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+    );
     
-    // Get total users count
-    const totalUsers = await db.collection("clients").countDocuments();
+    const { db } = await Promise.race([dbPromise, timeoutPromise]) as { db: any };
     
-    // Get active stations count
-    const activeStations = await db.collection("stations").countDocuments({ 
+    // Get total users count with timeout
+    const totalUsersPromise = db.collection("clients").countDocuments();
+    const totalUsers = await Promise.race([
+      totalUsersPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Users count timeout')), 3000))
+    ]);
+    
+    // Get active stations count with timeout
+    const activeStationsPromise = db.collection("stations").countDocuments({ 
       status: "active" 
     });
+    const activeStations = await Promise.race([
+      activeStationsPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Stations count timeout')), 3000))
+    ]);
     
-    // Get unique locations count
-    const uniqueLocations = await db.collection("stations").distinct("location");
+    // Get unique locations count with timeout
+    const uniqueLocationsPromise = db.collection("stations").distinct("location");
+    const uniqueLocations = await Promise.race([
+      uniqueLocationsPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Locations count timeout')), 3000))
+    ]);
     const totalLocations = uniqueLocations.length;
     
-    // Get total revenue from completed payments
-    const payments = await db.collection("payments").find({ 
+    // Get total revenue from completed payments with timeout
+    const paymentsPromise = db.collection("payments").find({ 
       status: "completed" 
     }).toArray();
+    const payments: Payment[] = await Promise.race([
+      paymentsPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Payments fetch timeout')), 3000))
+    ]);
     
-    const totalRevenue = payments.reduce((sum, payment) => sum + (payment['amount'] || 0), 0);
+    const totalRevenue = payments.reduce((sum: number, payment: Payment) => sum + (payment.amount || 0), 0);
     
     // Prepare stats data as requested
     const stats = [
@@ -80,7 +103,8 @@ export async function updateDashboardStats() {
     return stats;
   } catch (error: any) {
     console.error('Error updating dashboard stats:', error);
-    throw error;
+    // Don't throw the error to prevent breaking the periodic updates
+    return null;
   }
 }
 

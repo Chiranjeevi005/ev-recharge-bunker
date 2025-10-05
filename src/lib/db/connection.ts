@@ -27,8 +27,22 @@ export async function connectToDatabase() {
   try {
     if (!global.mongoClient) {
       console.log('Creating new MongoDB client');
-      const client = new MongoClient(MONGODB_URI!);
-      await client.connect();
+      const client = new MongoClient(MONGODB_URI!, {
+        serverSelectionTimeoutMS: 5000, // 5 second timeout for server selection
+        connectTimeoutMS: 5000, // 5 second timeout for connection
+        socketTimeoutMS: 10000, // 10 second timeout for socket operations
+        maxIdleTimeMS: 30000, // 30 second max idle time
+        retryWrites: true,
+        retryReads: true
+      });
+      
+      // Add timeout to connection
+      const connectPromise = client.connect();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+      );
+      
+      await Promise.race([connectPromise, timeoutPromise]);
       console.log('Connected to MongoDB');
       global.mongoClient = client;
     } else {
@@ -40,9 +54,14 @@ export async function connectToDatabase() {
     cachedDb = cachedClient.db('ev_bunker');
     console.log('Database name:', cachedDb.databaseName);
     
-    // Test the connection by listing collections
+    // Test the connection by listing collections with timeout
     try {
-      const collections = await cachedDb.listCollections().toArray();
+      const collectionsPromise = cachedDb.listCollections().toArray();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Collections list timeout')), 3000)
+      );
+      
+      const collections = await Promise.race([collectionsPromise, timeoutPromise]) as any[];
       console.log('Available collections:', collections.map(c => c.name));
     } catch (collectionError) {
       console.error('Error listing collections:', collectionError);
@@ -57,6 +76,8 @@ export async function connectToDatabase() {
       throw new Error('Authentication failed. Please check your MongoDB credentials in .env.local');
     } else if (error.name === 'MongoNetworkError') {
       throw new Error('Network error. Please check your MongoDB connection');
+    } else if (error.message && error.message.includes('timeout')) {
+      throw new Error('Database connection timeout. Please check your MongoDB server status and network connection.');
     } else {
       throw new Error(`Failed to connect to database: ${error.message}`);
     }

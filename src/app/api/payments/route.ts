@@ -1,86 +1,264 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
-
-interface Payment {
-  _id: ObjectId;
-  orderId: string;
-  paymentId: string;
-  amount: number;
-  currency: string;
-  status: string;
-  userId: string;
-  stationId: string;
-  stationName?: string;
-  slotId: string;
-  duration: number;
-  method: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface Station {
-  _id: ObjectId | string;
-  name: string;
-  // ... other station properties
-}
+import { validatePayment } from '@/lib/db/schemas/validation';
+import redis from '@/lib/redis';
 
 export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const status = searchParams.get('status');
+    const userId = searchParams.get('userId');
+    const stationId = searchParams.get('stationId');
+    
+    // Create cache key based on parameters
+    const cacheKey = `payments:${page}:${limit}:${status || 'all'}:${userId || 'all'}:${stationId || 'all'}`;
+    
+    // Try to get data from Redis cache first
+    if (redis.isAvailable()) {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        console.log('Returning cached payments data');
+        return NextResponse.json(JSON.parse(cachedData));
+      }
+    }
+    
     const { db } = await connectToDatabase();
     
-    // Get userId from query parameters
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    // Build filter query
+    const filter: any = {};
+    if (status) filter.status = status;
+    if (userId) filter.userId = userId;
+    if (stationId) filter.stationId = stationId;
     
-    if (!userId) {
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Fetch payments with pagination
+    const payments = await db.collection("payments")
+      .find(filter)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    // Get total count for pagination
+    const total = await db.collection("payments").countDocuments(filter);
+    
+    // Convert ObjectId to string for JSON serialization
+    const serializedPayments = payments.map((payment: any) => ({
+      ...payment,
+      _id: payment._id.toString(),
+      userId: payment.userId.toString(),
+      stationId: payment.stationId.toString(),
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt
+    }));
+    
+    const response = {
+      success: true,
+      data: serializedPayments,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+    
+    // Cache the response for 60 seconds
+    if (redis.isAvailable()) {
+      await redis.setex(cacheKey, 60, JSON.stringify(response));
+    }
+    
+    return NextResponse.json(response);
+  } catch (error: any) {
+    console.error("Error fetching payments:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch payments" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    
+    // Validate payment data
+    if (!validatePayment(body)) {
       return NextResponse.json(
-        { error: "User ID is required" }, 
+        { error: "Invalid payment data" },
         { status: 400 }
       );
     }
     
-    // Fetch payments for the user
-    const payments = await db.collection<Payment>("payments").find({ 
-      userId: userId 
-    }).sort({ createdAt: -1 }).toArray();
+    const { db } = await connectToDatabase();
     
-    // Enhance payments with station names if not already present
-    const enhancedPayments = await Promise.all(payments.map(async (payment) => {
-      // If stationName is not already set, try to fetch it
-      let stationName = payment.stationName || 'Unknown Station';
-      
-      if (stationName === 'Unknown Station' && payment.stationId) {
-        try {
-          // Try to find station by ObjectId
-          let station;
-          if (ObjectId.isValid(payment.stationId)) {
-            station = await db.collection<Station>('stations').findOne({ _id: new ObjectId(payment.stationId) });
-          } else {
-            // Try to find by string ID
-            station = await db.collection<Station>('stations').findOne({ _id: payment.stationId } as any);
-          }
-          
-          if (station && station['name']) {
-            stationName = station['name'];
-          }
-        } catch (error) {
-          console.error("Error fetching station name:", error);
-        }
-      }
-      
-      return {
-        ...payment,
-        stationName,
-        _id: payment._id.toString()
+    // Insert new payment
+    const { _id, ...paymentData } = body;
+    
+    const result: any = await db.collection("payments").insertOne({
+      ...paymentData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    // Publish update to Redis for real-time sync
+    if (redis.isAvailable()) {
+      const paymentData = {
+        event: 'payment_update',
+        operationType: 'insert',
+        documentKey: result.insertedId.toString(),
+        fullDocument: {
+          ...body,
+          _id: result.insertedId.toString(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        timestamp: new Date().toISOString()
       };
-    }));
+      
+      await redis.publish('client_activity_channel', JSON.stringify(paymentData));
+    }
     
-    return NextResponse.json(enhancedPayments);
-  } catch (error) {
-    console.error("Error fetching payments:", error);
+    return NextResponse.json({ 
+      success: true, 
+      id: result.insertedId.toString() 
+    });
+  } catch (error: any) {
+    console.error("Error creating payment:", error);
     return NextResponse.json(
-      { error: "Failed to fetch payments" }, 
+      { error: "Failed to create payment" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id || !ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Invalid payment ID" },
+        { status: 400 }
+      );
+    }
+    
+    const body = await request.json();
+    
+    // Validate payment data
+    if (!validatePayment(body)) {
+      return NextResponse.json(
+        { error: "Invalid payment data" },
+        { status: 400 }
+      );
+    }
+    
+    const { db } = await connectToDatabase();
+    
+    // Update payment
+    const result: any = await db.collection("payments").findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { 
+        $set: {
+          ...body,
+          updatedAt: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    );
+    
+    if (!result || !result['ok']) {
+      return NextResponse.json(
+        { error: "Payment not found" },
+        { status: 404 }
+      );
+    }
+    
+    // Publish update to Redis for real-time sync
+    if (redis.isAvailable()) {
+      const paymentData = {
+        event: 'payment_update',
+        operationType: 'update',
+        documentKey: id,
+        fullDocument: {
+          ...result['value'],
+          _id: id,
+          updatedAt: new Date()
+        },
+        timestamp: new Date().toISOString()
+      };
+      
+      await redis.publish('client_activity_channel', JSON.stringify(paymentData));
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      data: {
+        ...result['value'],
+        _id: id
+      }
+    });
+  } catch (error: any) {
+    console.error("Error updating payment:", error);
+    return NextResponse.json(
+      { error: "Failed to update payment" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id || !ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "Invalid payment ID" },
+        { status: 400 }
+      );
+    }
+    
+    const { db } = await connectToDatabase();
+    
+    // Delete payment
+    const result = await db.collection("payments").deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: "Payment not found" },
+        { status: 404 }
+      );
+    }
+    
+    // Publish update to Redis for real-time sync
+    if (redis.isAvailable()) {
+      const paymentData = {
+        event: 'payment_update',
+        operationType: 'delete',
+        documentKey: id,
+        timestamp: new Date().toISOString()
+      };
+      
+      await redis.publish('client_activity_channel', JSON.stringify(paymentData));
+    }
+    
+    return NextResponse.json({ 
+      success: true,
+      message: "Payment deleted successfully"
+    });
+  } catch (error: any) {
+    console.error("Error deleting payment:", error);
+    return NextResponse.json(
+      { error: "Failed to delete payment" },
       { status: 500 }
     );
   }

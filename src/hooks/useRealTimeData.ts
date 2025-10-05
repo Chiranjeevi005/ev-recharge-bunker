@@ -1,248 +1,147 @@
-import { useEffect, useState, useCallback } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 // Define types for our real-time data
-interface ClientUpdateEvent {
+interface ClientUpdate {
   event: 'client_update';
-  operationType: string;
+  operationType: 'insert' | 'update' | 'delete';
   documentKey: string;
-  fullDocument: any;
+  fullDocument?: any;
   timestamp: string;
 }
 
-interface ChargingSessionUpdateEvent {
+interface ChargingSessionUpdate {
   event: 'charging_session_update';
-  operationType: string;
+  operationType: 'insert' | 'update' | 'delete';
   documentKey: string;
-  fullDocument: any;
+  fullDocument?: any;
   timestamp: string;
 }
 
-interface PaymentUpdateEvent {
+interface PaymentUpdate {
   event: 'payment_update';
-  operationType: string;
+  operationType: 'insert' | 'update' | 'delete';
   documentKey: string;
-  fullDocument: any;
+  fullDocument?: any;
   timestamp: string;
 }
 
-interface EcoStatsUpdateEvent {
+interface EcoStatsUpdate {
   event: 'eco_stats_update';
-  operationType: string;
+  operationType: 'insert' | 'update' | 'delete';
   documentKey: string;
-  fullDocument: any;
+  fullDocument?: any;
   timestamp: string;
 }
 
-type RealTimeEvent = 
-  | ClientUpdateEvent 
-  | ChargingSessionUpdateEvent 
-  | PaymentUpdateEvent 
-  | EcoStatsUpdateEvent;
+type RealTimeUpdate = 
+  | ClientUpdate 
+  | ChargingSessionUpdate 
+  | PaymentUpdate 
+  | EcoStatsUpdate;
 
-interface RealTimeData {
-  clients: any[];
-  chargingSessions: any[];
-  payments: any[];
-  ecoStats: any[];
-  activityLog: RealTimeEvent[];
+// Enhanced return type to include processed data
+interface UseRealTimeDataReturn {
+  socket: Socket | null;
+  isConnected: boolean;
+  updates: RealTimeUpdate[];
+  joinUserRoom: (userId: string) => void;
+  clearUpdates: () => void;
+  data: any;
+  loading: boolean;
+  error: string | null;
 }
 
-export const useRealTimeData = () => {
-  const [data, setData] = useState<RealTimeData>({
-    clients: [],
-    chargingSessions: [],
-    payments: [],
-    ecoStats: [],
-    activityLog: []
-  });
-  const [loading, setLoading] = useState(true);
+export function useRealTimeData(): UseRealTimeDataReturn {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [updates, setUpdates] = useState<RealTimeUpdate[]>([]);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const socket = io({ path: '/api/socketio' });
-
-  // Function to add events to activity log with timestamp-based ordering
-  const addToActivityLog = useCallback((event: RealTimeEvent) => {
-    setData(prev => {
-      const newLog = [...prev.activityLog, event].sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      ).slice(0, 50); // Keep only the latest 50 events
-      
-      return {
-        ...prev,
-        activityLog: newLog
-      };
-    });
-  }, []);
-
   useEffect(() => {
-    // Connect to WebSocket
-    socket.on('connect', () => {
-      console.log('Connected to real-time server');
+    // Initialize Socket.IO client
+    const socketInstance = io({
+      path: '/api/socketio',
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketInstance.on('connect', () => {
+      console.log('Connected to Socket.IO server');
+      setIsConnected(true);
       setLoading(false);
     });
 
-    socket.on('disconnect', () => {
-      console.log('Disconnected from real-time server');
+    socketInstance.on('disconnect', (reason) => {
+      console.log('Disconnected from Socket.IO server:', reason);
+      setIsConnected(false);
     });
 
-    socket.on('connect_error', (err) => {
-      console.error('Connection error:', err);
-      setError('Failed to connect to real-time server');
+    socketInstance.on('connect_error', (error) => {
+      console.error('Socket.IO connection error:', error);
+      setIsConnected(false);
+      setError('Connection error: ' + error.message);
       setLoading(false);
     });
 
-    // Handle client updates
-    socket.on('client-update', (event: ClientUpdateEvent) => {
-      console.log('Client update received:', event);
-      addToActivityLog(event);
-      
-      // Update clients list
-      if (event.operationType === 'insert' || event.operationType === 'replace') {
-        setData(prev => ({
-          ...prev,
-          clients: [...prev.clients, event.fullDocument]
-        }));
-      } else if (event.operationType === 'update') {
-        setData(prev => ({
-          ...prev,
-          clients: prev.clients.map(client => 
-            client.id === event.documentKey ? { ...client, ...event.fullDocument } : client
-          )
-        }));
-      } else if (event.operationType === 'delete') {
-        setData(prev => ({
-          ...prev,
-          clients: prev.clients.filter(client => client.id !== event.documentKey)
-        }));
-      }
+    // Listen for real-time updates
+    socketInstance.on('client-update', (data: ClientUpdate) => {
+      console.log('Received client update:', data);
+      setUpdates(prev => [...prev, data]);
+      // Process client data if needed
     });
 
-    // Handle charging session updates
-    socket.on('charging-session-update', (event: ChargingSessionUpdateEvent) => {
-      console.log('Charging session update received:', event);
-      addToActivityLog(event);
-      
-      // Update charging sessions list
-      if (event.operationType === 'insert' || event.operationType === 'replace') {
-        setData(prev => ({
-          ...prev,
-          chargingSessions: [...prev.chargingSessions, event.fullDocument]
-        }));
-      } else if (event.operationType === 'update') {
-        setData(prev => ({
-          ...prev,
-          chargingSessions: prev.chargingSessions.map(session => 
-            session.id === event.documentKey ? { ...session, ...event.fullDocument } : session
-          )
-        }));
-      } else if (event.operationType === 'delete') {
-        setData(prev => ({
-          ...prev,
-          chargingSessions: prev.chargingSessions.filter(session => session.id !== event.documentKey)
-        }));
-      }
+    socketInstance.on('charging-session-update', (data: ChargingSessionUpdate) => {
+      console.log('Received charging session update:', data);
+      setUpdates(prev => [...prev, data]);
+      // Process session data if needed
     });
 
-    // Handle payment updates
-    socket.on('payment-update', (event: PaymentUpdateEvent) => {
-      console.log('Payment update received:', event);
-      addToActivityLog(event);
-      
-      // Update payments list
-      if (event.operationType === 'insert' || event.operationType === 'replace') {
-        setData(prev => ({
-          ...prev,
-          payments: [...prev.payments, event.fullDocument]
-        }));
-      } else if (event.operationType === 'update') {
-        setData(prev => ({
-          ...prev,
-          payments: prev.payments.map(payment => 
-            payment.id === event.documentKey ? { ...payment, ...event.fullDocument } : payment
-          )
-        }));
-      } else if (event.operationType === 'delete') {
-        setData(prev => ({
-          ...prev,
-          payments: prev.payments.filter(payment => payment.id !== event.documentKey)
-        }));
-      }
+    socketInstance.on('payment-update', (data: PaymentUpdate) => {
+      console.log('Received payment update:', data);
+      setUpdates(prev => [...prev, data]);
+      // Process payment data if needed
     });
 
-    // Handle eco stats updates
-    socket.on('eco-stats-update', (event: EcoStatsUpdateEvent) => {
-      console.log('Eco stats update received:', event);
-      addToActivityLog(event);
-      
-      // Update eco stats list
-      if (event.operationType === 'insert' || event.operationType === 'replace') {
-        setData(prev => ({
-          ...prev,
-          ecoStats: [...prev.ecoStats, event.fullDocument]
-        }));
-      } else if (event.operationType === 'update') {
-        setData(prev => ({
-          ...prev,
-          ecoStats: prev.ecoStats.map(stat => 
-            stat.id === event.documentKey ? { ...stat, ...event.fullDocument } : stat
-          )
-        }));
-      } else if (event.operationType === 'delete') {
-        setData(prev => ({
-          ...prev,
-          ecoStats: prev.ecoStats.filter(stat => stat.id !== event.documentKey)
-        }));
-      }
+    socketInstance.on('eco-stats-update', (data: EcoStatsUpdate) => {
+      console.log('Received eco stats update:', data);
+      setUpdates(prev => [...prev, data]);
+      // Process stats data if needed
     });
 
-    // Initial data fetch
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch initial data from API endpoints
-        const [clientsRes, sessionsRes, paymentsRes, ecoStatsRes] = await Promise.all([
-          fetch('/api/clients'),
-          fetch('/api/dashboard/sessions'),
-          fetch('/api/dashboard/payments'),
-          fetch('/api/dashboard/environmental-impact')
-        ]);
-
-        const clients = clientsRes.ok ? await clientsRes.json() : [];
-        const sessions = sessionsRes.ok ? await sessionsRes.json() : [];
-        const payments = paymentsRes.ok ? await paymentsRes.json() : [];
-        const ecoStats = ecoStatsRes.ok ? await ecoStatsRes.json() : [];
-
-        setData({
-          clients,
-          chargingSessions: sessions,
-          payments,
-          ecoStats,
-          activityLog: []
-        });
-      } catch (err) {
-        console.error('Error fetching initial data:', err);
-        setError('Failed to fetch initial data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    setSocket(socketInstance);
 
     // Cleanup function
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('connect_error');
-      socket.off('client-update');
-      socket.off('charging-session-update');
-      socket.off('payment-update');
-      socket.off('eco-stats-update');
-      socket.disconnect();
+      socketInstance.disconnect();
     };
-  }, [addToActivityLog]);
+  }, []);
 
-  return { data, loading, error, socket };
-};
+  // Function to join a user room
+  const joinUserRoom = (userId: string) => {
+    if (socket) {
+      socket.emit('join-user-room', userId);
+      console.log(`Joined user room: user-${userId}`);
+    }
+  };
+
+  // Function to clear updates
+  const clearUpdates = () => {
+    setUpdates([]);
+  };
+
+  return {
+    socket,
+    isConnected,
+    updates,
+    joinUserRoom,
+    clearUpdates,
+    data,
+    loading,
+    error
+  };
+}

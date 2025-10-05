@@ -5,12 +5,22 @@ import { ensureDatabaseIndexes } from './db/indexes';
 export async function startup() {
   console.log('Starting up application services...');
   
-  // Ensure database indexes are created
-  const indexesCreated = await ensureDatabaseIndexes();
-  if (indexesCreated) {
-    console.log('✅ Database indexes ensured');
-  } else {
-    console.warn('⚠️  Failed to create database indexes');
+  // Ensure database indexes are created with timeout
+  try {
+    // Add timeout to index creation
+    const indexesPromise = ensureDatabaseIndexes();
+    const timeoutPromise = new Promise<boolean>((_, reject) => 
+      setTimeout(() => reject(new Error('Database index creation timeout')), 10000)
+    );
+    
+    const indexesCreated = await Promise.race([indexesPromise, timeoutPromise]);
+    if (indexesCreated) {
+      console.log('✅ Database indexes ensured');
+    } else {
+      console.warn('⚠️  Failed to create database indexes');
+    }
+  } catch (error) {
+    console.warn('⚠️  Database index creation timed out or failed:', error);
   }
   
   // Initialize Redis if available
