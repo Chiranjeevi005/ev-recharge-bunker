@@ -1,4 +1,4 @@
-import { initializeChangeStreams } from '@/lib/db/changeStreams';
+import { initializeChangeStreams, closeChangeStreams } from '@/lib/db/changeStreams';
 
 export async function initRealTimeFeatures() {
   console.log('Initializing real-time features...');
@@ -13,4 +13,11 @@ export async function initRealTimeFeatures() {
   }
   
   return changeStreamsInitialized;
+}
+
+// Cleanup function to properly close real-time features
+export function cleanupRealTimeFeatures() {
+  console.log('Cleaning up real-time features...');
+  closeChangeStreams();
+  console.log('✅ Real-time features cleaned up successfully');
 }

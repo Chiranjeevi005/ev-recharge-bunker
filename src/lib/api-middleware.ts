@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import { withRateLimit } from "@/lib/rateLimit";
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
@@ -10,7 +11,7 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
+  return withRateLimit(async (req: NextRequest) => {
     try {
       // Get the authorization header
       const authHeader = req.headers.get("authorization");
@@ -44,7 +45,7 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
         { status: 401 }
       );
     }
-  };
+  });
 }
 
 export function withRole(requiredRole: string) {

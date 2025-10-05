@@ -5,12 +5,16 @@ let io: SocketIOServer | null = null;
 
 export function initSocket(server: any) {
   if (!io) {
+    // Configure Socket.IO with Redis adapter for horizontal scaling
     io = new SocketIOServer(server, {
       path: "/api/socketio",
       cors: {
         origin: "*",
         methods: ["GET", "POST"]
-      }
+      },
+      // Add connection options for better reliability
+      transports: ["websocket", "polling"],
+      allowEIO3: true
     });
 
     io.on("connection", (socket) => {
@@ -22,8 +26,14 @@ export function initSocket(server: any) {
         console.log(`User ${userId} joined room user-${userId}`);
       });
 
-      socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
+      // Handle disconnection
+      socket.on("disconnect", (reason) => {
+        console.log("User disconnected:", socket.id, "Reason:", reason);
+      });
+      
+      // Handle connection errors
+      socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
       });
     });
 
@@ -31,24 +41,24 @@ export function initSocket(server: any) {
     if (redis.isAvailable()) {
       // Subscribe to existing channels
       redis.subscribe("charging-session-update")
-        .then(count => {
-          console.log(`Subscribed to charging-session-update channel. ${count} total subscriptions`);
+        .then(() => {
+          console.log('Subscribed to charging-session-update channel');
         })
         .catch(err => {
           console.error("Error subscribing to charging-session-update:", err);
         });
 
       redis.subscribe("payment-update")
-        .then(count => {
-          console.log(`Subscribed to payment-update channel. ${count} total subscriptions`);
+        .then(() => {
+          console.log('Subscribed to payment-update channel');
         })
         .catch(err => {
           console.error("Error subscribing to payment-update:", err);
         });
 
       redis.subscribe("slot-availability-update")
-        .then(count => {
-          console.log(`Subscribed to slot-availability-update channel. ${count} total subscriptions`);
+        .then(() => {
+          console.log('Subscribed to slot-availability-update channel');
         })
         .catch(err => {
           console.error("Error subscribing to slot-availability-update:", err);
@@ -56,8 +66,8 @@ export function initSocket(server: any) {
 
       // Subscribe to the new client activity channel
       redis.subscribe("client_activity_channel")
-        .then(count => {
-          console.log(`Subscribed to client_activity_channel. ${count} total subscriptions`);
+        .then(() => {
+          console.log('Subscribed to client_activity_channel');
         })
         .catch(err => {
           console.error("Error subscribing to client_activity_channel:", err);

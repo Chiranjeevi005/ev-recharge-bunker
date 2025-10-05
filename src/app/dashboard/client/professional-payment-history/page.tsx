@@ -157,7 +157,10 @@ export default function ProfessionalPaymentHistoryPage() {
           >
             {loading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]"></div>
+                <div className="text-center">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+                  <p className="text-[#CBD5E1]">Loading payment history...</p>
+                </div>
               </div>
             ) : payments.length > 0 ? (
               <div className="overflow-x-auto">

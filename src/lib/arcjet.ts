@@ -2,7 +2,7 @@ import arcjet, { detectBot, shield } from "@arcjet/next";
 
 // Initialize Arcjet with your API key
 const aj = arcjet({
-  key: process.env.ARCJET_KEY!, // Get your site key from https://app.arcjet.com
+  key: process.env['ARCJET_KEY']!, // Get your site key from https://app.arcjet.com
   rules: [
     // Protect against common attacks with Shield
     shield({

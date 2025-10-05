@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PaymentService } from '@/lib/payment';
+import { withRateLimit } from '@/lib/rateLimit';
 
-export async function GET(request: Request) {
+export const GET = withRateLimit(async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -27,4 +28,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});

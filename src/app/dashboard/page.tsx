@@ -63,6 +63,7 @@ interface SlotAvailability {
 export default function ClientDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { showLoader, hideLoader } = useLoader();
   const [activeSession, setActiveSession] = useState<ChargingSession | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<Payment[]>([]);
   const [slotAvailability, setSlotAvailability] = useState<SlotAvailability[]>([]);
@@ -114,6 +115,9 @@ export default function ClientDashboard() {
       socketRef.current.on("payment-update", (data: any) => {
         console.log("Received payment update:", data);
         
+        // Show loader while processing update
+        showLoader("Updating payment information...");
+        
         // Transform the incoming payment data to match the expected structure
         const updatedPayment: Payment = {
           userId: data.payment.userId || session.user.id || '',
@@ -164,6 +168,9 @@ export default function ClientDashboard() {
           type: data.status.toLowerCase() === 'completed' ? 'success' : 'info'
         });
         
+        // Hide loader after processing
+        hideLoader();
+        
         // Auto-hide notification after 5 seconds
         setTimeout(() => {
           setNotification(null);
@@ -181,7 +188,7 @@ export default function ClientDashboard() {
     
     // Return a no-op cleanup function for cases where the effect doesn't run
     return () => {};
-  }, [status, session?.user?.id]);
+  }, [status, session?.user?.id, showLoader, hideLoader]);
 
   // Fetch initial dashboard data - simplified version
   useEffect(() => {
@@ -197,6 +204,7 @@ export default function ClientDashboard() {
           setError(null);
           
           setLoading(true);
+          showLoader("Loading dashboard...");
         }
 
         // Fetch active charging session
@@ -257,12 +265,14 @@ export default function ClientDashboard() {
         if (isMounted) {
           setSlotAvailability(slotData);
           setLoading(false);
+          hideLoader();
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         if (isMounted) {
           setError("Failed to load dashboard data. Please try again later.");
           setLoading(false);
+          hideLoader();
         }
       }
     };
@@ -272,12 +282,13 @@ export default function ClientDashboard() {
     } else if (status !== "loading" && !session?.user?.id) {
       // Hide loader if not authenticated or session is not loading
       setLoading(false);
+      hideLoader();
     }
 
     return () => {
       isMounted = false;
     };
-  }, [status, session?.user?.id]); // Simplified dependencies
+  }, [status, session?.user?.id, showLoader, hideLoader]); // Simplified dependencies
 
   // Handle book slot action
   const handleBookSlot = useCallback(() => {
@@ -298,7 +309,6 @@ export default function ClientDashboard() {
     
     // Only show fetching animation if not navigating from navbar
     if (!fromNavbar) {
-      // Show fetching animation during loading
       return (
         <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
           <Navbar />
@@ -312,7 +322,12 @@ export default function ClientDashboard() {
                   Proud to be part of the EV revolution – Together reducing CO2 and building a greener future.
                 </p>
               </div>
-              <FetchingAnimation />
+              <div className="flex justify-center items-center min-h-[200px]">
+                <div className="text-center">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+                  <p className="text-[#CBD5E1] text-lg font-medium">Loading dashboard...</p>
+                </div>
+              </div>
             </div>
           </main>
         </div>
@@ -334,7 +349,7 @@ export default function ClientDashboard() {
               </p>
             </div>
             <div className="flex justify-center items-center min-h-[200px]">
-              <div className="text-[#CBD5E1]">Loading your dashboard...</div>
+              <div className="text-[#CBD5E1]">Loading dashboard...</div>
             </div>
           </div>
         </main>

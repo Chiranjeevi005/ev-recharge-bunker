@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
+import { withRateLimit } from '@/lib/rateLimit';
 
-export async function GET(request: Request) {
+export const GET = withRateLimit(async (request: Request) => {
   try {
     const { db } = await connectToDatabase();
     
@@ -39,4 +40,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});

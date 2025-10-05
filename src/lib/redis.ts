@@ -121,11 +121,25 @@ const redis = {
     }
 
     try {
-      // Note: The redis library handles subscriptions differently
-      // This is a simplified implementation
-      console.log(`Subscribing to channel: ${channel}`);
+      await redisClient!.subscribe(channel, (message) => {
+        // This is a placeholder - actual message handling should be done by the subscriber
+        console.log(`Message received on channel ${channel}:`, message);
+      });
+      console.log(`Subscribed to channel: ${channel}`);
     } catch (error) {
       console.error('Redis SUBSCRIBE error:', error);
+    }
+  },
+  
+  // Add on method for handling messages
+  on: (event: string, handler: (channel: string, message: string) => void) => {
+    if (!redis.isAvailable()) {
+      console.log(`Redis not available - skipping ${event} event handler`);
+      return;
+    }
+    
+    if (event === 'message') {
+      redisClient!.on('message', handler);
     }
   }
 };

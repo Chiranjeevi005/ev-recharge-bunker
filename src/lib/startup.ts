@@ -1,8 +1,17 @@
 import redis from './redis';
 import { setupPeriodicStatsUpdates } from './updateStats';
+import { ensureDatabaseIndexes } from './db/indexes';
 
 export async function startup() {
   console.log('Starting up application services...');
+  
+  // Ensure database indexes are created
+  const indexesCreated = await ensureDatabaseIndexes();
+  if (indexesCreated) {
+    console.log('✅ Database indexes ensured');
+  } else {
+    console.warn('⚠️  Failed to create database indexes');
+  }
   
   // Initialize Redis if available
   if (redis.isAvailable()) {

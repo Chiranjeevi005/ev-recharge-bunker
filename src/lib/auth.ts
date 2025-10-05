@@ -215,6 +215,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: {
     strategy: "jwt",
+    // Configure session timeout and refresh
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env['AUTH_SECRET'] || "default_secret_key",
+  // Add custom session management
+  events: {
+    async signIn({ user, account, profile }) {
+      console.log("User signed in:", user.id);
+      // Update last login time
+      const { db } = await connectToDatabase();
+      await db.collection("clients").updateOne(
+        { _id: new ObjectId(user.id) },
+        { $set: { lastLogin: new Date() } }
+      );
+    },
+    async signOut(message) {
+      // Handle both possible message types
+      if ('token' in message && message.token) {
+        console.log("User signed out with token:", message.token.id);
+      } else if ('session' in message && message.session) {
+        // For session, we need to check if it has a user property
+        const session = message.session as any;
+        if (session.user && session.user.id) {
+          console.log("User signed out with session:", session.user.id);
+        }
+      }
+    }
+  }
 });

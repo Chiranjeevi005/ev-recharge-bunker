@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import redis from '@/lib/redis';
+import { withRateLimit } from '@/lib/rateLimit';
 
-export async function GET(request: Request) {
+export const GET = withRateLimit(async (request: Request) => {
   try {
     // Try to get stats from Redis cache first
     const cachedStats = await redis.get('dashboard_stats');
@@ -90,4 +91,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});
