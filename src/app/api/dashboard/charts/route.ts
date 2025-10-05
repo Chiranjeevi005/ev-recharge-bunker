@@ -5,8 +5,15 @@ import redis from '@/lib/redis';
 // Helper function to get user growth data
 async function getUserGrowthData(db: any) {
   try {
-    // Get users grouped by month
+    // Get users grouped by month for the last 12 months
     const userGrowth = await db.collection("clients").aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(new Date().setMonth(new Date().getMonth() - 12))
+          }
+        }
+      },
       {
         $group: {
           _id: {
@@ -21,9 +28,6 @@ async function getUserGrowthData(db: any) {
           "_id.year": 1,
           "_id.month": 1
         }
-      },
-      {
-        $limit: 12 // Last 12 months
       }
     ]).toArray();
 
@@ -65,7 +69,47 @@ async function getRevenueByCityData(db: any) {
         $group: {
           _id: "$station.city",
           totalRevenue: { $sum: "$amount" },
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          // Calculate growth by comparing recent vs older payments
+          recentRevenue: {
+            $sum: {
+              $cond: [
+                { $gte: ["$createdAt", new Date(new Date().setMonth(new Date().getMonth() - 1))] },
+                "$amount",
+                0
+              ]
+            }
+          },
+          olderRevenue: {
+            $sum: {
+              $cond: [
+                { $lt: ["$createdAt", new Date(new Date().setMonth(new Date().getMonth() - 1))] },
+                "$amount",
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          growth: {
+            $cond: [
+              { $eq: ["$olderRevenue", 0] },
+              { $cond: [{ $gt: ["$recentRevenue", 0] }, 100, 0] },
+              {
+                $multiply: [
+                  {
+                    $divide: [
+                      { $subtract: ["$recentRevenue", "$olderRevenue"] },
+                      "$olderRevenue"
+                    ]
+                  },
+                  100
+                ]
+              }
+            ]
+          }
         }
       },
       {
@@ -78,10 +122,11 @@ async function getRevenueByCityData(db: any) {
       }
     ]).toArray();
 
-    // Format data for chart
+    // Format data for chart with actual growth information
     const formattedData = revenueByCity.map((item: any) => ({
       name: item._id || 'Unknown',
-      value: item.totalRevenue
+      value: item.totalRevenue,
+      growth: Math.round(item.growth)
     }));
 
     return formattedData;
@@ -107,7 +152,7 @@ async function getUserAndChargingUsageByCity(db: any) {
         $lookup: {
           from: "clients",
           localField: "_id",
-          foreignField: "location",
+          foreignField: "city", // Changed from "location" to "city" for consistency
           as: "users"
         }
       },

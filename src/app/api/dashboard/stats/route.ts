@@ -3,6 +3,52 @@ import { connectToDatabase } from '@/lib/db/connection';
 import redis from '@/lib/redis';
 import { withRateLimit } from '@/lib/rateLimit';
 
+// Helper function to calculate percentage change
+async function calculatePercentageChange(db: any, collectionName: string, fieldName: string, statusFilter?: any) {
+  try {
+    // Get current month start and previous month start
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let currentCount = 0;
+    let previousCount = 0;
+    
+    if (statusFilter) {
+      // For payments, filter by status
+      currentCount = await db.collection(collectionName).countDocuments({
+        ...statusFilter,
+        createdAt: { $gte: currentMonthStart }
+      });
+      
+      previousCount = await db.collection(collectionName).countDocuments({
+        ...statusFilter,
+        createdAt: { $gte: previousMonthStart, $lt: previousMonthEnd }
+      });
+    } else {
+      // For other collections
+      currentCount = await db.collection(collectionName).countDocuments({
+        createdAt: { $gte: currentMonthStart }
+      });
+      
+      previousCount = await db.collection(collectionName).countDocuments({
+        createdAt: { $gte: previousMonthStart, $lt: previousMonthEnd }
+      });
+    }
+    
+    if (previousCount === 0) {
+      return currentCount > 0 ? 100 : 0;
+    }
+    
+    const change = ((currentCount - previousCount) / previousCount) * 100;
+    return Math.round(change);
+  } catch (error) {
+    console.error(`Error calculating percentage change for ${collectionName}:`, error);
+    return 0;
+  }
+}
+
 export const GET = withRateLimit(async (request: Request) => {
   try {
     // Try to get stats from Redis cache first
@@ -23,7 +69,7 @@ export const GET = withRateLimit(async (request: Request) => {
     });
     
     // Get unique locations count
-    const uniqueLocations = await db.collection("stations").distinct("location");
+    const uniqueLocations = await db.collection("stations").distinct("city");
     const totalLocations = uniqueLocations.length;
     
     // Get total revenue from completed payments
@@ -33,13 +79,19 @@ export const GET = withRateLimit(async (request: Request) => {
     
     const totalRevenue = payments.reduce((sum, payment) => sum + (payment['amount'] || 0), 0);
     
+    // Calculate percentage changes
+    const userChange = await calculatePercentageChange(db, "clients", "createdAt");
+    const stationChange = await calculatePercentageChange(db, "stations", "createdAt", { status: "active" });
+    const locationChange = 0; // This is harder to calculate accurately without historical data
+    const revenueChange = await calculatePercentageChange(db, "payments", "amount", { status: "completed" });
+    
     // Prepare stats data as requested
     const stats = [
       {
         id: '1',
         name: 'Users',
         value: totalUsers,
-        change: 0, // Would calculate based on previous period in real implementation
+        change: userChange,
         color: 'from-[#8B5CF6] to-[#10B981]',
         icon: 'user-group'
       },
@@ -47,7 +99,7 @@ export const GET = withRateLimit(async (request: Request) => {
         id: '2',
         name: 'Stations',
         value: activeStations,
-        change: 0,
+        change: stationChange,
         color: 'from-[#10B981] to-[#059669]',
         icon: 'lightning-bolt'
       },
@@ -55,7 +107,7 @@ export const GET = withRateLimit(async (request: Request) => {
         id: '3',
         name: 'Locations',
         value: totalLocations,
-        change: 0,
+        change: locationChange,
         color: 'from-[#F59E0B] to-[#D97706]',
         icon: 'clock'
       },
@@ -63,7 +115,7 @@ export const GET = withRateLimit(async (request: Request) => {
         id: '4',
         name: 'Revenue',
         value: totalRevenue,
-        change: 0,
+        change: revenueChange,
         color: 'from-[#EF4444] to-[#DC2626]',
         icon: 'currency-rupee'
       }
@@ -87,7 +139,7 @@ export const GET = withRateLimit(async (request: Request) => {
     }
     
     return NextResponse.json(
-      { error: errorMessage }, 
+      { error: errorMessage, details: error.message }, 
       { status: 500 }
     );
   }

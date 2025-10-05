@@ -39,32 +39,7 @@ export function initSocket(server: any) {
 
     // Only subscribe to Redis channels if Redis is available
     if (redis.isAvailable()) {
-      // Subscribe to existing channels
-      redis.subscribe("charging-session-update")
-        .then(() => {
-          console.log('Subscribed to charging-session-update channel');
-        })
-        .catch(err => {
-          console.error("Error subscribing to charging-session-update:", err);
-        });
-
-      redis.subscribe("payment-update")
-        .then(() => {
-          console.log('Subscribed to payment-update channel');
-        })
-        .catch(err => {
-          console.error("Error subscribing to payment-update:", err);
-        });
-
-      redis.subscribe("slot-availability-update")
-        .then(() => {
-          console.log('Subscribed to slot-availability-update channel');
-        })
-        .catch(err => {
-          console.error("Error subscribing to slot-availability-update:", err);
-        });
-
-      // Subscribe to the new client activity channel
+      // Subscribe to the client activity channel for MongoDB change streams
       redis.subscribe("client_activity_channel")
         .then(() => {
           console.log('Subscribed to client_activity_channel');
@@ -78,48 +53,62 @@ export function initSocket(server: any) {
         try {
           const data = JSON.parse(message);
           
-          switch (channel) {
-            case "charging-session-update":
-              io?.to(`user-${data.userId}`).emit("charging-session-update", data);
-              break;
-            case "payment-update":
-              io?.to(`user-${data.userId}`).emit("payment-update", data);
-              break;
-            case "slot-availability-update":
-              // Broadcast to all users or specific users based on your needs
-              io?.emit("slot-availability-update", data);
-              break;
-            case "client_activity_channel":
-              // Handle new real-time events from MongoDB change streams
-              switch (data.event) {
-                case 'client_update':
-                  // Broadcast to admin dashboard
-                  io?.emit("client-update", data);
-                  break;
-                case 'charging_session_update':
-                  // Broadcast to admin dashboard and specific user
-                  io?.emit("charging-session-update", data);
-                  if (data.fullDocument?.userId) {
-                    io?.to(`user-${data.fullDocument.userId}`).emit("user-charging-session-update", data);
-                  }
-                  break;
-                case 'payment_update':
-                  // Broadcast to admin dashboard and specific user
-                  io?.emit("payment-update", data);
-                  if (data.fullDocument?.userId) {
-                    io?.to(`user-${data.fullDocument.userId}`).emit("user-payment-update", data);
-                  }
-                  break;
-                case 'eco_stats_update':
-                  // Broadcast to admin dashboard
-                  io?.emit("eco-stats-update", data);
-                  break;
-                default:
-                  console.log(`Unknown client activity event: ${data.event}`);
-              }
-              break;
-            default:
-              console.log(`Unknown channel: ${channel}`);
+          if (channel === "client_activity_channel") {
+            // Handle real-time events from MongoDB change streams
+            switch (data.event) {
+              case 'client_update':
+                // Broadcast to admin dashboard
+                io?.emit("client-update", data);
+                // Also trigger eco stats update
+                io?.emit("eco-stats-update", { event: 'eco_stats_update' });
+                break;
+              case 'station_update':
+                // Broadcast to admin dashboard
+                io?.emit("station-update", data);
+                // Also trigger eco stats update
+                io?.emit("eco-stats-update", { event: 'eco_stats_update' });
+                break;
+              case 'charging_session_update':
+                // Broadcast to admin dashboard and specific user
+                io?.emit("charging-session-update", data);
+                if (data.fullDocument?.userId) {
+                  io?.to(`user-${data.fullDocument.userId}`).emit("user-charging-session-update", data);
+                }
+                // Also trigger eco stats update
+                io?.emit("eco-stats-update", { event: 'eco_stats_update' });
+                break;
+              case 'payment_update':
+                // Broadcast to admin dashboard and specific user
+                io?.emit("payment-update", data);
+                if (data.fullDocument?.userId) {
+                  io?.to(`user-${data.fullDocument.userId}`).emit("user-payment-update", data);
+                }
+                // Also trigger eco stats update
+                io?.emit("eco-stats-update", { event: 'eco_stats_update' });
+                break;
+              case 'eco_stats_update':
+                // Broadcast to admin dashboard
+                io?.emit("eco-stats-update", data);
+                break;
+              default:
+                console.log(`Unknown client activity event: ${data.event}`);
+            }
+          } else {
+            // Handle legacy channels for backward compatibility
+            switch (channel) {
+              case "charging-session-update":
+                io?.to(`user-${data.userId}`).emit("charging-session-update", data);
+                break;
+              case "payment-update":
+                io?.to(`user-${data.userId}`).emit("payment-update", data);
+                break;
+              case "slot-availability-update":
+                // Broadcast to all users or specific users based on your needs
+                io?.emit("slot-availability-update", data);
+                break;
+              default:
+                console.log(`Unknown channel: ${channel}`);
+            }
           }
         } catch (error) {
           console.error("Error parsing Redis message:", error);

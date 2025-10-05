@@ -45,6 +45,21 @@ export async function initializeChangeStreams() {
           console.error('Error publishing client update to Redis:', error);
         }
       }
+      
+      // Also publish eco stats update when clients change to trigger dashboard updates
+      if (redis.isAvailable()) {
+        try {
+          await redis.publish('client_activity_channel', JSON.stringify({
+            event: 'eco_stats_update',
+            operationType: change.operationType,
+            documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
+            timestamp: new Date().toISOString()
+          }));
+          console.log('Published eco stats update to Redis due to client change');
+        } catch (error) {
+          console.error('Error publishing eco stats update to Redis:', error);
+        }
+      }
     });
     
     clientsChangeStream.on('error', (error) => {
@@ -58,6 +73,69 @@ export async function initializeChangeStreams() {
     });
     
     changeStreams.push({ name: 'clients', stream: clientsChangeStream });
+    
+    // Watch stations collection
+    const stationsCollection = db.collection('stations');
+    const stationsChangeStream = stationsCollection.watch([], { 
+      fullDocument: 'updateLookup',
+      resumeAfter: null,
+      startAfter: null,
+      maxAwaitTimeMS: 60000
+    });
+    
+    stationsChangeStream.on('change', async (change: ChangeStreamDocument) => {
+      console.log('Station change detected:', change.operationType, (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey);
+      
+      // Prepare the event data
+      const eventData = {
+        event: 'station_update',
+        operationType: change.operationType,
+        documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
+        fullDocument: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument).fullDocument ? {
+          ...(change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument).fullDocument,
+          id: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument).fullDocument!['_id'].toString(),
+          _id: undefined
+        } : null,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Publish to Redis
+      if (redis.isAvailable()) {
+        try {
+          await redis.publish('client_activity_channel', JSON.stringify(eventData));
+          console.log('Published station update to Redis');
+        } catch (error) {
+          console.error('Error publishing station update to Redis:', error);
+        }
+      }
+      
+      // Also publish eco stats update when stations change to trigger dashboard updates
+      if (redis.isAvailable()) {
+        try {
+          await redis.publish('client_activity_channel', JSON.stringify({
+            event: 'eco_stats_update',
+            operationType: change.operationType,
+            documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
+            timestamp: new Date().toISOString()
+          }));
+          console.log('Published eco stats update to Redis due to station change');
+        } catch (error) {
+          console.error('Error publishing eco stats update to Redis:', error);
+        }
+      }
+    });
+    
+    stationsChangeStream.on('error', (error) => {
+      console.error('Stations change stream error:', error);
+      // Attempt to resume the change stream
+      handleChangeStreamError(error, 'stations');
+    });
+    
+    stationsChangeStream.on('end', () => {
+      console.log('Stations change stream ended');
+    });
+    
+    changeStreams.push({ name: 'stations', stream: stationsChangeStream });
     
     // Watch charging_sessions collection
     const chargingSessionsCollection = db.collection('charging_sessions');
@@ -139,6 +217,21 @@ export async function initializeChangeStreams() {
           console.log('Published payment update to Redis');
         } catch (error) {
           console.error('Error publishing payment update to Redis:', error);
+        }
+      }
+      
+      // Also publish eco stats update when payments change to trigger dashboard updates
+      if (redis.isAvailable()) {
+        try {
+          await redis.publish('client_activity_channel', JSON.stringify({
+            event: 'eco_stats_update',
+            operationType: change.operationType,
+            documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
+            timestamp: new Date().toISOString()
+          }));
+          console.log('Published eco stats update to Redis due to payment change');
+        } catch (error) {
+          console.error('Error publishing eco stats update to Redis:', error);
         }
       }
     });

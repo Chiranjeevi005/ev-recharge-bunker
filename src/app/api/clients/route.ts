@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     // Calculate pagination
     const skip = (page - 1) * limit;
     
-    // Fetch clients with pagination
+    // Fetch clients with pagination and sort by creation date (newest first)
     const clients = await db.collection("clients")
       .find(filter)
       .skip(skip)
@@ -51,9 +51,9 @@ export async function GET(request: Request) {
     const serializedClients = clients.map((client: any) => ({
       ...client,
       _id: client._id.toString(),
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt,
-      lastLogin: client.lastLogin
+      createdAt: client.createdAt?.toISOString ? client.createdAt.toISOString() : client.createdAt,
+      updatedAt: client.updatedAt?.toISOString ? client.updatedAt.toISOString() : client.updatedAt,
+      lastLogin: client.lastLogin?.toISOString ? client.lastLogin.toISOString() : client.lastLogin
     }));
     
     const response = {
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error("Error fetching clients:", error);
     return NextResponse.json(
-      { error: "Failed to fetch clients" },
+      { error: "Failed to fetch clients", details: error.message },
       { status: 500 }
     );
   }

@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     // Calculate pagination
     const skip = (page - 1) * limit;
     
-    // Fetch payments with pagination
+    // Fetch payments with pagination and sort by creation date (newest first)
     const payments = await db.collection("payments")
       .find(filter)
       .skip(skip)
@@ -47,14 +47,14 @@ export async function GET(request: Request) {
     // Get total count for pagination
     const total = await db.collection("payments").countDocuments(filter);
     
-    // Convert ObjectId to string for JSON serialization
+    // Convert ObjectId to string for JSON serialization and ensure proper date formatting
     const serializedPayments = payments.map((payment: any) => ({
       ...payment,
       _id: payment._id.toString(),
       userId: payment.userId.toString(),
       stationId: payment.stationId.toString(),
-      createdAt: payment.createdAt,
-      updatedAt: payment.updatedAt
+      createdAt: payment.createdAt?.toISOString ? payment.createdAt.toISOString() : payment.createdAt,
+      updatedAt: payment.updatedAt?.toISOString ? payment.updatedAt.toISOString() : payment.updatedAt
     }));
     
     const response = {
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error("Error fetching payments:", error);
     return NextResponse.json(
-      { error: "Failed to fetch payments" },
+      { error: "Failed to fetch payments", details: error.message },
       { status: 500 }
     );
   }

@@ -10,6 +10,14 @@ interface ClientUpdate {
   timestamp: string;
 }
 
+interface StationUpdate {
+  event: 'station_update';
+  operationType: 'insert' | 'update' | 'delete';
+  documentKey: string;
+  fullDocument?: any;
+  timestamp: string;
+}
+
 interface ChargingSessionUpdate {
   event: 'charging_session_update';
   operationType: 'insert' | 'update' | 'delete';
@@ -36,6 +44,7 @@ interface EcoStatsUpdate {
 
 type RealTimeUpdate = 
   | ClientUpdate 
+  | StationUpdate
   | ChargingSessionUpdate 
   | PaymentUpdate 
   | EcoStatsUpdate;
@@ -95,6 +104,12 @@ export function useRealTimeData(): UseRealTimeDataReturn {
       // Process client data if needed
     });
 
+    socketInstance.on('station-update', (data: StationUpdate) => {
+      console.log('Received station update:', data);
+      setUpdates(prev => [...prev, data]);
+      // Process station data if needed
+    });
+
     socketInstance.on('charging-session-update', (data: ChargingSessionUpdate) => {
       console.log('Received charging session update:', data);
       setUpdates(prev => [...prev, data]);
@@ -111,6 +126,12 @@ export function useRealTimeData(): UseRealTimeDataReturn {
       console.log('Received eco stats update:', data);
       setUpdates(prev => [...prev, data]);
       // Process stats data if needed
+    });
+
+    // Handle any general update events
+    socketInstance.on('update', (data: any) => {
+      console.log('Received general update:', data);
+      setUpdates(prev => [...prev, data]);
     });
 
     setSocket(socketInstance);
