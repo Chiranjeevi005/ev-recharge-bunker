@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, withRole } from "@/lib/api-middleware";
+import { withAuth, withRole } from "@/lib/api/api-middleware";
 
 // Protected route that requires authentication
 export const GET = withAuth(async (req) => {

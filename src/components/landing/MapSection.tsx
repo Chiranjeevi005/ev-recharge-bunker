@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Section } from '@/components/ui/Section';
+import { Section } from '@/components/landing/Section';
 
 export const MapSection: React.FC = () => {
   const [selectedStation, setSelectedStation] = useState<number | null>(null);

@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/landing/Navbar';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { useLoader } from '@/lib/LoaderContext';
+import { Card } from '@/components/common/Card';
+import { Button } from '@/components/common/Button';
+import { Input } from '@/components/common/Input';
+import { useLoader } from '@/context/LoaderContext';
 import Image from 'next/image';
 
 // List of major metropolitan cities in India

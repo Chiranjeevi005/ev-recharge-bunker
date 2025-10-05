@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from '@/lib/redis';
+import redis from '@/lib/realtime/redis';
 
 // Helper function to get user growth data
 async function getUserGrowthData(db: any) {
@@ -219,7 +219,7 @@ export async function GET(request: Request) {
 
     const { db } = await connectToDatabase();
     
-    let chartData: any = {};
+    const chartData: any = {};
 
     if (!chartType || chartType === 'user-growth') {
       chartData.userGrowth = await getUserGrowthData(db);

@@ -1,5 +1,5 @@
-import redis from './redis';
-import { setupPeriodicStatsUpdates } from './updateStats';
+import redis from './realtime/redis';
+import { setupPeriodicStatsUpdates } from './realtime/updateStats';
 import { ensureDatabaseIndexes } from './db/indexes';
 
 export async function startup() {

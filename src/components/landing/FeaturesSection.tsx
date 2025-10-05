@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Section } from '@/components/ui/Section';
-import { Card } from '@/components/ui/Card';
+import { Section } from '@/components/landing/Section';
+import { Card } from '@/components/common/Card';
 
 export const FeaturesSection: React.FC = () => {
   const features = [

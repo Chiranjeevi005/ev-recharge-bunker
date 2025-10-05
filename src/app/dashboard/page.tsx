@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/common/Button';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import io from 'socket.io-client';
@@ -15,9 +15,9 @@ import {
   BusinessStats,
   JourneyImpactStats
 } from '@/components/dashboard';
-import { useLoader } from '@/lib/LoaderContext';
+import { useLoader } from '@/context/LoaderContext';
 import { useRouteTransition } from '@/hooks/useRouteTransition';
-import { FetchingAnimation } from '@/components/ui/FetchingAnimation';
+import { FetchingAnimation } from '@/components/dashboard/FetchingAnimation';
 
 interface ChargingSession {
   userId: string;

@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
-import { Logo } from '@/components/ui/Logo';
+import { Button } from '@/components/common/Button';
+import { Logo } from '@/components/common/Logo';
 import { signOut, useSession } from "next-auth/react";
 import Image from 'next/image';
-import { useLoader } from '@/lib/LoaderContext'; // Import the universal loader context
+import { useLoader } from '@/context/LoaderContext'; // Import the universal loader context
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export const Navbar: React.FC = () => {

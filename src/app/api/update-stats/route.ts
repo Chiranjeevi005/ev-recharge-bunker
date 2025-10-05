@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { updateDashboardStats } from '@/lib/updateStats';
+import { updateDashboardStats } from '@/lib/realtime/updateStats';
 
 export async function GET() {
   try {

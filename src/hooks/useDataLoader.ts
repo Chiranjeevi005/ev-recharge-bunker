@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLoader } from '@/lib/LoaderContext';
+import { useLoader } from '@/context/LoaderContext';
 import { connectToDatabase } from '@/lib/db/connection';
 
 interface DataLoaderOptions {

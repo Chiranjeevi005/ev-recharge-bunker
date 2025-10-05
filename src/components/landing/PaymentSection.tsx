@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Section } from '@/components/ui/Section';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Section } from '@/components/landing/Section';
+import { Card } from '@/components/common/Card';
+import { Button } from '@/components/common/Button';
 
 export const PaymentSection: React.FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<string>("card");

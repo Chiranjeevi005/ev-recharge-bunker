@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
-import { useLoader } from '@/lib/LoaderContext';
+import { useLoader } from '@/context/LoaderContext';
 import io from 'socket.io-client';
 
 interface ImpactStat {

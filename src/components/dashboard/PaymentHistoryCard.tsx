@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/common/Button';
 import { motion } from 'framer-motion';
 
 interface Payment {

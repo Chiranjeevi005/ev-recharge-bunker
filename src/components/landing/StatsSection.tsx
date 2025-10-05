@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Section } from '@/components/ui/Section';
+import { Section } from '@/components/landing/Section';
 
 export const StatsSection: React.FC = () => {
   // Professional placeholder data for statistics

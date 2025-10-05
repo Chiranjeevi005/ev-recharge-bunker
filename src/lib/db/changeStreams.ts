@@ -1,5 +1,5 @@
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from '@/lib/redis';
+import redis from '@/lib/realtime/redis';
 import type { ChangeStreamDocument, ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ChangeStreamDeleteDocument } from 'mongodb';
 
 // Store change stream references for proper cleanup

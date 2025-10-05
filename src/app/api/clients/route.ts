@@ -3,8 +3,8 @@ import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validateClient } from '@/lib/db/schemas/validation';
 import { clientSchema } from '@/lib/validation/client';
-import { withPermission, withValidation } from '@/lib/middleware/rbac';
-import redis from '@/lib/redis';
+import { withPermission, withValidation } from '@/lib/auth/rbac';
+import redis from '@/lib/realtime/redis';
 
 export async function GET(request: Request) {
   try {

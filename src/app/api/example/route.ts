@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { withAuth, withRole } from "@/lib/api-middleware";
-import type { AuthenticatedRequest } from "@/lib/api-middleware";
+import { withAuth, withRole } from "@/lib/api/api-middleware";
+import type { AuthenticatedRequest } from "@/lib/api/api-middleware";
 import { withRateLimit } from "@/lib/rateLimit";
 
 // Example of a rate-limited public endpoint

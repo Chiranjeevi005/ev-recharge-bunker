@@ -5,8 +5,8 @@ import React, { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 // @ts-ignore
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/common/Button';
+import { Card } from '@/components/common/Card';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useContactForm } from '@/hooks/useContactForm';

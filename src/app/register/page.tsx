@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/common/Button";
+import { Card } from "@/components/common/Card";
 import Link from "next/link";
-import { useLoader } from "@/lib/LoaderContext";
+import { useLoader } from "@/context/LoaderContext";
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export default function RegisterPage() {

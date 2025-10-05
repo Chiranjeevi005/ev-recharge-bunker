@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useLoader } from '@/lib/LoaderContext';
+import { useLoader } from '@/context/LoaderContext';
 import Router from 'next/router';
 
 let isInitialLoad = true;

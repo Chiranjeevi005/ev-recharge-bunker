@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/common/Button';
 import { useSession } from "next-auth/react";
 
 export const CTASection: React.FC = () => {

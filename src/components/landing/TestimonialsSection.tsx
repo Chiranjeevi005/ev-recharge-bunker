@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Section } from '@/components/ui/Section';
-import { TestimonialCard } from '@/components/ui/TestimonialCard';
+import { Section } from '@/components/landing/Section';
+import { TestimonialCard } from '@/components/common/TestimonialCard';
 
 export const TestimonialsSection: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);

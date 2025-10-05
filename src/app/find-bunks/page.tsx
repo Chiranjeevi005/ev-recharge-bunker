@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui";
-import { useAuth } from "@/lib/useAuth";
+import { Button } from "@/components/common/Button";
+import { Card } from "@/components/common/Card";
+import { Input } from "@/components/common";
+import { useAuth } from "@/lib/auth/useAuth";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { useLoader } from '@/lib/LoaderContext'; // Added import
+import { useLoader } from '@/context/LoaderContext'; 
 
 // Declare Razorpay on window object
 declare global {

@@ -4,10 +4,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/common/Button';
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
-import { useLoader } from '@/lib/LoaderContext'; // Import the universal loader context
+import { useLoader } from '@/context/LoaderContext'; // Import the universal loader context
 
 // Predefined positions for particles to ensure SSR/CSR consistency
 const particlePositions = [

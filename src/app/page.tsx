@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { 
   Navbar,
   HeroSection,

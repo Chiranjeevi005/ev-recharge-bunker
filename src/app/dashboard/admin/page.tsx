@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/common/Button';
+import { Card } from '@/components/common/Card';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLoader } from '@/lib/LoaderContext';
+import { useLoader } from '@/context/LoaderContext';
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 import { useRealTimeData } from '@/hooks/useRealTimeData';
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart';
-import { FetchingAnimation } from '@/components/ui/FetchingAnimation';
+import { FetchingAnimation } from '@/components/dashboard/FetchingAnimation';
 
 interface Client {
   _id: string;

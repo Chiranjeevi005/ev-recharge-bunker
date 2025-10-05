@@ -5,9 +5,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/Navbar';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/common/Button';
 import { Footer } from '@/components/landing/Footer';
-import { useLoader } from '@/lib/LoaderContext';
+import { useLoader } from '@/context/LoaderContext';
 
 interface Payment {
   _id: string;

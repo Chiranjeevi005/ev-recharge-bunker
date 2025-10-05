@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { Button } from '@/components/ui/Button';
-import { useLoader } from '@/lib/LoaderContext'; // Added import
+import { Button } from '@/components/common/Button';
+import { useLoader } from '@/context/LoaderContext'; // Added import
 
 interface Booking {
   _id: string;

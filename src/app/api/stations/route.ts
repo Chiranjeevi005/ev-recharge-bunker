@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validateStation } from '@/lib/db/schemas/validation';
-import redis from '@/lib/redis';
+import redis from '@/lib/realtime/redis';
 
 export async function GET(request: Request) {
   try {

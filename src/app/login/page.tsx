@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/common/Button";
+import { Card } from "@/components/common/Card";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useLoader } from "@/lib/LoaderContext";
+import { useLoader } from "@/context/LoaderContext";
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 
 export default function LoginPage() {
