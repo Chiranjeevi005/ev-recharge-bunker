@@ -1,0 +1,21 @@
+import { auth } from "@/lib/auth/auth";
+import { handlers } from "@/lib/auth/auth";
+export const { GET, POST } = handlers;
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  try {
+    const session = await auth();
+    
+    // Return the session with proper headers
+    const response = NextResponse.json(session || null);
+    response.headers.set("Content-Type", "application/json");
+    return response;
+  } catch (error) {
+    console.error("Session fetch error:", error);
+    // Return null session instead of error to prevent JSON parsing issues
+    const response = NextResponse.json(null);
+    response.headers.set("Content-Type", "application/json");
+    return response;
+  }
+}

@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     await db.collection("accounts").insertOne({
       userId: client._id.toString(),
       type: "credentials",
-      provider: "credentials",
+      provider: "client-credentials",
       providerAccountId: client._id.toString(),
       access_token: password, // In a real implementation, this should be hashed
       createdAt: new Date(),
@@ -61,9 +61,9 @@ export async function POST(request: Request) {
       message: "Client registered successfully",
       client: {
         id: client._id.toString(),
-        name: client.name,
-        email: client.email,
-        role: client.role
+        name: client['name'],
+        email: client['email'],
+        role: client['role']
       }
     }, { status: 201 });
 

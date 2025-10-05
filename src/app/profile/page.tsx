@@ -10,6 +10,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { useLoader } from '@/context/LoaderContext';
 import Image from 'next/image';
+import Toast from '@/components/common/Toast';
 
 // List of major metropolitan cities in India
 const METROPOLITAN_CITIES = [
@@ -38,6 +39,9 @@ export default function ProfileSettings() {
     location: '',
     avatar: '/assets/logo.png'
   });
+
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
 
   // Password & Security State
   const [passwordForm, setPasswordForm] = useState({
@@ -187,7 +191,10 @@ export default function ProfileSettings() {
               clientId: session.user.id
             });
             // Show error to user with more specific message
-            alert(`Failed to update location: ${errorData.error || errorData.details || 'Unknown error'}`);
+            setToast({
+              message: `Failed to update location: ${errorData.error || errorData.details || 'Unknown error'}`,
+              type: 'error'
+            });
             hasError = true;
           } else {
             const updatedClient = await response.json();
@@ -219,7 +226,10 @@ export default function ProfileSettings() {
               clientId: session.user.id
             });
             // Show error to user with more specific message
-            alert(`Failed to update name: ${errorData.error || errorData.details || 'Unknown error'}`);
+            setToast({
+              message: `Failed to update name: ${errorData.error || errorData.details || 'Unknown error'}`,
+              type: 'error'
+            });
             hasError = true;
           } else {
             const updatedClient = await response.json();
@@ -243,7 +253,10 @@ export default function ProfileSettings() {
           // Dispatch custom event for more reliable communication
           if (profile.location) {
             window.dispatchEvent(new CustomEvent('locationUpdated', {
-              detail: { userId: session.user.id, location: profile.location }
+              detail: { 
+                userId: session.user.id, 
+                location: profile.location 
+              } 
             }));
           }
           
@@ -261,10 +274,16 @@ export default function ProfileSettings() {
       // Simulate API call for other profile changes
       await new Promise(resolve => setTimeout(resolve, 1500));
       hideLoader();
-      alert("Profile updated successfully!");
+      setToast({
+        message: "Profile updated successfully!",
+        type: 'success'
+      });
     } catch (error) {
       console.error("Error saving profile:", error);
-      alert("Failed to save profile. Please try again.");
+      setToast({
+        message: "Failed to save profile. Please try again.",
+        type: 'error'
+      });
       hideLoader();
     }
   };
@@ -419,7 +438,7 @@ export default function ProfileSettings() {
                 <Input
                   label="Full Name"
                   value={profile.fullName}
-                  onChange={(e) => setProfile(prev => ({ ...prev, fullName: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile(prev => ({ ...prev, fullName: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
                 
@@ -427,7 +446,7 @@ export default function ProfileSettings() {
                   label="Email Address"
                   type="email"
                   value={profile.email}
-                  onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile(prev => ({ ...prev, email: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
                 
@@ -435,7 +454,7 @@ export default function ProfileSettings() {
                   label="Phone Number"
                   type="tel"
                   value={profile.phone}
-                  onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
                 
@@ -447,21 +466,30 @@ export default function ProfileSettings() {
                   <div className="relative">
                     <select
                       value={profile.location}
-                      onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                        const newLocation = e.target.value;
+                        setProfile(prev => ({ ...prev, location: newLocation }));
+                        // Dispatch location update immediately when location changes
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('locationUpdated', { 
+                            detail: { 
+                              location: newLocation 
+                            } 
+                          }));
+                          // Also dispatch storage event for backward compatibility
+                          window.dispatchEvent(new StorageEvent('storage', {
+                            key: 'userProfile',
+                            newValue: JSON.stringify({ ...profile, location: newLocation })
+                          }));
+                        }
+                      }}
                       className="w-full bg-[#334155] border border-[#475569] rounded-lg py-2 px-3 text-[#F1F5F9] text-sm focus:outline-none focus:ring-2 focus:ring-[#10B981] appearance-none"
                     >
                       <option value="">Select your city</option>
-                      {METROPOLITAN_CITIES.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
+                      {METROPOLITAN_CITIES.map(city => (
+                        <option key={city} value={city}>{city}</option>
                       ))}
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#94A3B8]">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </div>
                   </div>
                 </div>
                 
@@ -484,7 +512,7 @@ export default function ProfileSettings() {
                   label="Current Password"
                   type="password"
                   value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
                 
@@ -492,7 +520,7 @@ export default function ProfileSettings() {
                   label="New Password"
                   type="password"
                   value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
                 
@@ -500,7 +528,7 @@ export default function ProfileSettings() {
                   label="Confirm New Password"
                   type="password"
                   value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   className="py-2 px-3 text-sm"
                 />
                 
@@ -834,6 +862,15 @@ export default function ProfileSettings() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
 import { useLoader } from '@/context/LoaderContext';
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 import { FetchingAnimation } from '@/components/dashboard/FetchingAnimation';
+import Toast from '@/components/common/Toast';
 
 interface ChargingSession {
   userId: string;
@@ -71,7 +72,8 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
-  
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
+
   // Clear the navigation flag on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -112,7 +114,7 @@ export default function ClientDashboard() {
       socketRef.current.emit("join-user-room", session.user.id);
 
       // Listen for payment updates
-      socketRef.current.on("payment-update", (data: any) => {
+      const handlePaymentUpdate = (data: any) => {
         console.log("Received payment update:", data);
         
         // Show loader while processing update
@@ -175,12 +177,18 @@ export default function ClientDashboard() {
         setTimeout(() => {
           setNotification(null);
         }, 5000);
-      });
+      };
+
+      socketRef.current.on("payment-update", handlePaymentUpdate);
+      
+      // Also listen for user-specific payment updates
+      socketRef.current.on("user-payment-update", handlePaymentUpdate);
 
       // Clean up socket listeners
       return () => {
         if (socketRef.current) {
-          socketRef.current.off("payment-update");
+          socketRef.current.off("payment-update", handlePaymentUpdate);
+          socketRef.current.off("user-payment-update", handlePaymentUpdate);
           socketRef.current.disconnect();
         }
       };
@@ -248,11 +256,10 @@ export default function ClientDashboard() {
         })) : [];
         
         if (isMounted) {
-          // Sort by date (newest first) and keep only the 5 most recent
-          const sortedPayments = transformedPaymentData
+          const recentPayments = transformedPaymentData
             .sort((a: Payment, b: Payment) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 5);
-          setPaymentHistory(sortedPayments);
+          setPaymentHistory(recentPayments);
         }
 
         // Fetch slot availability
@@ -301,6 +308,12 @@ export default function ClientDashboard() {
     // Navigate to payment history page (original)
     router.push('/dashboard/client/payment-history');
   }, [router]);
+
+  const handleCancelSession = () => {
+    // In a real app, you would call your API to cancel the session
+    console.log("Cancel session functionality would be implemented here");
+    setToast({ message: "Cancel session functionality would be implemented here", type: 'info' });
+  };
 
   if (status === "loading" || loading) {
     // Check if we're navigating from the navbar to avoid flashing loaders
@@ -418,10 +431,7 @@ export default function ClientDashboard() {
           <div className="mb-10">
             <ChargingStatusCard 
               session={activeSession} 
-              onCancelSession={() => {
-                // Implementation for canceling session
-                alert("Cancel session functionality would be implemented here");
-              }} 
+              onCancelSession={handleCancelSession} 
             />
           </div>
 
@@ -429,7 +439,15 @@ export default function ClientDashboard() {
           <PaymentHistoryCard payments={Array.isArray(paymentHistory) ? paymentHistory : []} onViewAll={handleViewHistory} />
         </div>
       </main>
-      <Footer />
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

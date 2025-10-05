@@ -160,7 +160,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // First, check if an account already exists for this client
         const existingAccount = await db.collection("accounts").findOne({
           userId: client._id.toString(),
-          provider: "credentials"
+          provider: "client-credentials"
         });
 
         if (!existingAccount) {

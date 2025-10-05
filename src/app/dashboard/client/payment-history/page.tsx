@@ -8,6 +8,7 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Button } from '@/components/common/Button';
 import { Footer } from '@/components/landing/Footer';
 import { useLoader } from '@/context/LoaderContext';
+import io from 'socket.io-client';
 
 interface Payment {
   _id: string;
@@ -33,6 +34,7 @@ export default function PaymentHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { showLoader, hideLoader } = useLoader();
+  const socketRef = React.useRef<any>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -40,6 +42,81 @@ export default function PaymentHistoryPage() {
       router.push("/login");
     }
   }, [status, router]);
+
+  // Initialize socket connection and set up listeners
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.id) {
+      // Initialize socket connection
+      socketRef.current = io({
+        path: "/api/socketio"
+      });
+
+      // Join user room
+      socketRef.current.emit("join-user-room", session.user.id);
+
+      // Listen for payment updates
+      const handlePaymentUpdate = (data: any) => {
+        console.log("Received payment update in payment history:", data);
+        
+        // Transform the incoming payment data to match the expected structure
+        const updatedPayment: Payment = {
+          _id: data.payment.paymentId || '',
+          userId: data.payment.userId || session.user.id || '',
+          paymentId: data.payment.paymentId || '',
+          orderId: data.payment.orderId || '',
+          amount: data.payment.amount || 0,
+          status: data.payment.status || 'unknown',
+          method: data.payment.method || 'Razorpay',
+          stationId: data.payment.stationId || '',
+          stationName: data.payment.stationName || 'Unknown Station',
+          slotId: data.payment.slotId || '',
+          duration: data.payment.duration || 0,
+          currency: data.payment.currency || 'INR',
+          createdAt: data.payment.date || new Date().toISOString(),
+          updatedAt: data.payment.date || new Date().toISOString()
+        };
+
+        // Update payment history with the new payment
+        setPayments(prevPayments => {
+          // Create a new array with the updated payment
+          const updatedPayments = [...prevPayments];
+          
+          // Check if this payment already exists in the list
+          const existingIndex = updatedPayments.findIndex(
+            p => p.paymentId === updatedPayment.paymentId
+          );
+          
+          if (existingIndex !== -1) {
+            // Update existing payment
+            updatedPayments[existingIndex] = updatedPayment;
+          } else {
+            // Add new payment to the beginning of the list
+            updatedPayments.unshift(updatedPayment);
+          }
+          
+          // Sort by date (newest first)
+          return updatedPayments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        });
+      };
+
+      socketRef.current.on("payment-update", handlePaymentUpdate);
+      
+      // Also listen for user-specific payment updates
+      socketRef.current.on("user-payment-update", handlePaymentUpdate);
+
+      // Clean up socket listeners
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.off("payment-update", handlePaymentUpdate);
+          socketRef.current.off("user-payment-update", handlePaymentUpdate);
+          socketRef.current.disconnect();
+        }
+      };
+    }
+    
+    // Return a no-op cleanup function for cases where the effect doesn't run
+    return () => {};
+  }, [status, session?.user?.id]);
 
   // Fetch payment history
   useEffect(() => {
@@ -50,13 +127,16 @@ export default function PaymentHistoryPage() {
           setError(null);
           showLoader("Loading payment history...");
           
-          const response = await fetch(`/api/payments?userId=${session.user.id}`);
+          // Fetch all payments for this user without limit
+          const response = await fetch(`/api/payments?userId=${session.user.id}&limit=1000`);
           if (!response.ok) {
             throw new Error('Failed to fetch payment history');
           }
           
-          const data = await response.json();
-          setPayments(data);
+          const result = await response.json();
+          // Extract data array from the response (API returns { success: true, data: [...] })
+          const paymentsData = result.data || result || [];
+          setPayments(paymentsData);
           hideLoader();
         } catch (err) {
           console.error("Error fetching payment history:", err);

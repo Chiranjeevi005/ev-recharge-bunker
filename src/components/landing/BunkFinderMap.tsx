@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { motion } from 'framer-motion';
+import Toast from '@/components/common/Toast';
 
 // Import MapLibre Geocoder
 import MaplibreGeocoder from '@maplibre/maplibre-gl-geocoder';
@@ -49,6 +50,9 @@ export const BunkFinderMap: React.FC = () => {
   const [selectedSlot, setSelectedSlot] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
+  
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
 
   // Load charging stations
   useEffect(() => {
@@ -349,13 +353,22 @@ export const BunkFinderMap: React.FC = () => {
         setSelectedSlot('');
         
         // Show success message
-        alert(`Booking confirmed for ${selectedStation.name} - Slot ${selectedSlot}`);
+        setToast({
+          message: `Booking confirmed for ${selectedStation.name} - Slot ${selectedSlot}`,
+          type: 'success'
+        });
       } else {
-        alert(`Booking failed: ${result.error}`);
+        setToast({
+          message: `Booking failed: ${result.error}`,
+          type: 'error'
+        });
       }
     } catch (error) {
       console.error('Booking failed:', error);
-      alert('Failed to process booking. Please try again.');
+      setToast({
+        message: 'Failed to process booking. Please try again.',
+        type: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -639,6 +652,15 @@ export const BunkFinderMap: React.FC = () => {
             </motion.div>
           </div>
         </motion.div>
+      )}
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

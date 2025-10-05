@@ -4,13 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/common/Button";
 import { Card } from "@/components/common/Card";
-import { Input } from "@/components/common";
+import { Input } from "@/components/common/Input";
 import { useAuth } from "@/lib/auth/useAuth";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { useLoader } from '@/context/LoaderContext'; 
+import { useLoader } from '@/context/LoaderContext'; // Added import
+import Toast from '@/components/common/Toast';
 
 // Declare Razorpay on window object
 declare global {
@@ -70,6 +71,9 @@ export default function FindBunksPage() {
     startTime: "",
     endTime: "",
   });
+  
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
   
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -193,7 +197,10 @@ export default function FindBunksPage() {
       
       if (!res) {
         hideLoader(); // Hide loader
-        alert('Failed to load Razorpay. Please try again.');
+        setToast({
+          message: 'Failed to load Razorpay. Please try again.',
+          type: 'error'
+        });
         return;
       }
       
@@ -226,7 +233,10 @@ export default function FindBunksPage() {
       if (!response.ok) {
         hideLoader(); // Hide loader
         console.error("Payment order creation failed:", orderData.error);
-        alert(`Payment order creation failed: ${orderData.error}`);
+        setToast({
+          message: `Payment order creation failed: ${orderData.error}`,
+          type: 'error'
+        });
         return;
       }
       
@@ -266,11 +276,17 @@ export default function FindBunksPage() {
                 router.push(`/confirmation?bookingId=${verifyData.bookingId}`);
               } else {
                 console.error("Payment verification failed:", verifyData.error);
-                alert("Payment verification failed. Please contact support.");
+                setToast({
+                  message: "Payment verification failed. Please contact support.",
+                  type: 'error'
+                });
               }
             } catch (verifyError) {
               console.error("Error verifying payment:", verifyError);
-              alert("Failed to verify payment. Please contact support.");
+              setToast({
+                message: "Failed to verify payment. Please contact support.",
+                type: 'error'
+              });
             } finally {
               hideLoader(); // Hide loader
             }
@@ -295,12 +311,18 @@ export default function FindBunksPage() {
         rzp.open();
       } else {
         hideLoader(); // Hide loader
-        alert("Failed to create payment order. Please try again.");
+        setToast({
+          message: "Failed to create payment order. Please try again.",
+          type: 'error'
+        });
       }
     } catch (error) {
       hideLoader(); // Hide loader
       console.error("Payment error:", error);
-      alert("Payment failed. Please try again.");
+      setToast({
+        message: "Payment failed. Please try again.",
+        type: 'error'
+      });
     }
   };
 
@@ -648,6 +670,15 @@ export default function FindBunksPage() {
 
       {/* Footer */}
       <Footer />
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

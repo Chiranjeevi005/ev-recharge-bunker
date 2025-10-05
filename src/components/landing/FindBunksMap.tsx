@@ -26,10 +26,16 @@ interface FindBunksMapProps {
 }
 
 export const FindBunksMap: React.FC<FindBunksMapProps> = ({ 
-  stations, 
+  stations: stationsProp, 
   onStationSelect,
   selectedStation
 }) => {
+  // Ensure stations is always an array
+  const stations = Array.isArray(stationsProp) ? stationsProp : [];
+  
+  // Type guard for the first station
+  const firstStation = stations.length > 0 ? stations[0] : null;
+  
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -42,7 +48,7 @@ export const FindBunksMap: React.FC<FindBunksMapProps> = ({
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://tiles.openfreemap.org/styles/liberty',
-      center: stations.length > 0 ? [stations[0].lng, stations[0].lat] : [77.209021, 28.613939],
+      center: firstStation ? [firstStation.lng, firstStation.lat] : [77.209021, 28.613939],
       zoom: stations.length > 0 ? 10 : 12,
       attributionControl: false
     });
@@ -83,7 +89,7 @@ export const FindBunksMap: React.FC<FindBunksMapProps> = ({
       
       el.innerHTML = `
         <div class="relative">
-          <div class="w-6 h-6 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] border-2 border-white flex items-center justify-center shadow-lg">
+          <div class="w-6 h-6 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] border-2 border-white flex items-center justify-center shadow-lg cursor-pointer">
             <span class="text-white text-xs font-bold">⚡</span>
           </div>
           <div class="absolute -top-2 -right-2 bg-[#10B981] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -118,7 +124,7 @@ export const FindBunksMap: React.FC<FindBunksMapProps> = ({
       });
       
       mapRef.current.fitBounds(bounds, {
-        padding: 50,
+        padding: 30,
         maxZoom: 15
       });
     }

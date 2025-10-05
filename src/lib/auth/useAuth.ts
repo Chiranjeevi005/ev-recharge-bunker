@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signIn, signOut } from "next-auth/react";
 
 interface User {
   id: string;
@@ -19,8 +20,8 @@ export function useAuth() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("/api/auth/session");
-        const session = await res.json();
+        // Use next-auth/react to get session
+        const session = await fetch("/api/auth/session").then(res => res.json());
         
         if (session?.user) {
           setUser(session.user);
@@ -38,24 +39,25 @@ export function useAuth() {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, userType: 'admin' | 'client' = 'client') => {
     try {
-      const res = await fetch("/api/auth/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      // Use next-auth/react signIn function
+      const result = await signIn(`${userType}-credentials`, {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setUser(data.user);
-        router.push("/dashboard/admin");
-        return { success: true };
+      if (result?.error) {
+        return { success: false, error: result.error };
       } else {
-        return { success: false, error: data.error };
+        // Refresh the user data
+        const session = await fetch("/api/auth/session").then(res => res.json());
+        if (session?.user) {
+          setUser(session.user);
+        }
+        router.push(userType === 'admin' ? "/dashboard/admin" : "/dashboard/client");
+        return { success: true };
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -65,10 +67,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-      
+      await signOut({ redirect: false });
       setUser(null);
       router.push("/login");
     } catch (error) {

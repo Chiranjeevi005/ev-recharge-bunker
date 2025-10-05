@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validatePayment } from '@/lib/db/schemas/validation';
+import { PaymentService } from '@/lib/payment';
 import redis from '@/lib/realtime/redis';
 
 export async function GET(request: Request) {
@@ -12,6 +13,24 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const userId = searchParams.get('userId');
     const stationId = searchParams.get('stationId');
+    
+    // Special case: if userId is provided and limit is high, use getAllPaymentHistory
+    if (userId && limit >= 1000) {
+      // Fetch all payments for the user without pagination
+      const payments = await PaymentService.getAllPaymentHistory(userId);
+      
+      // Apply status filter if provided
+      const filteredPayments = status 
+        ? payments.filter(payment => payment.status === status)
+        : payments;
+      
+      // Apply stationId filter if provided
+      const finalPayments = stationId 
+        ? filteredPayments.filter(payment => payment.stationId === stationId)
+        : filteredPayments;
+      
+      return NextResponse.json(finalPayments);
+    }
     
     // Create cache key based on parameters
     const cacheKey = `payments:${page}:${limit}:${status || 'all'}:${userId || 'all'}:${stationId || 'all'}`;

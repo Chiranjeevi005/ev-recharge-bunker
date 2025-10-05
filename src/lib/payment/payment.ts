@@ -152,11 +152,23 @@ export class PaymentService {
         }
         
         console.log(`Successfully updated paymentId for orderId: '${orderId}'`);
-        return {
+        const updatedPayment = {
           ...result['value'],
           id: result['value']._id.toString(),
           _id: result['value']._id
         } as Payment;
+        
+        // Clear Redis cache for this user by setting a short TTL
+        if (redis.isAvailable()) {
+          try {
+            await redis.setex(`payment:history:${updatedPayment.userId}`, 1, JSON.stringify([]));
+            await redis.setex(`payment:history:all:${updatedPayment.userId}`, 1, JSON.stringify([]));
+          } catch (redisError) {
+            console.error("Error clearing Redis cache:", redisError);
+          }
+        }
+        
+        return updatedPayment;
       }
       
       // Update the payment record
@@ -198,11 +210,23 @@ export class PaymentService {
           const updatedRecord = await db.collection('payments').findOne({ orderId: orderId });
           if (updatedRecord) {
             console.log("Successfully updated payment record with direct update");
-            return {
+            const updatedPayment = {
               ...updatedRecord,
               id: updatedRecord._id.toString(),
               _id: updatedRecord._id
             } as Payment;
+            
+            // Clear Redis cache for this user by setting a short TTL
+            if (redis.isAvailable()) {
+              try {
+                await redis.setex(`payment:history:${updatedPayment.userId}`, 1, JSON.stringify([]));
+                await redis.setex(`payment:history:all:${updatedPayment.userId}`, 1, JSON.stringify([]));
+              } catch (redisError) {
+                console.error("Error clearing Redis cache:", redisError);
+              }
+            }
+            
+            return updatedPayment;
           }
         } catch (directUpdateError) {
           console.error("Direct update also failed:", directUpdateError);
@@ -213,11 +237,24 @@ export class PaymentService {
       
       console.log(`Successfully updated payment status for orderId: '${orderId}'`);
       
-      return {
+      const updatedPayment = {
         ...(result as any).value,
         id: (result as any).value._id.toString(),
         _id: (result as any).value._id
       } as Payment;
+      
+      // Clear Redis cache for this user by setting a short TTL
+      if (redis.isAvailable()) {
+        try {
+          // Clear both recent payments cache and all payments cache
+          await redis.setex(`payment:history:${updatedPayment.userId}`, 1, JSON.stringify([]));
+          await redis.setex(`payment:history:all:${updatedPayment.userId}`, 1, JSON.stringify([]));
+        } catch (redisError) {
+          console.error("Error clearing Redis cache:", redisError);
+        }
+      }
+      
+      return updatedPayment;
     } catch (error) {
       console.error("Error updating payment status:", error);
       return null;
@@ -225,9 +262,9 @@ export class PaymentService {
   }
   
   /**
-   * Get payment history for a user
+   * Get payment history for a user (recent payments - limited to 5)
    */
-  static async getPaymentHistory(userId: string, limit: number = 10): Promise<Payment[]> {
+  static async getPaymentHistory(userId: string, limit: number = 5): Promise<Payment[]> {
     // Try to fetch from Redis first (if available)
     if (redis.isAvailable()) {
       try {
@@ -235,11 +272,11 @@ export class PaymentService {
         const cachedPayments = await redis.get(paymentKey);
         
         if (cachedPayments) {
-          console.log('PaymentService - Returning cached payments for user', userId);
+          console.log('PaymentService - Returning cached recent payments for user', userId);
           return JSON.parse(cachedPayments);
         }
       } catch (redisError) {
-        console.error("Error fetching payments from Redis:", redisError);
+        console.error("Error fetching recent payments from Redis:", redisError);
       }
     }
     
@@ -251,7 +288,7 @@ export class PaymentService {
       .limit(limit)
       .toArray();
     
-    console.log('PaymentService - Raw payments from DB for user', userId, ':', JSON.stringify(payments, null, 2));
+    console.log('PaymentService - Raw recent payments from DB for user', userId, ':', JSON.stringify(payments, null, 2));
     
     // Fetch station names for each payment only if stationName is not already set
     const enrichedPayments = await Promise.all(payments.map(async (payment: any) => {
@@ -299,14 +336,102 @@ export class PaymentService {
       };
     }));
     
-    console.log('PaymentService - Enriched payments for user', userId, ':', JSON.stringify(enrichedPayments, null, 2));
+    console.log('PaymentService - Enriched recent payments for user', userId, ':', JSON.stringify(enrichedPayments, null, 2));
     
     // Cache in Redis for 5 minutes (if available)
     if (redis.isAvailable()) {
       try {
         await redis.setex(`payment:history:${userId}`, 300, JSON.stringify(enrichedPayments));
       } catch (redisError) {
-        console.error("Error caching payments in Redis:", redisError);
+        console.error("Error caching recent payments in Redis:", redisError);
+      }
+    }
+    
+    return enrichedPayments as Payment[];
+  }
+  
+  /**
+   * Get all payment history for a user (complete history - no limit)
+   */
+  static async getAllPaymentHistory(userId: string): Promise<Payment[]> {
+    // Try to fetch from Redis first (if available)
+    if (redis.isAvailable()) {
+      try {
+        const paymentKey = `payment:history:all:${userId}`;
+        const cachedPayments = await redis.get(paymentKey);
+        
+        if (cachedPayments) {
+          console.log('PaymentService - Returning cached all payments for user', userId);
+          return JSON.parse(cachedPayments);
+        }
+      } catch (redisError) {
+        console.error("Error fetching all payments from Redis:", redisError);
+      }
+    }
+    
+    // If not in Redis or Redis not available, fetch from MongoDB
+    const { db } = await connectToDatabase();
+    const payments = await db.collection('payments')
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    console.log('PaymentService - Raw all payments from DB for user', userId, ':', JSON.stringify(payments, null, 2));
+    
+    // Fetch station names for each payment only if stationName is not already set
+    const enrichedPayments = await Promise.all(payments.map(async (payment: any) => {
+      // Use existing stationName if available, otherwise try to fetch it
+      let stationName = payment.stationName || 'Unknown Station';
+      
+      // Only try to fetch station info if stationName is still 'Unknown Station' and we have a stationId
+      if (stationName === 'Unknown Station' && payment['stationId']) {
+        try {
+          // Try to fetch station information
+          // First, try to find by ObjectId if stationId looks like an ObjectId
+          if (typeof payment['stationId'] === 'string' && /^[0-9a-fA-F]{24}$/.test(payment['stationId'])) {
+            // It looks like an ObjectId, try to find by ObjectId
+            try {
+              const station = await db.collection('stations').findOne({ _id: new ObjectId(payment['stationId']) });
+              if (station) {
+                stationName = station['name'];
+              }
+            } catch (objectIdError) {
+              console.error("Error fetching station by ObjectId:", objectIdError);
+            }
+          }
+          
+          // If we still don't have a station name, try to find by string ID
+          if (stationName === 'Unknown Station') {
+            try {
+              const station = await db.collection('stations').findOne({ _id: payment['stationId'] });
+              if (station) {
+                stationName = station['name'];
+              }
+            } catch (stringError) {
+              console.error("Error fetching station with string ID:", stringError);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching station name for payment:", error);
+        }
+      }
+      
+      return {
+        ...payment,
+        stationName,
+        id: payment._id.toString(),
+        _id: payment._id
+      };
+    }));
+    
+    console.log('PaymentService - Enriched all payments for user', userId, ':', JSON.stringify(enrichedPayments, null, 2));
+    
+    // Cache in Redis for 5 minutes (if available)
+    if (redis.isAvailable()) {
+      try {
+        await redis.setex(`payment:history:all:${userId}`, 300, JSON.stringify(enrichedPayments));
+      } catch (redisError) {
+        console.error("Error caching all payments in Redis:", redisError);
       }
     }
     
@@ -328,13 +453,20 @@ export class PaymentService {
           status: payment.status,
           method: payment.method || 'Razorpay',
           date: payment.updatedAt.toISOString(),
-          stationName: payment.stationName || 'Unknown Station'
+          stationName: payment.stationName || 'Unknown Station',
+          orderId: payment.orderId,
+          stationId: payment.stationId,
+          slotId: payment.slotId,
+          duration: payment.duration,
+          currency: payment.currency
         },
         status: payment.status
       };
       
       // Emit to user room
       io.to(`user-${payment.userId}`).emit('payment-update', paymentUpdate);
+      // Also emit to user-specific event
+      io.to(`user-${payment.userId}`).emit('user-payment-update', paymentUpdate);
     }
   }
   

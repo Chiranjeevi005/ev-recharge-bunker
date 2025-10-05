@@ -6,6 +6,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Toast from '@/components/common/Toast';
 
 interface ChargingStation {
   id: string;
@@ -61,6 +62,9 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
   const markerRefs = useRef<maplibregl.Marker[]>([]);
   const router = useRouter();
   const { data: session } = useSession();
+  
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
 
   console.log('FuturisticMap: Component rendered with userId:', userId, 'refreshKey:', refreshKey);
 
@@ -409,7 +413,10 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       const availableSlot = selectedStation.slots.find(slot => slot.status === 'available');
       
       if (!availableSlot) {
-        alert('No available slots at this station');
+        setToast({
+          message: 'No available slots at this station',
+          type: 'error'
+        });
         setIsLoading(false);
         return;
       }
@@ -470,7 +477,10 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
             // Basic validation of Razorpay response
             if (!response.razorpay_order_id || !response.razorpay_payment_id || !response.razorpay_signature) {
               console.error('Invalid Razorpay response:', response);
-              alert('Invalid payment response received');
+              setToast({
+                message: 'Invalid payment response received',
+                type: 'error'
+              });
               setIsLoading(false);
               return;
             }
@@ -497,11 +507,17 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
             } else {
               const errorMessage = verifyData.error || 'Payment verification failed';
               console.error('Payment verification failed:', errorMessage);
-              alert(`Payment verification failed: ${errorMessage}`);
+              setToast({
+                message: `Payment verification failed: ${errorMessage}`,
+                type: 'error'
+              });
             }
           } catch (verifyError) {
             console.error('Error verifying payment:', verifyError);
-            alert('Error verifying payment. Please contact support.');
+            setToast({
+              message: 'Error verifying payment. Please contact support.',
+              type: 'error'
+            });
           } finally {
             setIsLoading(false);
           }
@@ -531,10 +547,16 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
           const errorMessage = response.error?.description || 'Payment failed';
           const errorCode = response.error?.code || 'UNKNOWN_ERROR';
           console.error('Payment failure details:', { code: errorCode, description: errorMessage });
-          alert(`Payment failed: ${errorMessage} (Code: ${errorCode})`);
+          setToast({
+            message: `Payment failed: ${errorMessage} (Code: ${errorCode})`,
+            type: 'error'
+          });
         } catch (e) {
           console.error('Error processing payment failure:', e);
-          alert('Payment failed. Please try again.');
+          setToast({
+            message: 'Payment failed. Please try again.',
+            type: 'error'
+          });
         }
         setIsLoading(false);
       });
@@ -542,7 +564,10 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       rzp.open();
     } catch (error) {
       console.error('Error booking slot:', error);
-      alert(`Error booking slot: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setToast({
+        message: `Error booking slot: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error'
+      });
       setIsLoading(false);
     }
   };
@@ -593,6 +618,15 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
             </button>
           </div>
         </div>
+      )}
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   );

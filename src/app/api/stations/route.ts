@@ -8,9 +8,13 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    // Increase default limit to show more stations
+    const limit = parseInt(searchParams.get('limit') || '100');
     const status = searchParams.get('status');
     const city = searchParams.get('city');
+    
+    // Special case: if limit is set to -1, fetch all stations
+    const fetchAll = limit === -1;
     
     // Create cache key based on parameters
     const cacheKey = `stations:${page}:${limit}:${status || 'all'}:${city || 'all'}`;
@@ -31,19 +35,31 @@ export async function GET(request: Request) {
     if (status) filter.status = status;
     if (city) filter.city = city;
     
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    let stations, total;
     
-    // Fetch stations with pagination
-    const stations = await db.collection("stations")
-      .find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .toArray();
-    
-    // Get total count for pagination
-    const total = await db.collection("stations").countDocuments(filter);
+    if (fetchAll) {
+      // Fetch all stations without pagination
+      stations = await db.collection("stations")
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      total = stations.length;
+    } else {
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+      
+      // Fetch stations with pagination
+      stations = await db.collection("stations")
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      // Get total count for pagination
+      total = await db.collection("stations").countDocuments(filter);
+    }
     
     // Convert ObjectId to string for JSON serialization
     const serializedStations = stations.map((station: any) => ({
@@ -56,7 +72,7 @@ export async function GET(request: Request) {
     const response = {
       success: true,
       data: serializedStations,
-      pagination: {
+      pagination: fetchAll ? null : {
         page,
         limit,
         total,
