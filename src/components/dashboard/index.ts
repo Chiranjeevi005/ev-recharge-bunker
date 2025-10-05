@@ -8,3 +8,4 @@ export { PastBookings } from './PastBookings';
 export { MapSection } from './MapSection';
 export { BusinessStats } from './BusinessStats';
 export { EcoJourneyHighlights } from './EcoJourneyHighlights';
+export { JourneyImpactStats } from './JourneyImpactStats';

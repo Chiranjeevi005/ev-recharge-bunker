@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     shortcut: "/assets/favicon.ico",
     apple: "/assets/apple-touch-icon.png",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -42,6 +43,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body
         className={`${inter.variable} ${poppins.variable} ${roboto.variable} antialiased`}
       >

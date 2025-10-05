@@ -21,6 +21,37 @@ interface ChargingStation {
   }[];
 }
 
+// Helper function to validate coordinates
+const isValidCoordinate = (value: any): boolean => {
+  // Check if value is null or undefined
+  if (value === null || value === undefined) return false;
+  
+  // Convert to number if it's a string
+  const num = typeof value === 'number' ? value : parseFloat(value);
+  
+  // Check if it's a finite number and within valid coordinate ranges
+  return isFinite(num) && Math.abs(num) <= 180; // 180 for longitude, 90 for latitude but we'll check that separately
+};
+
+// Helper function to parse coordinates safely
+const parseCoordinate = (value: any): number | null => {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === 'number' ? value : parseFloat(value);
+  return isFinite(num) ? num : null;
+};
+
+// Enhanced function to validate both latitude and longitude
+const isValidLatLng = (lat: any, lng: any): boolean => {
+  const parsedLat = parseCoordinate(lat);
+  const parsedLng = parseCoordinate(lng);
+  
+  // Both must be valid numbers
+  if (parsedLat === null || parsedLng === null) return false;
+  
+  // Check ranges: latitude [-90, 90], longitude [-180, 180]
+  return Math.abs(parsedLat) <= 90 && Math.abs(parsedLng) <= 180;
+};
+
 export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: string | null; refreshKey?: number }> = ({ userId, location = null, refreshKey = 0 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -86,23 +117,25 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
           console.log('FuturisticMap: Received stations:', stations);
           // Filter out stations with invalid coordinates and map _id to id
           const validStations = stations
-            .filter((station: any) => 
-              station.lat !== null && 
-              station.lat !== undefined && 
-              typeof station.lat === 'number' &&
-              station.lng !== null && 
-              station.lng !== undefined && 
-              typeof station.lng === 'number'
-            )
-            .map((station: any) => ({
-              // Map _id to id to match the ChargingStation interface
-              id: station._id || station.id,
-              name: station.name || 'Unknown Station',
-              address: station.address || 'Unknown Location',
-              lat: station.lat,
-              lng: station.lng,
-              slots: station.slots || []
-            }));
+            .filter((station: any) => {
+              // Validate both lat and lng with enhanced validation
+              return isValidLatLng(station.lat, station.lng);
+            })
+            .map((station: any) => {
+              // Parse coordinates safely
+              const lat = parseCoordinate(station.lat) || 0;
+              const lng = parseCoordinate(station.lng) || 0;
+              
+              return {
+                // Map _id to id to match the ChargingStation interface
+                id: station._id || station.id || '',
+                name: station.name || 'Unknown Station',
+                address: station.address || 'Unknown Location',
+                lat: lat,
+                lng: lng,
+                slots: Array.isArray(station.slots) ? station.slots : []
+              };
+            });
           console.log('FuturisticMap: Valid stations after filtering:', validStations);
           setChargingStations(validStations);
         } else {
@@ -184,6 +217,7 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       
       console.log('FuturisticMap: Container dimensions:', offsetWidth, 'x', offsetHeight);
       
+      // Only proceed if container has valid dimensions
       if (offsetWidth === 0 || offsetHeight === 0) {
         console.warn('FuturisticMap: Container has zero dimensions, map initialization delayed');
         // The parent component should handle retries through refreshKey
@@ -235,6 +269,18 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
 
         // Add markers for each station
         chargingStations.forEach(station => {
+          // Additional validation for coordinate ranges and validity
+          if (!isValidLatLng(station.lat, station.lng)) {
+            console.warn('FuturisticMap: Skipping station with invalid coordinates:', station);
+            return;
+          }
+          
+          // Check coordinate ranges
+          if (Math.abs(station.lat) > 90 || Math.abs(station.lng) > 180) {
+            console.warn('FuturisticMap: Skipping station with out-of-range coordinates:', station);
+            return;
+          }
+          
           const el = document.createElement('div');
           el.className = 'station-marker';
           
@@ -258,29 +304,58 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
           });
           
           if (mapRef.current) {
-            const marker = new maplibregl.Marker({
-              element: el,
-              anchor: 'center'
-            })
-              .setLngLat([station.lng, station.lat])
-              .addTo(mapRef.current);
-            
-            markerRefs.current.push(marker);
+            try {
+              const marker = new maplibregl.Marker({
+                element: el,
+                anchor: 'center'
+              })
+                .setLngLat([station.lng, station.lat])
+                .addTo(mapRef.current);
+              
+              markerRefs.current.push(marker);
+            } catch (error) {
+              console.error('FuturisticMap: Error creating marker for station:', station, error);
+            }
           }
         });
 
         // Fit map to show all stations
         if (chargingStations.length > 0 && mapRef.current) {
-          const bounds = new maplibregl.LngLatBounds();
-          
-          chargingStations.forEach(station => {
-            bounds.extend([station.lng, station.lat]);
-          });
-          
-          mapRef.current.fitBounds(bounds, {
-            padding: 50,
-            maxZoom: 15
-          });
+          try {
+            const bounds = new maplibregl.LngLatBounds();
+            let validStationCount = 0;
+            
+            chargingStations.forEach(station => {
+              // Validate coordinates before extending bounds
+              if (!isValidLatLng(station.lat, station.lng)) {
+                return;
+              }
+              
+              // Check coordinate ranges
+              if (Math.abs(station.lat) > 90 || Math.abs(station.lng) > 180) {
+                return;
+              }
+              
+              try {
+                bounds.extend([station.lng, station.lat]);
+                validStationCount++;
+              } catch (error) {
+                console.warn('FuturisticMap: Error extending bounds for station:', station, error);
+              }
+            });
+            
+            // Only fit bounds if we have valid stations
+            if (validStationCount > 0 && !bounds.isEmpty()) {
+              mapRef.current.fitBounds(bounds, {
+                padding: 50,
+                maxZoom: 15
+              });
+            } else {
+              console.warn('FuturisticMap: No valid stations to fit bounds');
+            }
+          } catch (error) {
+            console.error('FuturisticMap: Error fitting bounds:', error);
+          }
         }
       };
 
@@ -390,6 +465,16 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
         order_id: orderData.orderId,
         handler: async function (response: any) {
           try {
+            console.log('Razorpay response received:', response);
+            
+            // Basic validation of Razorpay response
+            if (!response.razorpay_order_id || !response.razorpay_payment_id || !response.razorpay_signature) {
+              console.error('Invalid Razorpay response:', response);
+              alert('Invalid payment response received');
+              setIsLoading(false);
+              return;
+            }
+            
             // Verify payment
             const verifyResponse = await fetch('/api/payment/verify', {
               method: 'POST',
@@ -404,16 +489,21 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
             });
             
             const verifyData = await verifyResponse.json();
+            console.log('Payment verification response:', verifyData);
             
             if (verifyData.success) {
               // Redirect to confirmation page
               router.push(`/confirmation?bookingId=${verifyData.bookingId}&paymentId=${verifyData.paymentId}`);
             } else {
-              alert(`Payment verification failed: ${verifyData.error}`);
+              const errorMessage = verifyData.error || 'Payment verification failed';
+              console.error('Payment verification failed:', errorMessage);
+              alert(`Payment verification failed: ${errorMessage}`);
             }
           } catch (verifyError) {
             console.error('Error verifying payment:', verifyError);
-            alert('Error verifying payment');
+            alert('Error verifying payment. Please contact support.');
+          } finally {
+            setIsLoading(false);
           }
         },
         prefill: {
@@ -433,6 +523,22 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       
       // @ts-ignore
       const rzp = new window.Razorpay(options);
+      
+      // Add error handling for Razorpay
+      rzp.on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response);
+        try {
+          const errorMessage = response.error?.description || 'Payment failed';
+          const errorCode = response.error?.code || 'UNKNOWN_ERROR';
+          console.error('Payment failure details:', { code: errorCode, description: errorMessage });
+          alert(`Payment failed: ${errorMessage} (Code: ${errorCode})`);
+        } catch (e) {
+          console.error('Error processing payment failure:', e);
+          alert('Payment failed. Please try again.');
+        }
+        setIsLoading(false);
+      });
+      
       rzp.open();
     } catch (error) {
       console.error('Error booking slot:', error);

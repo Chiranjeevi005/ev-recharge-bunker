@@ -71,14 +71,33 @@ export async function GET(request: Request) {
 
     // Convert ObjectId to string for JSON serialization and ensure correct data structure
     const serializedStations = stations
-      .filter((station: any) => 
-        station['lat'] !== null && 
-        station['lat'] !== undefined && 
-        typeof station['lat'] === 'number' &&
-        station['lng'] !== null && 
-        station['lng'] !== undefined && 
-        typeof station['lng'] === 'number'
-      )
+      .filter((station: any) => {
+        // More robust validation for coordinates
+        const lat = station['lat'];
+        const lng = station['lng'];
+        
+        // Check if coordinates exist and are valid numbers
+        if (lat === null || lat === undefined || lng === null || lng === undefined) {
+          return false;
+        }
+        
+        // Check if they are numbers
+        if (typeof lat !== 'number' || typeof lng !== 'number') {
+          return false;
+        }
+        
+        // Check if they are finite numbers
+        if (!isFinite(lat) || !isFinite(lng)) {
+          return false;
+        }
+        
+        // Check coordinate ranges
+        if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return false;
+        }
+        
+        return true;
+      })
       .map((station: any) => ({
         _id: station['_id'].toString(),
         name: station['name'] || 'Unknown Station',

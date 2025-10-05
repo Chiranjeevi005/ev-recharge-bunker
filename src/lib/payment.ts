@@ -38,12 +38,25 @@ export class PaymentService {
         return false;
       }
       
+      // Additional validation
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        console.error('Missing required parameters for signature verification', {
+          razorpay_order_id: !!razorpay_order_id,
+          razorpay_payment_id: !!razorpay_payment_id,
+          razorpay_signature: !!razorpay_signature
+        });
+        return false;
+      }
+      
       const signature = razorpay_signature;
       const shasum = crypto.createHmac('sha256', secret);
       shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
       const digest = shasum.digest('hex');
       
-      return digest === signature;
+      const isValid = digest === signature;
+      console.log('Signature verification result:', { isValid, digest, signature });
+      
+      return isValid;
     } catch (error) {
       console.error('Error verifying Razorpay signature:', error);
       return false;

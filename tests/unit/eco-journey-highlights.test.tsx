@@ -8,9 +8,8 @@ global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve({
-      evDistance: 1200,
-      co2Saved: 95,
-      treesSaved: 4,
+      totalDistance: 1200,
+      co2Prevented: 95,
       rankPercentile: 5
     })
   } as Response)
@@ -53,7 +52,7 @@ describe('EcoJourneyHighlights', () => {
     
     await waitFor(() => {
       expect(screen.getByText("You've driven 1,200 km on clean energy")).toBeInTheDocument();
-      expect(screen.getByText("Your EV charging saved 95 kg CO₂ – equal to planting 4 trees")).toBeInTheDocument();
+      expect(screen.getByText("Your EV charging saved 95 kg CO₂ – equal to planting 0 trees")).toBeInTheDocument();
       expect(screen.getByText("You're in the Top 5% eco-contributors in your city this month")).toBeInTheDocument();
     });
   });

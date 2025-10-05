@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
+import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/Button';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -12,7 +13,7 @@ import {
   NotificationBanner,
   MapSection,
   BusinessStats,
-  EcoJourneyHighlights
+  JourneyImpactStats
 } from '@/components/dashboard';
 import { useLoader } from '@/lib/LoaderContext';
 import { useRouteTransition } from '@/hooks/useRouteTransition';
@@ -69,7 +70,13 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
-  const { showLoader, hideLoader } = useLoader();
+  
+  // Clear the navigation flag on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('navigatingToDashboard');
+    }
+  }, []);
   
   // Initialize route transition handler
   useRouteTransition();
@@ -77,23 +84,20 @@ export default function ClientDashboard() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
-      // Hide loader and redirect to login
-      hideLoader();
       setLoading(false);
       router.push("/login");
     }
-  }, [status, router, hideLoader]);
+  }, [status, router]);
 
   // Cleanup function to ensure loader is hidden when component unmounts
   useEffect(() => {
     return () => {
-      hideLoader();
       // Disconnect socket on component unmount
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, [hideLoader]);
+  }, []);
 
   // Initialize socket connection and set up listeners
   useEffect(() => {
@@ -110,24 +114,24 @@ export default function ClientDashboard() {
       socketRef.current.on("payment-update", (data: any) => {
         console.log("Received payment update:", data);
         
-        // Create a new payment object from the update data
+        // Transform the incoming payment data to match the expected structure
         const updatedPayment: Payment = {
-          userId: data.payment.userId,
-          paymentId: data.payment.paymentId,
-          amount: data.payment.amount,
-          status: data.payment.status,
-          method: data.payment.method,
-          createdAt: data.payment.date,
-          updatedAt: data.payment.date,
-          date: data.payment.date,
-          stationName: data.payment.stationName,
+          userId: data.payment.userId || session.user.id || '',
+          paymentId: data.payment.paymentId || '',
+          amount: data.payment.amount || 0,
+          status: data.payment.status || 'unknown',
+          method: data.payment.method || 'Razorpay',
+          createdAt: data.payment.date || new Date().toISOString(),
+          updatedAt: data.payment.date || new Date().toISOString(),
+          date: data.payment.date || '',
+          stationName: data.payment.stationName || 'Unknown Station',
           // Add other fields with default values
           orderId: '',
           stationId: '',
           slotId: '',
           duration: 1,
           currency: 'INR',
-          id: data.payment.paymentId
+          id: data.payment.paymentId || ''
         };
 
         // Update payment history with the new payment
@@ -192,8 +196,6 @@ export default function ClientDashboard() {
         if (isMounted) {
           setError(null);
           
-          // Show loader during data fetching
-          showLoader("Loading your dashboard...");
           setLoading(true);
         }
 
@@ -208,7 +210,7 @@ export default function ClientDashboard() {
           setActiveSession(sessionData);
         }
 
-        // Fetch payment history
+        // Fetch payment history using the same service as the payment history page
         const paymentResponse = await fetch(`/api/dashboard/payments?userId=${session.user.id}`);
         if (!paymentResponse.ok) {
           throw new Error('Failed to fetch payment data');
@@ -228,7 +230,7 @@ export default function ClientDashboard() {
           // Optional fields
           date: payment.date || payment.createdAt || payment.updatedAt || '',
           stationId: payment.stationId || '',
-          stationName: payment.stationName || 'Unknown Station',
+          stationName: payment.stationName || payment.station?.name || 'Unknown Station',
           slotId: payment.slotId || '',
           duration: payment.duration || 0,
           orderId: payment.orderId || '',
@@ -255,14 +257,12 @@ export default function ClientDashboard() {
         if (isMounted) {
           setSlotAvailability(slotData);
           setLoading(false);
-          hideLoader();
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         if (isMounted) {
           setError("Failed to load dashboard data. Please try again later.");
           setLoading(false);
-          hideLoader();
         }
       }
     };
@@ -271,7 +271,6 @@ export default function ClientDashboard() {
       fetchData();
     } else if (status !== "loading" && !session?.user?.id) {
       // Hide loader if not authenticated or session is not loading
-      hideLoader();
       setLoading(false);
     }
 
@@ -281,19 +280,46 @@ export default function ClientDashboard() {
   }, [status, session?.user?.id]); // Simplified dependencies
 
   // Handle book slot action
-  const handleBookSlot = () => {
+  const handleBookSlot = useCallback(() => {
     // Redirect to find-bunks page for booking
     router.push('/find-bunks');
-  };
+  }, [router]);
 
   // Handle view history action
-  const handleViewHistory = () => {
+  const handleViewHistory = useCallback(() => {
     // Navigate to payment history page (original)
     router.push('/dashboard/client/payment-history');
-  };
+  }, [router]);
 
   if (status === "loading" || loading) {
-    // Show fetching animation during loading
+    // Check if we're navigating from the navbar to avoid flashing loaders
+    const fromNavbar = typeof window !== 'undefined' && 
+      sessionStorage.getItem('navigatingToDashboard') === 'true';
+    
+    // Only show fetching animation if not navigating from navbar
+    if (!fromNavbar) {
+      // Show fetching animation during loading
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
+          <Navbar />
+          <main className="pt-20 pb-12">
+            <div className="container mx-auto px-4">
+              <div className="mb-10 rounded-2xl bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 p-6 border border-[#475569]/50">
+                <h1 className="text-2xl md:text-3xl font-bold text-[#F1F5F9] mb-2">
+                  Welcome back, {session?.user?.name || 'User'}
+                </h1>
+                <p className="text-[#CBD5E1]">
+                  Proud to be part of the EV revolution – Together reducing CO2 and building a greener future.
+                </p>
+              </div>
+              <FetchingAnimation />
+            </div>
+          </main>
+        </div>
+      );
+    }
+    
+    // If navigating from navbar, just show a minimal UI without loader
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
         <Navbar />
@@ -307,7 +333,9 @@ export default function ClientDashboard() {
                 Proud to be part of the EV revolution – Together reducing CO2 and building a greener future.
               </p>
             </div>
-            <FetchingAnimation />
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="text-[#CBD5E1]">Loading your dashboard...</div>
+            </div>
           </div>
         </main>
       </div>
@@ -363,12 +391,7 @@ export default function ClientDashboard() {
 
           {/* Stats Section - Replacing 'No Active Charging Session' */}
           <div className="mb-10">
-            <BusinessStats />
-          </div>
-
-          {/* Eco Journey Highlights - Replacing Quick Actions */}
-          <div className="mb-10">
-            <EcoJourneyHighlights />
+            <JourneyImpactStats />
           </div>
 
           {/* Map Section */}
@@ -391,6 +414,7 @@ export default function ClientDashboard() {
           <PaymentHistoryCard payments={Array.isArray(paymentHistory) ? paymentHistory : []} onViewAll={handleViewHistory} />
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

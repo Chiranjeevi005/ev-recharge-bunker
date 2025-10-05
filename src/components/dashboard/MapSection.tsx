@@ -8,7 +8,7 @@ interface MapSectionProps {
   onBookPay: () => void;
 }
 
-export const MapSection: React.FC<MapSectionProps> = ({ onBookPay }) => {
+export const MapSection: React.FC<MapSectionProps> = React.memo(({ onBookPay }) => {
   const { data: session } = useSession();
   const [refreshKey, setRefreshKey] = useState(0);
   const [location, setLocation] = useState<string | null>(null);
@@ -86,4 +86,7 @@ export const MapSection: React.FC<MapSectionProps> = ({ onBookPay }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if onBookPay function reference changes
+  return prevProps.onBookPay === nextProps.onBookPay;
+});

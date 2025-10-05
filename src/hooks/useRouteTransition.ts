@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useLoader } from '@/lib/LoaderContext';
 import Router from 'next/router';
@@ -10,38 +10,41 @@ export const useRouteTransition = () => {
   const searchParams = useSearchParams();
   const { showLoader, hideLoader } = useLoader();
 
+  // Handle initial page load
   useEffect(() => {
-    // Handle initial page load
     if (isInitialLoad) {
       isInitialLoad = false;
-      // Hide loader after initial load
-      hideLoader();
+      // For dashboard routes, don't show the loader as the page will handle it
+      if (!window.location.pathname.includes('/dashboard')) {
+        // Hide loader after initial load for non-dashboard routes
+        hideLoader();
+      }
     }
   }, [hideLoader]);
 
+  const handleRouteChangeStart = useCallback((url: string) => {
+    // For dashboard routes, don't show the loader as the page will handle it
+    if (!url.includes('/dashboard')) {
+      showLoader("Loading...");
+    }
+  }, [showLoader]);
+
+  const handleRouteChangeComplete = useCallback(() => {
+    // For non-dashboard routes, hide the loader after a delay
+    if (!window.location.pathname.includes('/dashboard')) {
+      // Increased delay to ensure smoother transitions
+      setTimeout(() => {
+        hideLoader();
+      }, 500);
+    }
+  }, [hideLoader]);
+
+  const handleRouteChangeError = useCallback(() => {
+    // Hide loader immediately if there's an error
+    hideLoader();
+  }, [hideLoader]);
+
   useEffect(() => {
-    const handleRouteChangeStart = (url: string) => {
-      // For dashboard routes, don't show the loader as the page will handle it
-      if (!url.includes('/dashboard')) {
-        showLoader("Loading...");
-      }
-    };
-
-    const handleRouteChangeComplete = () => {
-      // For non-dashboard routes, hide the loader after a delay
-      if (!window.location.pathname.includes('/dashboard')) {
-        // Increased delay to ensure smoother transitions
-        setTimeout(() => {
-          hideLoader();
-        }, 500);
-      }
-    };
-
-    const handleRouteChangeError = () => {
-      // Hide loader immediately if there's an error
-      hideLoader();
-    };
-
     // Add router event listeners
     Router.events.on('routeChangeStart', handleRouteChangeStart);
     Router.events.on('routeChangeComplete', handleRouteChangeComplete);
@@ -53,7 +56,7 @@ export const useRouteTransition = () => {
       Router.events.off('routeChangeComplete', handleRouteChangeComplete);
       Router.events.off('routeChangeError', handleRouteChangeError);
     };
-  }, [showLoader, hideLoader]);
+  }, [handleRouteChangeStart, handleRouteChangeComplete, handleRouteChangeError]);
 
   // Handle client-side navigation changes
   useEffect(() => {

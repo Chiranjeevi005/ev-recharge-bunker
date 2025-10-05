@@ -6,7 +6,17 @@ import { PaymentService } from '@/lib/payment';
 export async function POST(request: Request) {
   try {
     const { db } = await connectToDatabase();
-    const body = await request.json();
+    let body;
+    
+    try {
+      body = await request.json();
+    } catch (jsonError) {
+      console.error("Error parsing request body:", jsonError);
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" }, 
+        { status: 400 }
+      );
+    }
     
     console.log("Payment verification request body:", JSON.stringify(body, null, 2));
     
@@ -19,12 +29,8 @@ export async function POST(request: Request) {
       is_test
     });
     
-    console.log("Request body type:", typeof body);
-    console.log("is_test type:", typeof is_test);
-    console.log("is_test value:", is_test);
-    
     // Validate input
-    if (!razorpay_order_id) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       console.error("Missing required fields for payment verification:", {
         razorpay_order_id: !!razorpay_order_id,
         razorpay_payment_id: !!razorpay_payment_id,
@@ -38,16 +44,22 @@ export async function POST(request: Request) {
     
     // Skip signature verification for tests
     let isValid = false;
-    console.log("Checking is_test condition:", is_test);
-    console.log("is_test truthiness:", !!is_test);
     if (is_test) {
       console.log("Skipping signature verification for test payment");
       isValid = true;
     } else {
       console.log("Performing signature verification");
-      // Verify Razorpay signature
-      isValid = await PaymentService.verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-      console.log("Signature verification result:", isValid);
+      try {
+        // Verify Razorpay signature
+        isValid = await PaymentService.verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+        console.log("Signature verification result:", isValid);
+      } catch (verificationError) {
+        console.error("Error during signature verification:", verificationError);
+        return NextResponse.json(
+          { error: "Payment verification failed", details: verificationError instanceof Error ? verificationError.message : 'Unknown error' }, 
+          { status: 500 }
+        );
+      }
     }
     
     if (!isValid) {
@@ -60,11 +72,19 @@ export async function POST(request: Request) {
     
     // Find the payment record
     console.log(`Searching for payment record with orderId: '${razorpay_order_id}'`);
-    console.log("Type of razorpay_order_id:", typeof razorpay_order_id);
     
-    const paymentRecord = await db.collection("payments").findOne({ 
-      orderId: razorpay_order_id 
-    });
+    let paymentRecord;
+    try {
+      paymentRecord = await db.collection("payments").findOne({ 
+        orderId: razorpay_order_id 
+      });
+    } catch (dbError) {
+      console.error("Database error while finding payment record:", dbError);
+      return NextResponse.json(
+        { error: "Database error while retrieving payment record" }, 
+        { status: 500 }
+      );
+    }
     
     console.log("Payment record search result:", paymentRecord);
     
@@ -76,25 +96,22 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log("Found payment record:", {
-      _id: paymentRecord['_id'],
-      orderId: paymentRecord['orderId'],
-      userId: paymentRecord['userId'],
-      stationId: paymentRecord['stationId'],
-      slotId: paymentRecord['slotId'],
-      amount: paymentRecord['amount'],
-      duration: paymentRecord['duration'],
-      status: paymentRecord['status'],
-      createdAt: paymentRecord['createdAt']
-    });
-    
     // Update payment status using the payment service
     console.log(`Updating payment status for orderId: '${razorpay_order_id}'`);
-    const updatedPayment = await PaymentService.updatePaymentStatus(
-      razorpay_order_id, 
-      razorpay_payment_id || `pay_${Date.now()}`, 
-      'completed'
-    );
+    let updatedPayment;
+    try {
+      updatedPayment = await PaymentService.updatePaymentStatus(
+        razorpay_order_id, 
+        razorpay_payment_id, 
+        'completed'
+      );
+    } catch (updateError) {
+      console.error("Error updating payment status:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update payment status", details: updateError instanceof Error ? updateError.message : 'Unknown error' }, 
+        { status: 500 }
+      );
+    }
     
     console.log("PaymentService.updatePaymentStatus result:", updatedPayment);
     
@@ -106,11 +123,9 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log("Updated payment record:", updatedPayment);
-    
     // Create booking record with proper structure
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + paymentRecord['duration'] * 60 * 60 * 1000);
+    const endTime = new Date(startTime.getTime() + (paymentRecord['duration'] || 1) * 60 * 60 * 1000);
     
     const bookingData = {
       userId: paymentRecord['userId'] || "anonymous",
@@ -119,15 +134,28 @@ export async function POST(request: Request) {
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       amount: paymentRecord['amount'],
-      paymentId: razorpay_payment_id || `pay_${Date.now()}`,
+      paymentId: razorpay_payment_id,
       status: 'confirmed',
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
     console.log("Creating booking record:", bookingData);
-    const bookingResult = await db.collection("bookings").insertOne(bookingData);
-    console.log("Booking record created:", bookingResult.insertedId.toString());
+    let bookingResult;
+    try {
+      bookingResult = await db.collection("bookings").insertOne(bookingData);
+      console.log("Booking record created:", bookingResult.insertedId.toString());
+    } catch (bookingError) {
+      console.error("Error creating booking record:", bookingError);
+      // Even if booking creation fails, we should still return success since payment was verified
+      return NextResponse.json(
+        { 
+          success: true,
+          paymentId: razorpay_payment_id,
+          warning: "Payment verified but booking creation failed"
+        }
+      );
+    }
     
     // Update slot status to occupied
     try {
@@ -150,12 +178,17 @@ export async function POST(request: Request) {
     }
     
     // Emit real-time payment update
-    await PaymentService.emitPaymentUpdate(updatedPayment);
+    try {
+      await PaymentService.emitPaymentUpdate(updatedPayment);
+    } catch (emitError) {
+      console.error("Error emitting payment update:", emitError);
+      // Don't fail the whole request if real-time update fails
+    }
     
     return NextResponse.json({
       success: true,
-      bookingId: bookingResult.insertedId.toString(),
-      paymentId: razorpay_payment_id || `pay_${Date.now()}`
+      bookingId: bookingResult?.insertedId.toString() || null,
+      paymentId: razorpay_payment_id
     });
   } catch (error) {
     console.error("Error verifying payment:", error);

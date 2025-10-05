@@ -1,0 +1,26 @@
+{
+  "name": "EV Bunker",
+  "short_name": "EVBunker",
+  "description": "Find, book, and pay for EV charging stations seamlessly with EV Bunker. Revolutionizing the electric vehicle charging experience.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1E293B",
+  "theme_color": "#10B981",
+  "icons": [
+    {
+      "src": "/assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "serviceworker": {
+    "src": "/sw.js",
+    "scope": "/",
+    "update_via_cache": "none"
+  }
+}

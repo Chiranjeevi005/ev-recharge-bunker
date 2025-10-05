@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
+import { io } from "socket.io-client";
 
 interface EcoHighlight {
   id: string;
@@ -79,22 +80,25 @@ export const EcoJourneyHighlights: React.FC = () => {
         setHighlights(prev => prev.map(highlight => {
           switch (highlight.id) {
             case 'distance':
+              // Use totalDistance from the new API response instead of evDistance
               return { 
                 ...highlight, 
-                description: `You've driven ${data.evDistance.toLocaleString()} km on clean energy`,
-                value: `${data.evDistance.toLocaleString()} km`
+                description: `You've driven ${(data.totalDistance || 0).toLocaleString()} km on clean energy`,
+                value: `${(data.totalDistance || 0).toLocaleString()} km`
               };
             case 'carbon':
+              // Use co2Prevented from the new API response instead of co2Saved
               return { 
                 ...highlight, 
-                description: `Your EV charging saved ${data.co2Saved.toLocaleString()} kg CO₂ – equal to planting ${data.treesSaved.toLocaleString()} trees`,
-                value: `${data.co2Saved.toLocaleString()} kg`
+                description: `Your EV charging saved ${(data.co2Prevented || 0).toLocaleString()} kg CO₂ – equal to planting 0 trees`,
+                value: `${(data.co2Prevented || 0).toLocaleString()} kg`
               };
             case 'rank':
+              // Use rankPercentile from the new API response
               return { 
                 ...highlight, 
-                description: `You're in the Top ${data.rankPercentile}% eco-contributors in your city this month`,
-                value: `${data.rankPercentile}%`
+                description: `You're in the Top ${(data.rankPercentile || 0)}% eco-contributors in your city this month`,
+                value: `${(data.rankPercentile || 0)}%`
               };
             default:
               return highlight;
@@ -108,6 +112,75 @@ export const EcoJourneyHighlights: React.FC = () => {
     };
 
     fetchEcoHighlights();
+  }, [userId]);
+
+  // Initialize socket connection and set up listeners
+  useEffect(() => {
+    const socket = io({
+      path: "/api/socketio"
+    });
+
+    // Join user room
+    socket.emit("join-user-room", userId);
+
+    // Listen for real-time updates
+    socket.on("payment-update", (data: any) => {
+      console.log("Received payment update:", data);
+      // Refresh highlights when a payment completes
+      const fetchEcoHighlightsInner = async () => {
+        try {
+          setLoading(true);
+          const response = await fetch(`/api/dashboard/environmental-impact?userId=${userId}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch eco highlights data');
+          }
+          
+          const data = await response.json();
+          
+          // Update highlights with real data
+          setHighlights(prev => prev.map(highlight => {
+            switch (highlight.id) {
+              case 'distance':
+                // Use totalDistance from the new API response instead of evDistance
+                return { 
+                  ...highlight, 
+                  description: `You've driven ${(data.totalDistance || 0).toLocaleString()} km on clean energy`,
+                  value: `${(data.totalDistance || 0).toLocaleString()} km`
+                };
+              case 'carbon':
+                // Use co2Prevented from the new API response instead of co2Saved
+                return { 
+                  ...highlight, 
+                  description: `Your EV charging saved ${(data.co2Prevented || 0).toLocaleString()} kg CO₂ – equal to planting 0 trees`,
+                  value: `${(data.co2Prevented || 0).toLocaleString()} kg`
+                };
+              case 'rank':
+                // Use rankPercentile from the new API response
+                return { 
+                  ...highlight, 
+                  description: `You're in the Top ${(data.rankPercentile || 0)}% eco-contributors in your city this month`,
+                  value: `${(data.rankPercentile || 0)}%`
+                };
+              default:
+                return highlight;
+            }
+          }));
+        } catch (error) {
+          console.error("Error fetching eco highlights:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchEcoHighlightsInner();
+    });
+
+    // Clean up socket listeners
+    return () => {
+      socket.off("payment-update");
+      socket.disconnect();
+    };
   }, [userId]);
 
   // Set ref for icon elements

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UniversalLoader } from '@/components/ui/UniversalLoader';
@@ -19,6 +19,16 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [task, setTask] = useState("Loading...");
   const [state, setState] = useState<'loading' | 'success' | 'error' | 'idle'>('loading');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check if we're on a dashboard page and hide loader initially
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // If we're on a dashboard page, don't show the initial loader
+      if (window.location.pathname.includes('/dashboard')) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   const showLoader = useCallback((task: string, state: 'loading' | 'success' | 'error' | 'idle' = 'loading') => {
     // Clear any existing timeout to prevent race conditions
@@ -52,18 +62,19 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   return (
     <LoaderContext.Provider value={{ isLoading, showLoader, hideLoader, updateLoader }}>
       {children}
-      <motion.div 
-        className="fixed inset-0 z-50 flex items-center justify-center bg-[#1E293B] backdrop-blur-sm pointer-events-none"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isLoading ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-        style={{
-          visibility: isLoading ? 'visible' : 'hidden',
-          pointerEvents: isLoading ? 'auto' : 'none'
-        }}
-      >
-        <UniversalLoader task={task} state={state} size="lg" />
-      </motion.div>
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#1E293B] backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <UniversalLoader task={task} state={state} size="lg" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </LoaderContext.Provider>
   );
 };

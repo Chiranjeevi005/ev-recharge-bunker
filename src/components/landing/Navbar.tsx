@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
@@ -22,35 +22,35 @@ export const Navbar: React.FC = () => {
   // Initialize route transition handler
   useRouteTransition();
 
+  const loadAvatar = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      // First check localStorage for saved profile
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        try {
+          const parsedProfile = JSON.parse(savedProfile);
+          if (parsedProfile.avatar && parsedProfile.avatar !== '/assets/logo.png') {
+            setUserAvatar(parsedProfile.avatar);
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to parse saved profile data', e);
+        }
+      }
+      
+      // Fallback to session image
+      if (session?.user?.image && session.user.image !== '/assets/logo.png') {
+        setUserAvatar(session.user.image);
+        return;
+      }
+      
+      // If no custom avatar, set to null to show default
+      setUserAvatar(null);
+    }
+  }, [session]);
+
   // Load user avatar from localStorage or session
   useEffect(() => {
-    const loadAvatar = () => {
-      if (typeof window !== 'undefined') {
-        // First check localStorage for saved profile
-        const savedProfile = localStorage.getItem('userProfile');
-        if (savedProfile) {
-          try {
-            const parsedProfile = JSON.parse(savedProfile);
-            if (parsedProfile.avatar && parsedProfile.avatar !== '/assets/logo.png') {
-              setUserAvatar(parsedProfile.avatar);
-              return;
-            }
-          } catch (e) {
-            console.error('Failed to parse saved profile data', e);
-          }
-        }
-        
-        // Fallback to session image
-        if (session?.user?.image && session.user.image !== '/assets/logo.png') {
-          setUserAvatar(session.user.image);
-          return;
-        }
-        
-        // If no custom avatar, set to null to show default
-        setUserAvatar(null);
-      }
-    };
-
     loadAvatar();
 
     // Listen for localStorage changes
@@ -62,43 +62,43 @@ export const Navbar: React.FC = () => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, [loadAvatar]);
+
+  const loadUserName = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      // First check localStorage for saved profile
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        try {
+          const parsedProfile = JSON.parse(savedProfile);
+          if (parsedProfile.fullName) {
+            setUserName(parsedProfile.fullName);
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to parse saved profile data', e);
+        }
+      }
+      
+      // Fallback to session name
+      if (session?.user?.name) {
+        setUserName(session.user.name);
+        return;
+      }
+      
+      // Fallback to session email
+      if (session?.user?.email) {
+        setUserName(session.user.email);
+        return;
+      }
+      
+      // Default fallback
+      setUserName(null);
+    }
   }, [session]);
 
   // Load user name from localStorage or session
   useEffect(() => {
-    const loadUserName = () => {
-      if (typeof window !== 'undefined') {
-        // First check localStorage for saved profile
-        const savedProfile = localStorage.getItem('userProfile');
-        if (savedProfile) {
-          try {
-            const parsedProfile = JSON.parse(savedProfile);
-            if (parsedProfile.fullName) {
-              setUserName(parsedProfile.fullName);
-              return;
-            }
-          } catch (e) {
-            console.error('Failed to parse saved profile data', e);
-          }
-        }
-        
-        // Fallback to session name
-        if (session?.user?.name) {
-          setUserName(session.user.name);
-          return;
-        }
-        
-        // Fallback to session email
-        if (session?.user?.email) {
-          setUserName(session.user.email);
-          return;
-        }
-        
-        // Default fallback
-        setUserName(null);
-      }
-    };
-
     loadUserName();
 
     // Listen for localStorage changes
@@ -121,9 +121,9 @@ export const Navbar: React.FC = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('profileUpdated', handleProfileUpdate as EventListener);
     };
-  }, [session]);
+  }, [loadUserName]);
 
-  const handleLogoClick = (e: React.MouseEvent) => {
+  const handleLogoClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     // For logo click, we want to navigate without showing the loading screen
     // Set flag to indicate navigation is from logo click
@@ -131,9 +131,9 @@ export const Navbar: React.FC = () => {
       sessionStorage.setItem('fromLogoClick', 'true');
     }
     router.push("/");
-  };
+  }, [router]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       showLoader("Logging out..."); // Show loader during logout
       
@@ -154,10 +154,10 @@ export const Navbar: React.FC = () => {
       console.error("Logout failed:", error);
       hideLoader(); // Hide loader even if there's an error
     }
-  };
+  }, [showLoader, hideLoader]);
 
   // Handle navigation with universal loader and smooth transition
-  const handleNavigation = (path: string, loadingMessage: string = "Loading page...") => {
+  const handleNavigation = useCallback((path: string, loadingMessage: string = "Loading page...") => {
     // Close mobile menu if open
     setIsMenuOpen(false);
     
@@ -165,7 +165,7 @@ export const Navbar: React.FC = () => {
     router.push(path);
     
     // The route transition handler will take care of showing/hiding the loader
-  };
+  }, [router]);
 
   // Close mobile menu when resizing to desktop
   useEffect(() => {

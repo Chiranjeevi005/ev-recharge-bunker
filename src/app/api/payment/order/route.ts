@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const { stationId, slotId, duration, amount, userId } = body;
 
     // Validate input
-    if (!stationId || !slotId || !duration || amount === undefined) {
+    if (!stationId || !slotId || !duration || amount === undefined || amount === null) {
       console.error("Missing required fields:", { stationId, slotId, duration, amount });
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     console.log("Creating payment order with:", { stationId, slotId, duration, amount, userId });
 
     // Validate amount
-    if (amount <= 0) {
+    if (typeof amount !== 'number' || amount <= 0) {
       console.error("Invalid amount:", amount);
       return NextResponse.json(
         { error: "Invalid amount" },
@@ -49,10 +49,19 @@ export async function POST(request: Request) {
     }
 
     // Validate duration
-    if (duration <= 0 || duration > 24) {
+    if (typeof duration !== 'number' || duration <= 0 || duration > 24) {
       console.error("Invalid duration:", duration);
       return NextResponse.json(
         { error: "Invalid duration. Must be between 1 and 24 hours." },
+        { status: 400 }
+      );
+    }
+    
+    // Validate stationId and slotId
+    if (typeof stationId !== 'string' || typeof slotId !== 'string') {
+      console.error("Invalid stationId or slotId:", { stationId, slotId });
+      return NextResponse.json(
+        { error: "Invalid stationId or slotId" },
         { status: 400 }
       );
     }
@@ -72,8 +81,19 @@ export async function POST(request: Request) {
       console.log("Razorpay order created:", order);
     } catch (razorpayError: any) {
       console.error("Error creating Razorpay order:", razorpayError);
+      // Log more detailed error information
+      if (razorpayError.statusCode) {
+        console.error("Razorpay status code:", razorpayError.statusCode);
+      }
+      if (razorpayError.error) {
+        console.error("Razorpay error details:", razorpayError.error);
+      }
       return NextResponse.json(
-        { error: "Failed to create payment order with Razorpay", details: razorpayError.message },
+        { 
+          error: "Failed to create payment order with Razorpay", 
+          details: razorpayError.message,
+          code: razorpayError.statusCode
+        },
         { status: 500 }
       );
     }
@@ -102,7 +122,16 @@ export async function POST(request: Request) {
       updatedAt: new Date()
     };
 
-    const orderResult = await db.collection("payments").insertOne(paymentRecord);
+    let orderResult;
+    try {
+      orderResult = await db.collection("payments").insertOne(paymentRecord);
+    } catch (dbError) {
+      console.error("Database error while storing payment record:", dbError);
+      return NextResponse.json(
+        { error: "Failed to store payment record in database" },
+        { status: 500 }
+      );
+    }
 
     console.log("Payment record created:", {
       insertedId: orderResult.insertedId.toString(),

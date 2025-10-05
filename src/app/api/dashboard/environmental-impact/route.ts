@@ -17,76 +17,83 @@ export async function GET(request: Request) {
     // Try to fetch from Redis first (if available)
     if (redis.isAvailable()) {
       try {
-        const impactKey = `business-stats:${userId}`;
+        const impactKey = `journey-impact:${userId}`;
         const cachedImpact = await redis.get(impactKey);
         
         if (cachedImpact) {
+          console.log('Returning cached journey impact stats from Redis');
           return NextResponse.json(JSON.parse(cachedImpact));
         }
       } catch (redisError) {
-        console.error("Error fetching business stats from Redis:", redisError);
+        console.error("Error fetching journey impact stats from Redis:", redisError);
       }
     }
 
     // If not in Redis or Redis not available, calculate from MongoDB
     const { db } = await connectToDatabase();
     
-    // Get all completed charging sessions for the user (last 24 hours for more frequent updates)
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
-    const sessions = await db.collection("charging_sessions").find({ 
+    // Get all confirmed bookings for the user (using bookings collection instead of charging_sessions)
+    const bookings = await db.collection("bookings").find({ 
       userId: userId,
-      status: "completed",
-      createdAt: { $gte: twentyFourHoursAgo }
+      status: "confirmed"
     }).toArray();
     
     // Calculate totals
     let totalKWh = 0;
-    let totalDistance = 0;
-    let totalPayments = 0;
+    let totalDuration = 0; // in minutes
     
-    sessions.forEach(session => {
-      totalKWh += session["totalEnergyKWh"] || 0;
-      totalPayments += session["totalCost"] || 0;
+    bookings.forEach(booking => {
+      // Estimate energy based on duration (assuming 1 kWh per hour as a simple estimate)
+      // In a real implementation, this would come from actual charging data
+      const durationHours = (new Date(booking["endTime"]).getTime() - new Date(booking["startTime"]).getTime()) / (1000 * 60 * 60);
+      const estimatedEnergyKWh = durationHours * 1; // Simple estimate
+      
+      totalKWh += estimatedEnergyKWh;
+      
+      // Calculate duration from startTime and endTime
+      if (booking["startTime"] && booking["endTime"]) {
+        const start = new Date(booking["startTime"]);
+        const end = new Date(booking["endTime"]);
+        const durationInMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+        totalDuration += durationInMinutes;
+      }
     });
     
     // Calculate business metrics based on formulas provided
     // Constants
-    const PETROL_COST_PER_KM = 6.5;
-    const EV_COST_PER_KM = 1.5;
-    const AVG_KM_PER_LITER = 15;
     const KM_PER_KWH = 6;
     const CO2_PER_KWH = 0.85; // kg
-    const CO2_PER_KM_PETROL = 0.12; // kg CO2/km for petrol
+    const PETROL_COST_PER_KM = 6.5;
+    const EV_COST_PER_KM = 1.5;
     
-    // Calculate metrics with minimum values to keep users motivated
-    totalDistance = totalKWh * KM_PER_KWH;
-    const fuelSavings = Math.max(10, totalDistance * (PETROL_COST_PER_KM - EV_COST_PER_KM)); // Minimum ₹10
-    const petrolOffset = Math.max(5, totalDistance / AVG_KM_PER_LITER); // Minimum 5 liters
-    const co2Saved = Math.max(1, totalKWh * CO2_PER_KWH); // Minimum 1 kg
+    // Calculate metrics
+    const totalEnergy = totalKWh;
+    const co2Prevented = totalEnergy * CO2_PER_KWH; // kg CO₂
+    const totalDistance = totalEnergy * KM_PER_KWH; // km
+    const costSavings = totalDistance * (PETROL_COST_PER_KM - EV_COST_PER_KM); // ₹
     
-    // Calculate trees equivalent (21 kg CO2 per tree per year) - minimum 1 tree
-    const treesSaved = Math.max(1, Math.round(co2Saved / 21));
-    
-    // For community CO2 saved, we'll need to get the total for all users (last 24 hours)
-    const allSessions = await db.collection("charging_sessions").find({ 
-      status: "completed",
-      createdAt: { $gte: twentyFourHoursAgo }
+    // For community CO2 saved, we'll need to get the total for all users
+    const allBookings = await db.collection("bookings").find({ 
+      status: "confirmed"
     }).toArray();
     
     let communityCO2Saved = 0;
-    allSessions.forEach(session => {
-      communityCO2Saved += (session["totalEnergyKWh"] || 0) * CO2_PER_KWH;
+    allBookings.forEach(booking => {
+      const durationHours = (new Date(booking["endTime"]).getTime() - new Date(booking["startTime"]).getTime()) / (1000 * 60 * 60);
+      const estimatedEnergyKWh = durationHours * 1; // Simple estimate
+      communityCO2Saved += estimatedEnergyKWh * CO2_PER_KWH;
     });
     
-    // Calculate user's contribution percentage - minimum 1%
-    const evRevolutionContribution = communityCO2Saved > 0 ? Math.max(1, (co2Saved / communityCO2Saved) * 100) : 1;
-    
-    // Calculate user's rank (simplified - in a real app, you'd compare with users in the same city)
-    // For now, we'll simulate a rank based on CO2 saved (last 24 hours)
-    const allUsersCO2 = await db.collection("charging_sessions").aggregate([
-      { $match: { status: "completed", createdAt: { $gte: twentyFourHoursAgo } } },
-      { $group: { _id: "$userId", totalCO2: { $sum: { $multiply: ["$totalEnergyKWh", CO2_PER_KWH] } } } },
+    // Calculate user's rank percentile
+    const allUsersCO2 = await db.collection("bookings").aggregate([
+      { $match: { status: "confirmed" } },
+      { $group: { _id: "$userId", totalCO2: { $sum: { $multiply: [
+        { $divide: [
+          { $subtract: [{ $toDate: "$endTime" }, { $toDate: "$startTime" }] },
+          { $literal: 3600000 } // Convert ms to hours
+        ]},
+        CO2_PER_KWH
+      ] } } } },
       { $sort: { totalCO2: -1 } }
     ]).toArray();
     
@@ -95,34 +102,31 @@ export async function GET(request: Request) {
     const userRank = userIndex !== -1 ? userIndex + 1 : allUsersCO2.length + 1;
     const rankPercentile = allUsersCO2.length > 0 ? Math.max(1, Math.round((1 - (userRank / allUsersCO2.length)) * 100)) : 1;
     
-    const businessStats = {
-      fuelSavings: Math.round(fuelSavings),
-      petrolOffset: Math.round(petrolOffset),
-      evDistance: Math.max(30, Math.round(totalDistance)), // Minimum 30 km
-      evContribution: parseFloat(evRevolutionContribution.toFixed(2)),
-      co2Saved: Math.round(co2Saved),
-      treesSaved: treesSaved,
+    // Prepare the journey impact stats data
+    const journeyImpactStats = {
+      totalKWh: parseFloat(totalEnergy.toFixed(2)),
+      totalDuration: Math.round(totalDuration),
+      co2Prevented: Math.round(co2Prevented),
+      costSavings: Math.round(costSavings),
       rankPercentile: rankPercentile,
       // Keep original values for potential reuse
-      totalKWh,
-      totalDistance,
-      totalPayments,
+      totalDistance: parseFloat(totalDistance.toFixed(2)),
     };
 
-    // Cache in Redis for 1 minute (if available) - more frequent updates for motivation
+    // Cache in Redis for 60 seconds
     if (redis.isAvailable()) {
       try {
-        await redis.setex(`business-stats:${userId}`, 60, JSON.stringify(businessStats));
+        await redis.setex(`journey-impact:${userId}`, 60, JSON.stringify(journeyImpactStats));
       } catch (redisError) {
-        console.error("Error caching business stats in Redis:", redisError);
+        console.error("Error caching journey impact stats in Redis:", redisError);
       }
     }
 
-    return NextResponse.json(businessStats);
+    return NextResponse.json(journeyImpactStats);
   } catch (error) {
-    console.error("Error fetching business stats:", error);
+    console.error("Error fetching journey impact stats:", error);
     return NextResponse.json(
-      { error: "Failed to fetch business stats" }, 
+      { error: "Failed to fetch journey impact stats" }, 
       { status: 500 }
     );
   }
