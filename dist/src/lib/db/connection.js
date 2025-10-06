@@ -7,9 +7,10 @@ const mongodb_1 = require("mongodb");
 // Default configuration
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY = 1000; // 1 second
-const DEFAULT_CONNECTION_TIMEOUT = 5000; // 5 seconds
+const DEFAULT_CONNECTION_TIMEOUT = 10000; // 10 seconds
+const DEFAULT_SOCKET_TIMEOUT = 20000; // 20 seconds
 // MongoDB connection URI from environment variables
-const MONGODB_URI = process.env['MONGODB_URI'] || 'mongodb://localhost:27017';
+const MONGODB_URI = process.env['DATABASE_URL'] || process.env['MONGODB_URI'] || 'mongodb://localhost:27017';
 // Global variables to cache the client and connection state
 let cachedClient = null;
 let cachedDb = null;
@@ -25,18 +26,44 @@ function log(message, ...optionalParams) {
 async function connectToDatabase(retries = DEFAULT_RETRY_ATTEMPTS, retryDelay = DEFAULT_RETRY_DELAY) {
     // Return cached connection if available
     if (cachedClient && cachedDb) {
+        log('Returning cached connection');
         return { client: cachedClient, db: cachedDb };
     }
     const options = {
         serverSelectionTimeoutMS: DEFAULT_CONNECTION_TIMEOUT,
         connectTimeoutMS: DEFAULT_CONNECTION_TIMEOUT,
+        socketTimeoutMS: DEFAULT_SOCKET_TIMEOUT,
+        maxIdleTimeMS: 30000, // 30 seconds
+        maxPoolSize: 10,
+        minPoolSize: 5,
+        waitQueueTimeoutMS: 5000 // 5 seconds
     };
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             log(`Connecting to MongoDB (attempt ${attempt}/${retries})`);
-            const client = new mongodb_1.MongoClient(MONGODB_URI, options);
-            await client.connect();
+            log(`Using MongoDB URI: ${MONGODB_URI}`);
+            // Add timeout to the connection promise
+            const connectionPromise = new Promise((resolve, reject) => {
+                const client = new mongodb_1.MongoClient(MONGODB_URI, options);
+                client.connect()
+                    .then(() => resolve(client))
+                    .catch(reject);
+                // Add timeout to reject if connection takes too long
+                setTimeout(() => reject(new Error('MongoDB connection timeout')), DEFAULT_CONNECTION_TIMEOUT);
+            });
+            const client = await connectionPromise;
             const db = client.db(); // Use database from URI or default
+            log(`Connected to database: ${db.databaseName}`);
+            // List collections to verify connection with timeout
+            const collectionsPromise = new Promise((resolve, reject) => {
+                db.listCollections().toArray()
+                    .then(resolve)
+                    .catch(reject);
+                // Add timeout to reject if listing takes too long
+                setTimeout(() => reject(new Error('MongoDB collections list timeout')), 5000);
+            });
+            const collections = await collectionsPromise;
+            log(`Available collections:`, collections.map((c) => c.name));
             // Cache the connection
             cachedClient = client;
             cachedDb = db;
