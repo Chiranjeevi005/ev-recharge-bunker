@@ -1,195 +1,138 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
-import { PaymentService } from '@/lib/payment';
+import { PaymentService } from '@/lib/payment/payment';
+import redis from '@/lib/realtime/redisQueue';
 
 export async function POST(request: Request) {
   try {
-    const { db } = await connectToDatabase();
-    let body;
+    const { db, client } = await connectToDatabase();
+    const body = await request.json();
     
-    try {
-      body = await request.json();
-    } catch (jsonError) {
-      console.error("Error parsing request body:", jsonError);
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" }, 
-        { status: 400 }
-      );
-    }
-    
-    console.log("Payment verification request body:", JSON.stringify(body, null, 2));
-    
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, is_test } = body;
-    
-    console.log("Payment verification request received:", {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      is_test
-    });
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
     
     // Validate input
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      console.error("Missing required fields for payment verification:", {
-        razorpay_order_id: !!razorpay_order_id,
-        razorpay_payment_id: !!razorpay_payment_id,
-        razorpay_signature: !!razorpay_signature
-      });
       return NextResponse.json(
-        { error: "Missing required fields" }, 
+        { error: "Missing required parameters" }, 
         { status: 400 }
       );
     }
     
-    // Skip signature verification for tests
-    let isValid = false;
-    if (is_test) {
-      console.log("Skipping signature verification for test payment");
-      isValid = true;
-    } else {
-      console.log("Performing signature verification");
-      try {
-        // Verify Razorpay signature
-        isValid = await PaymentService.verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-        console.log("Signature verification result:", isValid);
-      } catch (verificationError) {
-        console.error("Error during signature verification:", verificationError);
-        return NextResponse.json(
-          { error: "Payment verification failed", details: verificationError instanceof Error ? verificationError.message : 'Unknown error' }, 
-          { status: 500 }
+    // Verify Razorpay signature
+    const isVerified = PaymentService.verifyRazorpaySignature(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    );
+    
+    if (!isVerified) {
+      console.error("Razorpay signature verification failed");
+      return NextResponse.json(
+        { error: "Payment verification failed" }, 
+        { status: 400 }
+      );
+    }
+    
+    // Start a session for transactions
+    const session = client.startSession();
+    
+    try {
+      let bookingId = null;
+      let paymentId = null;
+      
+      // Start transaction
+      await session.withTransaction(async () => {
+        // Update payment status
+        const updatedPayment = await PaymentService.updatePaymentStatus(
+          razorpay_order_id,
+          razorpay_payment_id,
+          'completed'
         );
-      }
-    }
-    
-    if (!isValid) {
-      console.error("Invalid Razorpay signature", { razorpay_order_id, razorpay_payment_id });
-      return NextResponse.json(
-        { error: "Invalid payment signature" }, 
-        { status: 400 }
-      );
-    }
-    
-    // Find the payment record
-    console.log(`Searching for payment record with orderId: '${razorpay_order_id}'`);
-    
-    let paymentRecord;
-    try {
-      paymentRecord = await db.collection("payments").findOne({ 
-        orderId: razorpay_order_id 
-      });
-    } catch (dbError) {
-      console.error("Database error while finding payment record:", dbError);
-      return NextResponse.json(
-        { error: "Database error while retrieving payment record" }, 
-        { status: 500 }
-      );
-    }
-    
-    console.log("Payment record search result:", paymentRecord);
-    
-    if (!paymentRecord) {
-      console.error(`Payment record not found for orderId: '${razorpay_order_id}'`);
-      return NextResponse.json(
-        { error: "Payment record not found" }, 
-        { status: 404 }
-      );
-    }
-    
-    // Update payment status using the payment service
-    console.log(`Updating payment status for orderId: '${razorpay_order_id}'`);
-    let updatedPayment;
-    try {
-      updatedPayment = await PaymentService.updatePaymentStatus(
-        razorpay_order_id, 
-        razorpay_payment_id, 
-        'completed'
-      );
-    } catch (updateError) {
-      console.error("Error updating payment status:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update payment status", details: updateError instanceof Error ? updateError.message : 'Unknown error' }, 
-        { status: 500 }
-      );
-    }
-    
-    console.log("PaymentService.updatePaymentStatus result:", updatedPayment);
-    
-    if (!updatedPayment) {
-      console.error(`Failed to update payment status for orderId: '${razorpay_order_id}'`);
-      return NextResponse.json(
-        { error: "Failed to update payment status" }, 
-        { status: 500 }
-      );
-    }
-    
-    // Create booking record with proper structure
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + (paymentRecord['duration'] || 1) * 60 * 60 * 1000);
-    
-    const bookingData = {
-      userId: paymentRecord['userId'] || "anonymous",
-      stationId: paymentRecord['stationId'],
-      slotId: paymentRecord['slotId'],
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      amount: paymentRecord['amount'],
-      paymentId: razorpay_payment_id,
-      status: 'confirmed',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    console.log("Creating booking record:", bookingData);
-    let bookingResult;
-    try {
-      bookingResult = await db.collection("bookings").insertOne(bookingData);
-      console.log("Booking record created:", bookingResult.insertedId.toString());
-    } catch (bookingError) {
-      console.error("Error creating booking record:", bookingError);
-      // Even if booking creation fails, we should still return success since payment was verified
-      return NextResponse.json(
-        { 
-          success: true,
+        
+        if (!updatedPayment) {
+          throw new Error(`Failed to update payment status for orderId: '${razorpay_order_id}'`);
+        }
+        
+        console.log("PaymentService.updatePaymentStatus result:", updatedPayment);
+        
+        // Get payment record for booking creation
+        const paymentRecord = await db.collection('payments').findOne(
+          { orderId: razorpay_order_id },
+          { session }
+        );
+        
+        if (!paymentRecord) {
+          throw new Error(`Payment record not found for orderId: '${razorpay_order_id}'`);
+        }
+        
+        // Create booking record with proper structure
+        const startTime = new Date();
+        const endTime = new Date(startTime.getTime() + (paymentRecord['duration'] || 1) * 60 * 60 * 1000);
+        
+        const bookingData = {
+          userId: paymentRecord['userId'] || "anonymous",
+          stationId: paymentRecord['stationId'],
+          slotId: paymentRecord['slotId'],
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          amount: paymentRecord['amount'],
           paymentId: razorpay_payment_id,
-          warning: "Payment verified but booking creation failed"
+          status: 'confirmed',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        console.log("Creating booking record:", bookingData);
+        const bookingResult = await db.collection("bookings").insertOne(bookingData, { session });
+        console.log("Booking record created:", bookingResult.insertedId.toString());
+        
+        // Update slot status to occupied
+        const stationFilter = ObjectId.isValid(paymentRecord['stationId']) 
+          ? { _id: new ObjectId(paymentRecord['stationId']), "slots.slotId": paymentRecord['slotId'] }
+          : { _id: paymentRecord['stationId'], "slots.slotId": paymentRecord['slotId'] };
+        
+        const updateResult = await db.collection("stations").updateOne(
+          stationFilter,
+          { 
+            $set: { 
+              "slots.$.status": "occupied"
+            } 
+          },
+          { session }
+        );
+        
+        console.log("Slot status update result:", updateResult);
+        
+        // Store the IDs for the response
+        bookingId = bookingResult.insertedId.toString();
+        paymentId = razorpay_payment_id;
+        
+        // Emit real-time payment update
+        try {
+          await PaymentService.emitPaymentUpdate(updatedPayment);
+        } catch (emitError) {
+          console.error("Error emitting payment update:", emitError);
+          // Don't fail the whole request if real-time update fails
         }
-      );
-    }
-    
-    // Update slot status to occupied
-    try {
-      const stationFilter = ObjectId.isValid(paymentRecord['stationId']) 
-        ? { _id: new ObjectId(paymentRecord['stationId']), "slots.slotId": paymentRecord['slotId'] }
-        : { _id: paymentRecord['stationId'], "slots.slotId": paymentRecord['slotId'] };
+      });
       
-      const updateResult = await db.collection("stations").updateOne(
-        stationFilter,
-        { 
-          $set: { 
-            "slots.$.status": "occupied"
-          } 
-        }
+      // Return success response
+      return NextResponse.json({
+        success: true,
+        bookingId: bookingId,
+        paymentId: paymentId
+      });
+    } catch (transactionError) {
+      console.error("Transaction failed:", transactionError);
+      return NextResponse.json(
+        { error: "Transaction failed", details: transactionError instanceof Error ? transactionError.message : 'Unknown error' }, 
+        { status: 500 }
       );
-      
-      console.log("Slot status update result:", updateResult);
-    } catch (slotUpdateError) {
-      console.error("Error updating slot status:", slotUpdateError);
+    } finally {
+      // End session
+      await session.endSession();
     }
-    
-    // Emit real-time payment update
-    try {
-      await PaymentService.emitPaymentUpdate(updatedPayment);
-    } catch (emitError) {
-      console.error("Error emitting payment update:", emitError);
-      // Don't fail the whole request if real-time update fails
-    }
-    
-    return NextResponse.json({
-      success: true,
-      bookingId: bookingResult?.insertedId.toString() || null,
-      paymentId: razorpay_payment_id
-    });
   } catch (error) {
     console.error("Error verifying payment:", error);
     return NextResponse.json(

@@ -1,4 +1,4 @@
-import redis from './realtime/redis';
+import redis from './realtime/redisQueue';
 import { setupPeriodicStatsUpdates } from './realtime/updateStats';
 import { ensureDatabaseIndexes } from './db/indexes';
 

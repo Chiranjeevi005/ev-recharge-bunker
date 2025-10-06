@@ -1,0 +1,109 @@
+# Alerting Rules for EV Bunker Application
+
+groups:
+- name: ev-bunker-alerts
+  rules:
+  # Application Alerts
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate (instance {{ $labels.instance }})"
+      description: "HTTP error rate is above 5% for 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HighErrorRateCritical
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate (instance {{ $labels.instance }})"
+      description: "HTTP error rate is above 10% for 5 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  # Latency Alerts
+  - alert: HighLatency
+    expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High latency (instance {{ $labels.instance }})"
+      description: "HTTP request latency is above 500ms for 2 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HighLatencyCritical
+    expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High latency (instance {{ $labels.instance }})"
+      description: "HTTP request latency is above 1s for 2 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  # Database Alerts
+  - alert: DatabaseDown
+    expr: mongodb_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Database down (instance {{ $labels.instance }})"
+      description: "MongoDB instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: DatabaseHighConnectionCount
+    expr: mongodb_connections{state="current"} > 1000
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Database high connection count (instance {{ $labels.instance }})"
+      description: "MongoDB current connection count is above 1000\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  # Redis Alerts
+  - alert: RedisDown
+    expr: redis_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis down (instance {{ $labels.instance }})"
+      description: "Redis instance is down\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  # System Alerts
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage (instance {{ $labels.instance }})"
+      description: "Memory usage is above 90%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HighCPUUsage
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage (instance {{ $labels.instance }})"
+      description: "CPU usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  # Custom Application Alerts
+  - alert: PaymentProcessingFailure
+    expr: rate(payment_processing_failures_total[5m]) > 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Payment processing failure (instance {{ $labels.instance }})"
+      description: "Payment processing failures detected\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: AuthenticationFailureRate
+    expr: rate(authentication_failures_total[5m]) > 10
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High authentication failure rate (instance {{ $labels.instance }})"
+      description: "Authentication failure rate is above 10 per minute\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"

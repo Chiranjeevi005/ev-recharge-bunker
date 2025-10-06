@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 
 export async function GET(request: Request) {
   try {

@@ -1,7 +1,7 @@
 /** @type {import('jest').Config} */
 const config = {
   preset: 'ts-jest',
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node', // Changed from jsdom to node for better MongoDB support
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -29,15 +29,18 @@ const config = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: 'tsconfig.json',
-      diagnostics: false
+      diagnostics: false,
+      useESM: true, // Enable ESM support
     }],
   },
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   // Handle ES modules and transform issues
   transformIgnorePatterns: [
-    '/node_modules/(?!bson|mongodb)/',
+    '/node_modules/(?!bson|mongodb|whatwg-url|tr46|webidl-conversions)/',
   ],
+  // Add ESM support
+  extensionsToTreatAsEsm: ['.ts'],
 };
 
 module.exports = config;

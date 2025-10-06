@@ -1,6 +1,6 @@
 import type { Payment } from '../../types/payment';
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from './redis';
+import redis from './redisQueue';
 
 /**
  * Update dashboard stats in Redis cache
@@ -97,7 +97,7 @@ export async function updateDashboardStats() {
     await redis.setex('dashboard_stats', 300, JSON.stringify(stats));
     
     // Publish stats update to Redis channel for real-time updates
-    await redis.publish('stats_update', JSON.stringify(stats));
+    await redis.enqueueMessage('stats_update', JSON.stringify(stats));
     
     console.log('Dashboard stats updated successfully');
     return stats;

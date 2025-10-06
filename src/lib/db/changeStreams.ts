@@ -1,5 +1,5 @@
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 import type { ChangeStreamDocument, ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ChangeStreamDeleteDocument } from 'mongodb';
 
 // Store change stream references for proper cleanup
@@ -39,7 +39,7 @@ export async function initializeChangeStreams() {
       // Publish to Redis
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify(eventData));
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify(eventData));
           console.log('Published client update to Redis');
         } catch (error) {
           console.error('Error publishing client update to Redis:', error);
@@ -49,7 +49,7 @@ export async function initializeChangeStreams() {
       // Also publish eco stats update when clients change to trigger dashboard updates
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify({
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify({
             event: 'eco_stats_update',
             operationType: change.operationType,
             documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
@@ -102,7 +102,7 @@ export async function initializeChangeStreams() {
       // Publish to Redis
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify(eventData));
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify(eventData));
           console.log('Published station update to Redis');
         } catch (error) {
           console.error('Error publishing station update to Redis:', error);
@@ -112,7 +112,7 @@ export async function initializeChangeStreams() {
       // Also publish eco stats update when stations change to trigger dashboard updates
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify({
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify({
             event: 'eco_stats_update',
             operationType: change.operationType,
             documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
@@ -165,7 +165,7 @@ export async function initializeChangeStreams() {
       // Publish to Redis
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify(eventData));
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify(eventData));
           console.log('Published charging session update to Redis');
         } catch (error) {
           console.error('Error publishing charging session update to Redis:', error);
@@ -213,7 +213,7 @@ export async function initializeChangeStreams() {
       // Publish to Redis
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify(eventData));
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify(eventData));
           console.log('Published payment update to Redis');
         } catch (error) {
           console.error('Error publishing payment update to Redis:', error);
@@ -223,7 +223,7 @@ export async function initializeChangeStreams() {
       // Also publish eco stats update when payments change to trigger dashboard updates
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify({
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify({
             event: 'eco_stats_update',
             operationType: change.operationType,
             documentKey: (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey ? (change as ChangeStreamInsertDocument | ChangeStreamUpdateDocument | ChangeStreamDeleteDocument).documentKey!['_id'].toString() : null,
@@ -276,7 +276,7 @@ export async function initializeChangeStreams() {
       // Publish to Redis
       if (redis.isAvailable()) {
         try {
-          await redis.publish('client_activity_channel', JSON.stringify(eventData));
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify(eventData));
           console.log('Published eco stats update to Redis');
         } catch (error) {
           console.error('Error publishing eco stats update to Redis:', error);

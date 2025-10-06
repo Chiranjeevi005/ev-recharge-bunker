@@ -16,6 +16,10 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const server = createServer(async (req, res) => {
     try {
+      // Set timeout for the request (60 seconds)
+      req.setTimeout(60000);
+      res.setTimeout(60000);
+      
       // Be sure to pass `true` as the second argument to `url.parse`.
       // This tells it to parse the query portion of the URL.
       const url = req.url || '/';
@@ -34,6 +38,9 @@ app.prepare().then(() => {
     .listen(port, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
     });
+
+  // Set server timeout (60 seconds)
+  server.setTimeout(60000);
 
   // Initialize Socket.IO
   const io = initSocket(server);

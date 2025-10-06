@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 
 // Helper function to get user growth data
 async function getUserGrowthData(db: any) {

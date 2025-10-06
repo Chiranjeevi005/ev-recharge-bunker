@@ -8,8 +8,6 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoader } from '@/context/LoaderContext';
-// We'll move useRouteTransition to a separate component wrapped in Suspense
-// import { useRouteTransition } from '@/hooks/useRouteTransition';
 import { useRealTimeData } from '@/hooks/useRealTimeData';
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart';
 import { FetchingAnimation } from '@/components/dashboard/FetchingAnimation';
@@ -215,7 +213,7 @@ function AdminDashboardContent() {
         setErrorState("Request timeout - please check your network connection and try again");
         hideLoader();
         setLoadingState(false);
-      }, 20000); // Increased to 20 seconds for better reliability
+      }, 30000); // Increased to 30 seconds for better reliability
       
       try {
         // Fetch all data with individual timeouts and better error handling
@@ -230,38 +228,41 @@ function AdminDashboardContent() {
           Promise.race([
             fetch('/api/dashboard/stats'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Stats fetch timeout')), 15000)
+              setTimeout(() => reject(new Error('Stats fetch timeout')), 20000)
             )
           ]),
           // Fetch clients with timeout
           Promise.race([
             fetch('/api/clients'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Clients fetch timeout')), 15000)
+              setTimeout(() => reject(new Error('Clients fetch timeout')), 20000)
             )
           ]),
           // Fetch stations with timeout
           Promise.race([
             fetch('/api/stations'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Stations fetch timeout')), 15000)
+              setTimeout(() => reject(new Error('Stations fetch timeout')), 20000)
             )
           ]),
           // Fetch payments with timeout
           Promise.race([
             fetch('/api/payments'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Payments fetch timeout')), 15000)
+              setTimeout(() => reject(new Error('Payments fetch timeout')), 20000)
             )
           ]),
           // Fetch chart data with timeout
           Promise.race([
             fetch('/api/dashboard/charts'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Chart data fetch timeout')), 15000)
+              setTimeout(() => reject(new Error('Chart data fetch timeout')), 20000)
             )
           ])
         ]);
+        
+        // Clear the overall timeout since we've successfully fetched data
+        clearTimeout(overallTimeoutId);
         
         // Process responses
         let statsData = [];

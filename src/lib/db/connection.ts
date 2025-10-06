@@ -28,18 +28,18 @@ export async function connectToDatabase() {
     if (!global.mongoClient) {
       console.log('Creating new MongoDB client');
       const client = new MongoClient(MONGODB_URI!, {
-        serverSelectionTimeoutMS: 5000, // 5 second timeout for server selection
-        connectTimeoutMS: 5000, // 5 second timeout for connection
-        socketTimeoutMS: 10000, // 10 second timeout for socket operations
+        serverSelectionTimeoutMS: 10000, // Increased to 10 seconds for server selection
+        connectTimeoutMS: 10000, // Increased to 10 seconds for connection
+        socketTimeoutMS: 20000, // Increased to 20 seconds for socket operations
         maxIdleTimeMS: 30000, // 30 second max idle time
         retryWrites: true,
         retryReads: true
       });
       
-      // Add timeout to connection
+      // Add timeout to connection with more generous limit
       const connectPromise = client.connect();
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+        setTimeout(() => reject(new Error('MongoDB connection timeout - please check your network connection and MongoDB server status')), 15000)
       );
       
       await Promise.race([connectPromise, timeoutPromise]);
@@ -58,7 +58,7 @@ export async function connectToDatabase() {
     try {
       const collectionsPromise = cachedDb.listCollections().toArray();
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Collections list timeout')), 3000)
+        setTimeout(() => reject(new Error('Collections list timeout - database connection may be slow')), 5000)
       );
       
       const collections = await Promise.race([collectionsPromise, timeoutPromise]) as any[];

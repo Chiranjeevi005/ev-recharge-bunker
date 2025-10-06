@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validatePayment } from '@/lib/db/schemas/validation';
 import { PaymentService } from '@/lib/payment';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 
 export async function GET(request: Request) {
   try {
@@ -13,6 +13,8 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const userId = searchParams.get('userId');
     const stationId = searchParams.get('stationId');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
     
     // Special case: if userId is provided and limit is high, use getAllPaymentHistory
     if (userId && limit >= 1000) {
@@ -29,11 +31,23 @@ export async function GET(request: Request) {
         ? filteredPayments.filter(payment => payment.stationId === stationId)
         : filteredPayments;
       
+      // Sort the results
+      const validSortFields = ['createdAt', 'amount', 'status'];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+      
+      finalPayments.sort((a: any, b: any) => {
+        if (sortOrder === 1) {
+          return a[sortField] > b[sortField] ? 1 : -1;
+        } else {
+          return a[sortField] < b[sortField] ? 1 : -1;
+        }
+      });
+      
       return NextResponse.json(finalPayments);
     }
     
     // Create cache key based on parameters
-    const cacheKey = `payments:${page}:${limit}:${status || 'all'}:${userId || 'all'}:${stationId || 'all'}`;
+    const cacheKey = `payments:${page}:${limit}:${status || 'all'}:${userId || 'all'}:${stationId || 'all'}:${sortBy}:${sortOrder}`;
     
     // Try to get data from Redis cache first
     if (redis.isAvailable()) {
@@ -52,19 +66,42 @@ export async function GET(request: Request) {
     if (userId) filter.userId = userId;
     if (stationId) filter.stationId = stationId;
     
+    // Validate sortBy field to prevent injection
+    const validSortFields = ['createdAt', 'amount', 'status'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    
     // Calculate pagination
     const skip = (page - 1) * limit;
     
-    // Fetch payments with pagination and sort by creation date (newest first)
+    // Use projection to only fetch required fields
+    const projection = {
+      userId: 1,
+      paymentId: 1,
+      orderId: 1,
+      amount: 1,
+      status: 1,
+      method: 1,
+      stationId: 1,
+      slotId: 1,
+      duration: 1,
+      currency: 1,
+      createdAt: 1,
+      updatedAt: 1
+    };
+    
+    // Fetch payments with pagination, sorting, and projection for better performance
     const payments = await db.collection("payments")
       .find(filter)
+      .project(projection)
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 })
+      .sort({ [sortField]: sortOrder })
       .toArray();
     
-    // Get total count for pagination
-    const total = await db.collection("payments").countDocuments(filter);
+    // Get total count for pagination using estimatedDocumentCount for better performance when no filters
+    const totalCountFilter = Object.keys(filter).length === 0 
+      ? await db.collection("payments").estimatedDocumentCount()
+      : await db.collection("payments").countDocuments(filter);
     
     // Convert ObjectId to string for JSON serialization and ensure proper date formatting
     const serializedPayments = payments.map((payment: any) => ({
@@ -82,8 +119,8 @@ export async function GET(request: Request) {
       pagination: {
         page,
         limit,
-        total,
-        pages: Math.ceil(total / limit)
+        total: totalCountFilter,
+        pages: Math.ceil(totalCountFilter / limit)
       }
     };
     
@@ -140,7 +177,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(paymentData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(paymentData));
     }
     
     return NextResponse.json({ 
@@ -180,7 +217,7 @@ export async function PUT(request: Request) {
     
     const { db } = await connectToDatabase();
     
-    // Update payment
+    // Update payment using findOneAndUpdate with projection for efficiency
     const result: any = await db.collection("payments").findOneAndUpdate(
       { _id: new ObjectId(id) },
       { 
@@ -189,7 +226,23 @@ export async function PUT(request: Request) {
           updatedAt: new Date()
         }
       },
-      { returnDocument: 'after' }
+      { 
+        returnDocument: 'after',
+        projection: { 
+          userId: 1,
+          paymentId: 1,
+          orderId: 1,
+          amount: 1,
+          status: 1,
+          method: 1,
+          stationId: 1,
+          slotId: 1,
+          duration: 1,
+          currency: 1,
+          createdAt: 1,
+          updatedAt: 1
+        } 
+      }
     );
     
     if (!result || !result['ok']) {
@@ -213,7 +266,7 @@ export async function PUT(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(paymentData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(paymentData));
     }
     
     return NextResponse.json({ 
@@ -267,7 +320,7 @@ export async function DELETE(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(paymentData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(paymentData));
     }
     
     return NextResponse.json({ 

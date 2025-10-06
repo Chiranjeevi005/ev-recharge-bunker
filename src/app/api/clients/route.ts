@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validateClient } from '@/lib/db/schemas/validation';
-import redis from '@/lib/realtime/redis';
+import { redisQueue as redis } from '@/lib/realtime';
 
 export async function GET(request: Request) {
   try {
@@ -11,9 +11,11 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
     const role = searchParams.get('role');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
     
     // Create cache key based on parameters
-    const cacheKey = `clients:${page}:${limit}:${status || 'all'}:${role || 'all'}`;
+    const cacheKey = `clients:${page}:${limit}:${status || 'all'}:${role || 'all'}:${sortBy}:${sortOrder}`;
     
     // Try to get data from Redis cache first
     if (redis.isAvailable()) {
@@ -31,19 +33,37 @@ export async function GET(request: Request) {
     if (status) filter.status = status;
     if (role) filter.role = role;
     
+    // Validate sortBy field to prevent injection
+    const validSortFields = ['createdAt', 'lastLogin', 'email', 'role'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    
     // Calculate pagination
     const skip = (page - 1) * limit;
     
-    // Fetch clients with pagination and sort by creation date (newest first)
+    // Use projection to only fetch required fields
+    const projection = {
+      email: 1,
+      name: 1,
+      role: 1,
+      status: 1,
+      createdAt: 1,
+      lastLogin: 1,
+      updatedAt: 1
+    };
+    
+    // Fetch clients with pagination, sorting, and projection for better performance
     const clients = await db.collection("clients")
       .find(filter)
+      .project(projection)
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 })
+      .sort({ [sortField]: sortOrder })
       .toArray();
     
-    // Get total count for pagination
-    const total = await db.collection("clients").countDocuments(filter);
+    // Get total count for pagination using estimatedDocumentCount for better performance when no filters
+    const total = Object.keys(filter).length === 0 
+      ? await db.collection("clients").estimatedDocumentCount()
+      : await db.collection("clients").countDocuments(filter);
     
     // Convert ObjectId to string for JSON serialization
     const serializedClients = clients.map((client: any) => ({
@@ -94,10 +114,11 @@ export async function POST(request: Request) {
     
     const { db } = await connectToDatabase();
     
-    // Check if client with email already exists
-    const existingClient = await db.collection("clients").findOne({ 
-      email: body.email 
-    });
+    // Check if client with email already exists using a more efficient query
+    const existingClient = await db.collection("clients").findOne(
+      { email: body.email },
+      { projection: { _id: 1 } } // Only fetch _id for efficiency
+    );
     
     if (existingClient) {
       return NextResponse.json(
@@ -131,7 +152,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(clientData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(clientData));
     }
     
     return NextResponse.json({ 
@@ -171,7 +192,7 @@ export async function PUT(request: Request) {
     
     const { db } = await connectToDatabase();
     
-    // Update client
+    // Update client using findOneAndUpdate with projection for efficiency
     const result: any = await db.collection("clients").findOneAndUpdate(
       { _id: new ObjectId(id) },
       { 
@@ -180,7 +201,17 @@ export async function PUT(request: Request) {
           updatedAt: new Date()
         }
       },
-      { returnDocument: 'after' }
+      { 
+        returnDocument: 'after',
+        projection: { 
+          email: 1, 
+          name: 1, 
+          role: 1, 
+          status: 1, 
+          createdAt: 1, 
+          updatedAt: 1 
+        } 
+      }
     );
     
     if (!result || !result.ok) {
@@ -204,7 +235,7 @@ export async function PUT(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(clientData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(clientData));
     }
     
     return NextResponse.json({ 
@@ -258,7 +289,7 @@ export async function DELETE(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(clientData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(clientData));
     }
     
     return NextResponse.json({ 

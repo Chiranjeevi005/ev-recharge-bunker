@@ -1,5 +1,5 @@
 import { Server as SocketIOServer } from "socket.io";
-import redis from './redis';
+import redis from './redisQueue';
 
 let io: SocketIOServer | null = null;
 
@@ -44,12 +44,12 @@ export function initSocket(server: any) {
         .then(() => {
           console.log('Subscribed to client_activity_channel');
         })
-        .catch(err => {
+        .catch((err: any) => {
           console.error("Error subscribing to client_activity_channel:", err);
         });
 
       // Handle Redis messages and broadcast to Socket.io clients
-      redis.on("message", (channel, message) => {
+      redis.on("message", (channel: string, message: string) => {
         try {
           const data = JSON.parse(message);
           

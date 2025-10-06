@@ -90,10 +90,12 @@ export async function POST(request: Request) {
       message: "Login successful",
       user: {
         id: client._id.toString(),
-        email: (client as any).email,
-        name: (client as any).name,
-        role: (client as any).role,
-      }
+       user: {
+         id: client._id.toString(),
+         email: (client as Client).email,
+         name: (client as Client).name,
+         role: (client as Client).role,
+       }      }
     }, { status: 200 });
 
   } catch (error: any) {

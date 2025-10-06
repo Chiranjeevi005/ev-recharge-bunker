@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 import { connectToDatabase } from '@/lib/db/connection';
 
 export async function POST(request: Request) {
@@ -48,8 +48,11 @@ export async function POST(request: Request) {
 
     // Update slot availability in Redis (if available)
     if (redis.isAvailable()) {
-      // Fix: Use the string stationId directly instead of converting to ObjectId
-      const station = await db.collection("stations").findOne({ _id: stationId });
+      // Use a more efficient query with projection
+      const station = await db.collection("stations").findOne(
+        { _id: stationId },
+        { projection: { city: 1, slots: 1 } }
+      );
       if (station) {
         const availabilityKey = `station:${station['city']}:${stationId}:availability`;
         const currentAvailability = await redis.get(availabilityKey);
@@ -64,7 +67,7 @@ export async function POST(request: Request) {
 
     // Publish update via Redis Pub/Sub (if available)
     if (redis.isAvailable()) {
-      await redis.publish("charging-session-update", JSON.stringify({
+      await redis.enqueueMessage("charging-session-update", JSON.stringify({
         userId,
         session: {
           ...session,

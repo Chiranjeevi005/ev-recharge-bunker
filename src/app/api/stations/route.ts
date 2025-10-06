@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validateStation } from '@/lib/db/schemas/validation';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 
 export async function GET(request: Request) {
   try {
@@ -12,12 +12,14 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const status = searchParams.get('status');
     const city = searchParams.get('city');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
     
     // Special case: if limit is set to -1, fetch all stations
     const fetchAll = limit === -1;
     
     // Create cache key based on parameters
-    const cacheKey = `stations:${page}:${limit}:${status || 'all'}:${city || 'all'}`;
+    const cacheKey = `stations:${page}:${limit}:${status || 'all'}:${city || 'all'}:${sortBy}:${sortOrder}`;
     
     // Try to get data from Redis cache first
     if (redis.isAvailable()) {
@@ -35,13 +37,36 @@ export async function GET(request: Request) {
     if (status) filter.status = status;
     if (city) filter.city = city;
     
+    // Validate sortBy field to prevent injection
+    const validSortFields = ['createdAt', 'name', 'city'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    
     let stations, total;
+    
+    // Use projection to only fetch required fields
+    const projection = {
+      name: 1,
+      address: 1,
+      city: 1,
+      state: 1,
+      country: 1,
+      postalCode: 1,
+      location: 1,
+      status: 1,
+      totalSlots: 1,
+      availableSlots: 1,
+      "slots.slotId": 1,
+      "slots.status": 1,
+      createdAt: 1,
+      updatedAt: 1
+    };
     
     if (fetchAll) {
       // Fetch all stations without pagination
       stations = await db.collection("stations")
         .find(filter)
-        .sort({ createdAt: -1 })
+        .project(projection)
+        .sort({ [sortField]: sortOrder })
         .toArray();
       
       total = stations.length;
@@ -49,16 +74,19 @@ export async function GET(request: Request) {
       // Calculate pagination
       const skip = (page - 1) * limit;
       
-      // Fetch stations with pagination
+      // Fetch stations with pagination, sorting, and projection for better performance
       stations = await db.collection("stations")
         .find(filter)
+        .project(projection)
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 })
+        .sort({ [sortField]: sortOrder })
         .toArray();
       
-      // Get total count for pagination
-      total = await db.collection("stations").countDocuments(filter);
+      // Get total count for pagination using estimatedDocumentCount for better performance when no filters
+      total = Object.keys(filter).length === 0 
+        ? await db.collection("stations").estimatedDocumentCount()
+        : await db.collection("stations").countDocuments(filter);
     }
     
     // Convert ObjectId to string for JSON serialization
@@ -133,7 +161,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(stationData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(stationData));
     }
     
     return NextResponse.json({ 
@@ -173,7 +201,7 @@ export async function PUT(request: Request) {
     
     const { db } = await connectToDatabase();
     
-    // Update station
+    // Update station using findOneAndUpdate with projection for efficiency
     const result: any = await db.collection("stations").findOneAndUpdate(
       { _id: new ObjectId(id) },
       { 
@@ -182,7 +210,25 @@ export async function PUT(request: Request) {
           updatedAt: new Date()
         }
       },
-      { returnDocument: 'after' }
+      { 
+        returnDocument: 'after',
+        projection: { 
+          name: 1,
+          address: 1,
+          city: 1,
+          state: 1,
+          country: 1,
+          postalCode: 1,
+          location: 1,
+          status: 1,
+          totalSlots: 1,
+          availableSlots: 1,
+          "slots.slotId": 1,
+          "slots.status": 1,
+          createdAt: 1,
+          updatedAt: 1
+        } 
+      }
     );
     
     if (!result || !result['ok']) {
@@ -206,7 +252,7 @@ export async function PUT(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(stationData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(stationData));
     }
     
     return NextResponse.json({ 
@@ -260,7 +306,7 @@ export async function DELETE(request: Request) {
         timestamp: new Date().toISOString()
       };
       
-      await redis.publish('client_activity_channel', JSON.stringify(stationData));
+      await redis.enqueueMessage('client_activity_channel', JSON.stringify(stationData));
     }
     
     return NextResponse.json({ 

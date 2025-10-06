@@ -1,5 +1,5 @@
 import { connectToDatabase } from '@/lib/db/connection';
-import redis from '@/lib/realtime/redis';
+import redis from '@/lib/realtime/redisQueue';
 import { getIO } from '@/lib/realtime/socket';
 import { ObjectId } from 'mongodb';
 import crypto from 'crypto';

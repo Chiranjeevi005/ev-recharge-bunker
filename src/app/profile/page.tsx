@@ -165,81 +165,39 @@ export default function ProfileSettings() {
       if (session?.user?.id) {
         console.log('Profile: Updating data in database for user:', session.user.id);
         
-        let hasError = false;
+        // Use the new atomic profile update endpoint
+        const response = await fetch(`/api/clients/${session.user.id}/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            name: profile.fullName,
+            location: profile.location
+          }),
+        });
         
-        // Update location if provided
-        if (profile.location) {
-          console.log('Profile: Updating location in database for user:', session.user.id, 'location:', profile.location);
-          
-          const response = await fetch(`/api/clients/${session.user.id}/location`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ location: profile.location }),
+        console.log('Profile: Update response status:', response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Failed to update client profile in database:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error || 'Unknown error',
+            details: errorData.details,
+            clientId: session.user.id
           });
-          
-          console.log('Profile: Location update response status:', response.status);
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("Failed to update client location in database:", {
-              status: response.status,
-              statusText: response.statusText,
-              error: errorData.error || 'Unknown error',
-              details: errorData.details,
-              clientId: session.user.id
-            });
-            // Show error to user with more specific message
-            setToast({
-              message: `Failed to update location: ${errorData.error || errorData.details || 'Unknown error'}`,
-              type: 'error'
-            });
-            hasError = true;
-          } else {
-            const updatedClient = await response.json();
-            console.log('Profile: Successfully updated client location in database:', updatedClient);
-          }
-        }
-        
-        // Update name if provided and different from current
-        if (profile.fullName && profile.fullName !== session.user.name) {
-          console.log('Profile: Updating name in database for user:', session.user.id, 'name:', profile.fullName);
-          
-          const response = await fetch(`/api/clients/${session.user.id}/name`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: profile.fullName }),
+          // Show error to user with more specific message
+          setToast({
+            message: `Failed to update profile: ${errorData.error || errorData.details || 'Unknown error'}`,
+            type: 'error'
           });
-          
-          console.log('Profile: Name update response status:', response.status);
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("Failed to update client name in database:", {
-              status: response.status,
-              statusText: response.statusText,
-              error: errorData.error || 'Unknown error',
-              details: errorData.details,
-              clientId: session.user.id
-            });
-            // Show error to user with more specific message
-            setToast({
-              message: `Failed to update name: ${errorData.error || errorData.details || 'Unknown error'}`,
-              type: 'error'
-            });
-            hasError = true;
-          } else {
-            const updatedClient = await response.json();
-            console.log('Profile: Successfully updated client name in database:', updatedClient);
-          }
-        }
-        
-        if (hasError) {
           hideLoader();
-          return; // Exit early if any update failed
+          return;
+        } else {
+          const updatedClient = await response.json();
+          console.log('Profile: Successfully updated client profile in database:', updatedClient);
         }
         
         // Successfully updated data, dispatch custom events to notify other components
