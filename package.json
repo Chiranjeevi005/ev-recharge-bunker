@@ -9,7 +9,12 @@
     "start": "NODE_ENV=production node -r ts-node/register server.ts",
     "lint": "eslint",
     "seed": "ts-node --project tsconfig.seed.json seed.ts",
-    "test": "jest"
+    "test": "jest",
+    "test:utils": "ts-node --project tsconfig.test.json src/test-utilities.ts",
+    "build:utils": "tsc --project tsconfig.test.json --outDir dist",
+    "demo:utils": "npm run build:utils && node demo-utilities.js",
+    "type-check": "tsc --noEmit",
+    "start:dev": "next dev"
   },
   "dependencies": {
     "@arcjet/next": "^1.0.0-beta.12",
