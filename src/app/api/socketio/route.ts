@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { initSocket } from '@/lib/socket';
+import { initSocket } from '@/lib/realtime/socket';
 
 export async function GET(request: NextRequest) {
   // This is a placeholder for the Socket.io endpoint

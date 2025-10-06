@@ -76,22 +76,22 @@ export const LiveOperationsTracker: React.FC = () => {
   useEffect(() => {
     if (!loading && data) {
       // Calculate active sessions
-      const activeSessions = data.chargingSessions.filter(session => 
+      const activeSessions = data.chargingSessions.filter((session: any) => 
         session.status === 'active' || session.status === 'charging'
       ).length;
 
       // Calculate total energy delivered
-      const totalEnergy = data.chargingSessions.reduce((sum, session) => 
+      const totalEnergy = data.chargingSessions.reduce((sum: any, session: any) => 
         sum + (session.totalEnergyKWh || session.energyConsumed || 0), 0
       );
 
       // Calculate CO₂ saved
-      const co2Saved = data.ecoStats.reduce((sum, stat) => 
+      const co2Saved = data.ecoStats.reduce((sum: any, stat: any) => 
         sum + (stat.co2Saved || 0), 0
       );
 
       // Calculate total payments
-      const totalPayments = data.payments.reduce((sum, payment) => 
+      const totalPayments = data.payments.reduce((sum: any, payment: any) => 
         sum + (payment.amount || 0), 0
       );
 
@@ -303,7 +303,7 @@ export const LiveOperationsTracker: React.FC = () => {
         <div className="max-h-96 overflow-y-auto">
           <AnimatePresence>
             {data.activityLog.length > 0 ? (
-              data.activityLog.map((event, index) => (
+              data.activityLog.map((event: any, index: any) => (
                 <motion.div
                   key={`${event.timestamp}-${index}`}
                   initial={{ opacity: 0, x: -20 }}

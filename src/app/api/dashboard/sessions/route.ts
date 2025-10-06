@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
+// import { ObjectId } from 'mongodb'; // Removed unused import
 import { withRateLimit } from '@/lib/rateLimit';
 
-export const GET = withRateLimit(async (request: Request) => {
+export const GET = withRateLimit(async (_request: Request) => { // Renamed request to _request to avoid unused variable warning
   try {
     const { db } = await connectToDatabase();
     

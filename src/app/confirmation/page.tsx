@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/common/Button';
 import { useLoader } from '@/context/LoaderContext'; // Added import
+
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex items-center justify-center">
+      <div className="text-[#F1F5F9] text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <p>Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 interface Booking {
   _id: string;
@@ -34,7 +46,7 @@ interface Station {
   }[];
 }
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
@@ -158,7 +170,7 @@ export default function ConfirmationPage() {
             transition={{ duration: 0.5 }}
             className="max-w-4xl mx-auto"
           >
-            {/* Success Header */}
+            {/* Success Header */ }
             <div className="text-center mb-10">
               <div className="flex justify-center mb-6">
                 <svg className="w-24 h-24 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -173,7 +185,7 @@ export default function ConfirmationPage() {
               </p>
             </div>
 
-            {/* Booking Details Card */}
+            {/* Booking Details Card */ }
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -203,7 +215,7 @@ export default function ConfirmationPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {/* Station Information */}
+                  {/* Station Information */ }
                   <div className="bg-[#334155]/30 rounded-lg p-5 border border-[#475569]/50">
                     <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
                       <svg className="w-5 h-5 mr-2 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -225,7 +237,7 @@ export default function ConfirmationPage() {
                     </div>
                   </div>
 
-                  {/* Booking Information */}
+                  {/* Booking Information */ }
                   <div className="bg-[#334155]/30 rounded-lg p-5 border border-[#475569]/50">
                     <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
                       <svg className="w-5 h-5 mr-2 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -254,7 +266,7 @@ export default function ConfirmationPage() {
                   </div>
                 </div>
 
-                {/* Time Information */}
+                {/* Time Information */ }
                 <div className="bg-gradient-to-r from-[#334155]/50 to-[#1E293B]/50 rounded-lg p-5 border border-[#475569]/50 mb-8">
                   <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
                     <svg className="w-5 h-5 mr-2 text-[#F59E0B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -278,7 +290,7 @@ export default function ConfirmationPage() {
                   </div>
                 </div>
 
-                {/* Payment Information */}
+                {/* Payment Information */ }
                 <div className="bg-[#334155]/30 rounded-lg p-5 border border-[#475569]/50">
                   <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
                     <svg className="w-5 h-5 mr-2 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -302,7 +314,7 @@ export default function ConfirmationPage() {
               </div>
             </motion.div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons */ }
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button
                 onClick={() => router.push('/dashboard')}
@@ -324,5 +336,13 @@ export default function ConfirmationPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ConfirmationPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ConfirmationContent />
+    </Suspense>
   );
 }

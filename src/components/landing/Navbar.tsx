@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/common/Button';
@@ -10,7 +10,12 @@ import Image from 'next/image';
 import { useLoader } from '@/context/LoaderContext'; // Import the universal loader context
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 
-export const Navbar: React.FC = () => {
+// Loading component for Suspense
+function Loading() {
+  return null; // This component doesn't render anything, it just handles transitions
+}
+
+function NavbarContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
   const loading = status === "loading";
@@ -392,5 +397,13 @@ export const Navbar: React.FC = () => {
         )}
       </div>
     </nav>
+  );
+}
+
+export const Navbar: React.FC = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <NavbarContent />
+    </Suspense>
   );
 };

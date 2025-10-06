@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/common/Button';
@@ -16,9 +16,29 @@ import {
   JourneyImpactStats
 } from '@/components/dashboard';
 import { useLoader } from '@/context/LoaderContext';
-import { useRouteTransition } from '@/hooks/useRouteTransition';
+// We'll move useRouteTransition to a separate component wrapped in Suspense
+// import { useRouteTransition } from '@/hooks/useRouteTransition';
 import { FetchingAnimation } from '@/components/dashboard/FetchingAnimation';
 import Toast from '@/components/common/Toast';
+
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
+      <Navbar />
+      <main className="pt-20 pb-12">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-center items-center min-h-[200px]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+              <p className="text-[#CBD5E1] text-lg font-medium">Loading dashboard...</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
 
 interface ChargingSession {
   userId: string;
@@ -61,7 +81,7 @@ interface SlotAvailability {
   location: string;
 }
 
-export default function ClientDashboard() {
+function DashboardContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
@@ -82,7 +102,8 @@ export default function ClientDashboard() {
   }, []);
   
   // Initialize route transition handler
-  useRouteTransition();
+  // We'll move this to a separate component that's wrapped in Suspense
+  // useRouteTransition();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -396,7 +417,7 @@ export default function ClientDashboard() {
       
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-4">
-          {/* Notification Banner */}
+          {/* Notification Banner */ }
           {notification && (
             <div className="mb-6">
               <NotificationBanner 
@@ -407,7 +428,7 @@ export default function ClientDashboard() {
             </div>
           )}
 
-          {/* Welcome Section */}
+          {/* Welcome Section */ }
           <div className="mb-10 rounded-2xl bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 p-6 border border-[#475569]/50">
             <h1 className="text-2xl md:text-3xl font-bold text-[#F1F5F9] mb-2">
               Welcome back, {session?.user?.name || 'User'}
@@ -417,17 +438,17 @@ export default function ClientDashboard() {
             </p>
           </div>
 
-          {/* Stats Section - Replacing 'No Active Charging Session' */}
+          {/* Stats Section - Replacing 'No Active Charging Session' */ }
           <div className="mb-10">
             <JourneyImpactStats />
           </div>
 
-          {/* Map Section */}
+          {/* Map Section */ }
           <div className="mb-10">
             <MapSection onBookPay={handleBookSlot} />
           </div>
 
-          {/* Charging Session Tracker */}
+          {/* Charging Session Tracker */ }
           <div className="mb-10">
             <ChargingStatusCard 
               session={activeSession} 
@@ -435,12 +456,12 @@ export default function ClientDashboard() {
             />
           </div>
 
-          {/* Payment History - Now with real-time updates */}
+          {/* Payment History - Now with real-time updates */ }
           <PaymentHistoryCard payments={Array.isArray(paymentHistory) ? paymentHistory : []} onViewAll={handleViewHistory} />
         </div>
       </main>
       
-      {/* Toast Notification */}
+      {/* Toast Notification */ }
       {toast && (
         <Toast
           message={toast.message}
@@ -449,5 +470,13 @@ export default function ClientDashboard() {
         />
       )}
     </div>
+  );
+}
+
+export default function ClientDashboard() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, Suspense } from 'react';
 // Removed motion import since we're removing motion components
 import maplibregl from 'maplibre-gl';
 // @ts-ignore
@@ -12,7 +12,19 @@ import { Footer } from '@/components/landing/Footer';
 import { useContactForm } from '@/hooks/useContactForm';
 import { useRouteTransition } from '@/hooks/useRouteTransition'; // Added import
 
-const ContactPage = () => {
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-[#1E293B] flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <p className="text-[#CBD5E1]">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+const ContactPageContent = () => {
   const {
     formData,
     setFormData,
@@ -384,4 +396,11 @@ const ContactPage = () => {
   );
 };
 
-export default ContactPage;
+// Wrap the component in Suspense to handle useSearchParams issues in Next.js 15
+export default function ContactPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ContactPageContent />
+    </Suspense>
+  );
+}

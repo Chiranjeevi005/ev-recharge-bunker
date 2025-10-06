@@ -103,19 +103,19 @@ export const TestimonialsSection: React.FC = () => {
                   className="text-center"
                 >
                   {/* Rating */}
-                  {renderRating(testimonials[currentIndex].rating)}
+                  {renderRating(testimonials[currentIndex]!.rating)}
                   
                   {/* Testimonial content */}
                   <div className="mb-8">
                     <p className="text-[#F1F5F9] text-lg md:text-xl italic leading-relaxed max-w-2xl mx-auto">
-                      "{testimonials[currentIndex].content}"
+                      "{testimonials[currentIndex]!.content}"
                     </p>
                   </div>
                   
                   {/* User info */}
                   <div className="mb-2">
-                    <h3 className="text-xl md:text-2xl font-bold text-[#F1F5F9]">{testimonials[currentIndex].name}</h3>
-                    <p className="text-[#94A3B8] text-base mt-1">{testimonials[currentIndex].role}</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-[#F1F5F9]">{testimonials[currentIndex]!.name}</h3>
+                    <p className="text-[#94A3B8] text-base mt-1">{testimonials[currentIndex]!.role}</p>
                   </div>
                   
                   {/* Decorative quote marks */}

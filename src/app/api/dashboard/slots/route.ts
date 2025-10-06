@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     }
     
     // For demo purposes, we'll use a default city
-    const city = user?.city || "Delhi";
+    const city = user?.['city'] || "Delhi";
     
     // Fetch stations for the city
     const stations = await db.collection("stations").find({ 

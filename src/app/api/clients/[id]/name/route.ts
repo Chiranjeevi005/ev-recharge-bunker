@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
+  const { id } = params;
   try {
     const { name } = await request.json();
-    const { id } = params;
 
     console.log('Name API: Updating name for client ID:', id, 'to name:', name);
 

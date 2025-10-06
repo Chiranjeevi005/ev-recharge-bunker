@@ -1,6 +1,6 @@
 import { MongoClient, Db } from 'mongodb';
 
-const MONGODB_URI = process.env.DATABASE_URL;
+const MONGODB_URI = process.env['DATABASE_URL'];
 
 if (!MONGODB_URI) {
   throw new Error('Please define the DATABASE_URL environment variable');

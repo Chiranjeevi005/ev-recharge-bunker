@@ -77,6 +77,7 @@ export async function GET(request: Request) {
       status: "confirmed"
     }).toArray();
     
+    // Calculate community CO2 saved
     let communityCO2Saved = 0;
     allBookings.forEach(booking => {
       const durationHours = (new Date(booking["endTime"]).getTime() - new Date(booking["startTime"]).getTime()) / (1000 * 60 * 60);
@@ -84,31 +85,13 @@ export async function GET(request: Request) {
       communityCO2Saved += estimatedEnergyKWh * CO2_PER_KWH;
     });
     
-    // Calculate user's rank percentile
-    const allUsersCO2 = await db.collection("bookings").aggregate([
-      { $match: { status: "confirmed" } },
-      { $group: { _id: "$userId", totalCO2: { $sum: { $multiply: [
-        { $divide: [
-          { $subtract: [{ $toDate: "$endTime" }, { $toDate: "$startTime" }] },
-          { $literal: 3600000 } // Convert ms to hours
-        ]},
-        CO2_PER_KWH
-      ] } } } },
-      { $sort: { totalCO2: -1 } }
-    ]).toArray();
-    
-    // Find user's position
-    const userIndex = allUsersCO2.findIndex(user => user["_id"] === userId);
-    const userRank = userIndex !== -1 ? userIndex + 1 : allUsersCO2.length + 1;
-    const rankPercentile = allUsersCO2.length > 0 ? Math.max(1, Math.round((1 - (userRank / allUsersCO2.length)) * 100)) : 1;
-    
-    // Prepare the journey impact stats data
+    // Add community CO2 saved to the response
     const journeyImpactStats = {
       totalKWh: parseFloat(totalEnergy.toFixed(2)),
       totalDuration: Math.round(totalDuration),
       co2Prevented: Math.round(co2Prevented),
       costSavings: Math.round(costSavings),
-      rankPercentile: rankPercentile,
+      communityCO2Saved: Math.round(communityCO2Saved), // Add community CO2 saved to the response
       // Keep original values for potential reuse
       totalDistance: parseFloat(totalDistance.toFixed(2)),
     };

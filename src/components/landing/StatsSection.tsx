@@ -49,28 +49,31 @@ export const StatsSection: React.FC = () => {
     <Section className="relative overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155] py-12 sm:py-16">
       {/* Animated background particles */}
       <div className="absolute inset-0 z-0">
-        {particleData.map((data, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-[#8B5CF6]/20"
-            style={{
-              width: data.width,
-              height: data.height,
-              top: data.top,
-              left: data.left,
-            }}
-            animate={{
-              y: particleAnimations[i].y,
-              x: particleAnimations[i].x,
-              opacity: [0.2, 0.6, 0.2],
-            }}
-            transition={{
-              duration: particleAnimations[i].duration,
-              repeat: Infinity,
-              delay: particleAnimations[i].delay,
-            }}
-          />
-        ))}
+        {particleData.map((data, i) => {
+          const animation = particleAnimations[i]!;
+          return (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-[#8B5CF6]/20"
+              style={{
+                width: data.width,
+                height: data.height,
+                top: data.top,
+                left: data.left,
+              }}
+              animate={{
+                y: animation.y,
+                x: animation.x,
+                opacity: [0.2, 0.6, 0.2],
+              }}
+              transition={{
+                duration: animation.duration,
+                repeat: Infinity,
+                delay: animation.delay,
+              }}
+            />
+          );
+        })}
       </div>
       
       <div className="container mx-auto px-4 relative z-10">

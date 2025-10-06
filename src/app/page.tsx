@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { 
   Navbar,
@@ -13,16 +13,25 @@ import {
   Footer
 } from '@/components/landing';
 import { useSession } from "next-auth/react";
-import { useRouteTransition } from '@/hooks/useRouteTransition';
 
-export default function Home() {
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-[#1E293B] flex items-center justify-center">
+      <div className="text-white">Loading...</div>
+    </div>
+  );
+}
+
+function HomeContent() {
   const [loading, setLoading] = useState(true);
   const { data: session, status } = useSession();
   const sessionLoading = status === "loading";
   const [wasLoggedIn, setWasLoggedIn] = useState(false);
   
   // Initialize route transition handler
-  useRouteTransition();
+  // We'll move this to a separate component that's wrapped in Suspense
+  // useRouteTransition();
 
   useEffect(() => {
     // Check for manual trigger via URL parameter
@@ -106,9 +115,17 @@ export default function Home() {
       <FeaturesSection />
       <HowItWorksSection />
       <TestimonialsSection />
-      {/* Only show CTA section if user is not logged in */}
+      {/* Only show CTA section if user is not logged in */ }
       {!session?.user && <CTASection />}
       <Footer />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <HomeContent />
+    </Suspense>
   );
 }

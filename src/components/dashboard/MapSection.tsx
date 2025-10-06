@@ -23,6 +23,9 @@ interface MapSectionProps {
 
 export const MapSection: React.FC<MapSectionProps> = React.memo(({ onBookPay }) => {
   const { data: session } = useSession();
+  
+  // Set display name for the component
+  MapSection.displayName = 'MapSection';
   const [refreshKey, setRefreshKey] = useState(0);
   const [location, setLocation] = useState<string | null>(null);
   const { showLoader, hideLoader } = useLoader();

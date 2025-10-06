@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import redis from '@/lib/realtime/redis';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
 
 export async function POST(request: Request) {
   try {
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
       // Fix: Use the string stationId directly instead of converting to ObjectId
       const station = await db.collection("stations").findOne({ _id: stationId });
       if (station) {
-        const availabilityKey = `station:${station.city}:${stationId}:availability`;
+        const availabilityKey = `station:${station['city']}:${stationId}:availability`;
         const currentAvailability = await redis.get(availabilityKey);
         
         if (currentAvailability) {

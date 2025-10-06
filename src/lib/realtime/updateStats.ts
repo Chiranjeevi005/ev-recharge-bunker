@@ -1,4 +1,4 @@
-import type { Payment } from '../types/payment';
+import type { Payment } from '../../types/payment';
 import { connectToDatabase } from '@/lib/db/connection';
 import redis from './redis';
 

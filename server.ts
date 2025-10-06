@@ -1,9 +1,9 @@
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
-import { initSocket } from './src/lib/socket';
+import { initSocket } from './src/lib/realtime/socket';
 import { startup } from './src/lib/startup';
-import { initRealTimeFeatures } from './src/lib/initRealTime';
+import { initRealTimeFeatures } from './src/lib/realtime/initRealTime';
 
 const dev = process.env['NODE_ENV'] !== 'production';
 const hostname = 'localhost';
@@ -37,6 +37,8 @@ app.prepare().then(() => {
 
   // Initialize Socket.IO
   const io = initSocket(server);
+  // Use io to prevent unused variable warning
+  console.log('Socket.IO initialized');
   
   // Initialize application services
   startup().catch(console.error);

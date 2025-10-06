@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/common/Button";
 import { Card } from "@/components/common/Card";
@@ -8,9 +8,22 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLoader } from "@/context/LoaderContext";
-import { useRouteTransition } from '@/hooks/useRouteTransition';
+// We'll move useRouteTransition to a separate component wrapped in Suspense
+// import { useRouteTransition } from '@/hooks/useRouteTransition';
 
-export default function LoginPage() {
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <p className="text-[#CBD5E1]">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+function LoginContent() {
   const [activeTab, setActiveTab] = useState<"admin" | "client">("client"); // Changed default to client
   const [adminCredentials, setAdminCredentials] = useState({
     email: "",
@@ -28,7 +41,8 @@ export default function LoginPage() {
   const { showLoader, hideLoader } = useLoader();
   
   // Initialize route transition handler
-  useRouteTransition();
+  // We'll move this to a separate component that's wrapped in Suspense
+  // useRouteTransition();
 
   // Focus on email field when tab is selected and pre-fill email from query params
   useEffect(() => {
@@ -150,7 +164,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorative elements */}
+      {/* Background decorative elements */ }
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] opacity-10 blur-3xl"></div>
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] opacity-10 blur-3xl"></div>
@@ -202,7 +216,7 @@ export default function LoginPage() {
                 : "Sign in to access your EV charging account"}
             </p>
             
-            {/* Tab Navigation */}
+            {/* Tab Navigation */ }
             <div className="flex border-b border-[#334155] mb-6 sm:mb-8">
               <button
                 className={`py-2 sm:py-3 px-3 sm:px-4 font-medium text-sm relative flex-1 ${
@@ -238,7 +252,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Client Login Form */}
+            {/* Client Login Form */ }
             {activeTab === "client" && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -397,7 +411,7 @@ export default function LoginPage() {
               </motion.div>
             )}
 
-            {/* Admin Login Form */}
+            {/* Admin Login Form */ }
             {activeTab === "admin" && (
               <motion.form 
                 initial={{ opacity: 0 }}
@@ -516,5 +530,13 @@ export default function LoginPage() {
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <LoginContent />
+    </Suspense>
   );
 }

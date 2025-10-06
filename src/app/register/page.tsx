@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/common/Button";
 import { Card } from "@/components/common/Card";
@@ -8,7 +8,19 @@ import Link from "next/link";
 import { useLoader } from "@/context/LoaderContext";
 import { useRouteTransition } from '@/hooks/useRouteTransition';
 
-export default function RegisterPage() {
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <p className="text-[#CBD5E1]">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+function RegisterPageContent() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -271,5 +283,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

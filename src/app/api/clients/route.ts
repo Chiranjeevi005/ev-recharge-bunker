@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import { validateClient } from '@/lib/db/schemas/validation';
-import { clientSchema } from '@/lib/validation/client';
-import { withPermission, withValidation } from '@/lib/auth/rbac';
 import redis from '@/lib/realtime/redis';
 
 export async function GET(request: Request) {
@@ -109,6 +107,7 @@ export async function POST(request: Request) {
     }
     
     // Insert new client
+    // Create a clean object without _id
     const { _id, ...clientData } = body;
     
     const result: any = await db.collection("clients").insertOne({

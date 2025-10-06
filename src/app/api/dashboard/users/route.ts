@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
+// import { ObjectId } from 'mongodb'; // Removed unused import
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) { // Renamed request to _request to avoid unused variable warning
   try {
     const { db } = await connectToDatabase();
     

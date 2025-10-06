@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
 import { connectToDatabase } from "@/lib/db/connection";
 
 export async function POST(request: Request) {
@@ -60,8 +59,8 @@ export async function POST(request: Request) {
       message: "Login successful",
       user: {
         id: admin._id.toString(),
-        email: admin.email,
-        role: admin.role
+        email: admin['email'],
+        role: admin['role']
       }
     }, { status: 200 });
 

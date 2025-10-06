@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
     // For email/password clients, check if they have a credentials-type googleId
     // In our implementation, clients with googleId starting with "credentials-" are email/password clients
-    if (!client.googleId?.startsWith("credentials-")) {
+    if (!(client as any).googleId?.startsWith("credentials-")) {
       console.log("Client is not a credentials-type client");
       // This is a Google OAuth client, they can't use password auth
       return NextResponse.json(
@@ -73,9 +73,9 @@ export async function POST(request: Request) {
     } else {
       // Check if the provided password matches
       // In a real implementation, you would compare hashed passwords
-      if (existingAccount.access_token !== password) {
+      if ((existingAccount as any).access_token !== password) {
         console.log("Password mismatch");
-        console.log("Expected:", existingAccount.access_token);
+        console.log("Expected:", (existingAccount as any).access_token);
         console.log("Provided:", password);
         return NextResponse.json(
           { error: "Invalid email or password" },
@@ -90,9 +90,9 @@ export async function POST(request: Request) {
       message: "Login successful",
       user: {
         id: client._id.toString(),
-        email: client.email,
-        name: client.name,
-        role: client.role,
+        email: (client as any).email,
+        name: (client as any).name,
+        role: (client as any).role,
       }
     }, { status: 200 });
 

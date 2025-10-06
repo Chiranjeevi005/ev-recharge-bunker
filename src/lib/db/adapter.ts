@@ -1,4 +1,4 @@
-import { Adapter } from 'next-auth/adapters';
+import { type Adapter } from 'next-auth/adapters';
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from './connection';
 
@@ -74,11 +74,11 @@ export function MongoDBAdapter(): Adapter {
       if (!account) return null;
       
       // Try to find in clients first
-      let user = await db.collection('clients').findOne({ _id: new ObjectId(account.userId) });
+      let user = await db.collection('clients').findOne({ _id: new ObjectId(account['userId']) });
       
       // If not found, try admins
       if (!user) {
-        user = await db.collection('admins').findOne({ _id: new ObjectId(account.userId) });
+        user = await db.collection('admins').findOne({ _id: new ObjectId(account['userId']) });
       }
       
       if (!user) return null;
@@ -170,11 +170,11 @@ export function MongoDBAdapter(): Adapter {
       if (!session) return null;
       
       // Try to find in clients first
-      let user = await db.collection('clients').findOne({ _id: new ObjectId(session.userId) });
+      let user = await db.collection('clients').findOne({ _id: new ObjectId(session['userId']) });
       
       // If not found, try admins
       if (!user) {
-        user = await db.collection('admins').findOne({ _id: new ObjectId(session.userId) });
+        user = await db.collection('admins').findOne({ _id: new ObjectId(session['userId']) });
       }
       
       if (!user) return null;
@@ -183,8 +183,8 @@ export function MongoDBAdapter(): Adapter {
         session: {
           ...session,
           id: session._id.toString(),
-          userId: session.userId,
-          expires: session.expires
+          userId: session['userId'],
+          expires: session['expires']
         },
         user: {
           ...user,
@@ -210,8 +210,8 @@ export function MongoDBAdapter(): Adapter {
       return updatedSession ? {
         ...updatedSession,
         id: updatedSession._id.toString(),
-        userId: updatedSession.userId,
-        expires: updatedSession.expires
+        userId: updatedSession['userId'],
+        expires: updatedSession['expires']
       } as any : null;
     },
 
@@ -253,7 +253,7 @@ export function MongoDBAdapter(): Adapter {
       return token ? {
         ...token,
         id: token._id.toString(),
-        expires: token.expires
+        expires: token['expires']
       } as any : null;
     }
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -10,7 +10,29 @@ import { Footer } from '@/components/landing/Footer';
 import { useLoader } from '@/context/LoaderContext';
 import type { Payment } from '@/types/payment';
 
-export default function ProfessionalPaymentHistoryPage() {
+// Loading component for Suspense
+function Loading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
+      <Navbar />
+      <main className="pt-20 pb-12">
+        <div className="container mx-auto px-4">
+          <div className="glass rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden">
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+                <p className="text-[#CBD5E1]">Loading...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function ProfessionalPaymentHistoryContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -35,7 +57,7 @@ export default function ProfessionalPaymentHistoryPage() {
           showLoader("Loading payment history...");
           
           // Use the same API endpoint as the dashboard for consistency
-          const response = await fetch(`/api/dashboard/payments?userId=${session.user.id}`);
+          const response = await fetch(`/api/dashboard/payments?userId=${encodeURIComponent(session.user.id)}`);
           if (!response.ok) {
             throw new Error('Failed to fetch payment history');
           }
@@ -234,5 +256,13 @@ export default function ProfessionalPaymentHistoryPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ProfessionalPaymentHistoryPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ProfessionalPaymentHistoryContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
 import { validateAuditLog } from '@/lib/db/schemas/validation';
 
 export async function GET(request: Request) {
@@ -108,14 +107,14 @@ export async function POST(request: Request) {
 // Audit logs are typically read-only, so we don't implement PUT or DELETE
 // But we'll include them for completeness
 
-export async function PUT(request: Request) {
+export async function PUT(_request: Request) {
   return NextResponse.json(
     { error: "Audit logs are read-only" },
     { status: 405 }
   );
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(_request: Request) {
   return NextResponse.json(
     { error: "Audit logs are read-only" },
     { status: 405 }

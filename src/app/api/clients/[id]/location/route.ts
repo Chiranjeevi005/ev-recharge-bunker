@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
+  const { id } = params;
   try {
     const { location } = await request.json();
-    const { id } = params;
 
     console.log('Location API: Updating location for client ID:', id, 'to location:', location);
 

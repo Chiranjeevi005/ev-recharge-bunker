@@ -49,7 +49,7 @@ async function calculatePercentageChange(db: any, collectionName: string, fieldN
   }
 }
 
-export const GET = withRateLimit(async (request: Request) => {
+export const GET = withRateLimit(async (_request: Request) => {
   try {
     // Try to get stats from Redis cache first
     const cachedStats = await redis.get('dashboard_stats');

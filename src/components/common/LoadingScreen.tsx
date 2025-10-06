@@ -223,7 +223,7 @@ export const LoadingScreen: React.FC = () => {
           <h2 
             className="text-center font-mono font-light tracking-wider relative"
           >
-            <AnimatedText text="EV Revolution Loading..." />
+            <AnimatedText text="Initialising EV Revolution..." />
           </h2>
         </div>
         

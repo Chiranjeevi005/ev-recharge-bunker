@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 
+interface Station {
+  _id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  city: string;
+}
+
+interface Client {
+  _id: string;
+  name: string;
+  email: string;
+  location: string;
+}
+
 export async function GET() {
   try {
     console.log('Debug API: Connecting to database');
@@ -27,20 +43,20 @@ export async function GET() {
       // Show sample stations
       const sampleStations = await stationsCollection.find({ city }).limit(2).toArray();
       console.log(`Debug API: Sample stations in ${city}:`, sampleStations.map(s => ({
-        name: s.name,
-        address: s.address,
-        lat: s.lat,
-        lng: s.lng
+        name: (s as any).name,
+        address: (s as any).address,
+        lat: (s as any).lat,
+        lng: (s as any).lng
       })));
       
       cityData.push({
         city,
         count,
         sampleStations: sampleStations.map(s => ({
-          name: s.name,
-          address: s.address,
-          lat: s.lat,
-          lng: s.lng
+          name: (s as any).name,
+          address: (s as any).address,
+          lat: (s as any).lat,
+          lng: (s as any).lng
         }))
       });
     }
@@ -54,16 +70,16 @@ export async function GET() {
     const sampleClients = await clientsCollection.find({}).limit(5).toArray();
     console.log('Debug API: Sample clients:', sampleClients.map(c => ({
       id: c._id,
-      name: c.name,
-      email: c.email,
-      location: c.location
+      name: (c as any).name,
+      email: (c as any).email,
+      location: (c as any).location
     })));
     
     const clientData = sampleClients.map(c => ({
       id: c._id,
-      name: c.name,
-      email: c.email,
-      location: c.location
+      name: (c as any).name,
+      email: (c as any).email,
+      location: (c as any).location
     }));
     
     return NextResponse.json({

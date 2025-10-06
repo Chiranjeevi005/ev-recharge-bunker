@@ -7,7 +7,7 @@ const execPromise = promisify(exec);
 export async function GET() {
   try {
     // Run a simple MongoDB command using the mongo shell
-    const command = `mongo "${process.env.DATABASE_URL}" --eval "db.getSiblingDB('ev_bunker').getCollectionNames()"`;
+    const command = `mongo "${process.env['DATABASE_URL']}" --eval "db.getSiblingDB('ev_bunker').getCollectionNames()"`;
     
     console.log('Running command:', command);
     const { stdout, stderr } = await execPromise(command);
