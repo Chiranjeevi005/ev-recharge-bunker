@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     // Enable cacheComponents for better streaming
     cacheComponents: false, // Disabled as it requires canary version
   },
+  // Turbopack optimizations
+  turbopack: {
+    resolveExtensions: ['.js', '.ts', '.jsx', '.tsx']
+  },
   // Optimize images
   images: {
     remotePatterns: [

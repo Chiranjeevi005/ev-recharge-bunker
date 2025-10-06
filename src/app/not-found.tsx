@@ -18,7 +18,7 @@ function Loading() {
 
 function NotFoundContent() {
   const searchParams = useSearchParams();
-  const from = searchParams.get('from') || '';
+  const from = searchParams?.get('from') || '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex items-center justify-center p-4">

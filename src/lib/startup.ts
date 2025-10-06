@@ -1,44 +1,46 @@
-import redis from './realtime/redisQueue';
-import { setupPeriodicStatsUpdates } from './realtime/updateStats';
-import { ensureDatabaseIndexes } from './db/indexes';
+import { updateDashboardStats, setupPeriodicStatsUpdates } from './realtime/updateStats';
+import redisQueue from './realtime/redisQueue';
+import { vercelTimeoutGuard } from '@/utils/vercelTimeoutGuard';
 
+/**
+ * Application startup function
+ * Initializes all required services and starts background processes
+ */
 export async function startup() {
-  console.log('Starting up application services...');
-  
-  // Ensure database indexes are created with timeout
   try {
-    // Add timeout to index creation
-    const indexesPromise = ensureDatabaseIndexes();
-    const timeoutPromise = new Promise<boolean>((_, reject) => 
-      setTimeout(() => reject(new Error('Database index creation timeout')), 10000)
-    );
+    console.log('Starting application services...');
     
-    const indexesCreated = await Promise.race([indexesPromise, timeoutPromise]);
-    if (indexesCreated) {
-      console.log('✅ Database indexes ensured');
+    // Redis queue is already initialized as a module, just check if it's available
+    if (redisQueue.isAvailable()) {
+      console.log('Redis queue is available');
     } else {
-      console.warn('⚠️  Failed to create database indexes');
+      console.log('Redis queue is not available');
     }
+    
+    // Set up Vercel timeout guard to prevent 60-second timeout
+    const cleanupTimeoutGuard = vercelTimeoutGuard(55000, () => {
+      console.log('Vercel timeout guard triggered - performing cleanup');
+      // Perform any necessary cleanup before the 60-second Vercel limit
+    });
+    
+    // Update dashboard stats immediately
+    console.log('Updating dashboard stats...');
+    await updateDashboardStats();
+    
+    // Set up periodic stats updates (every 30 seconds)
+    console.log('Setting up periodic stats updates...');
+    setupPeriodicStatsUpdates();
+    
+    console.log('Application services started successfully');
+    
+    // Return cleanup function
+    return () => {
+      // Clean up timeout guard
+      cleanupTimeoutGuard();
+      console.log('Application services cleaned up');
+    };
   } catch (error) {
-    console.warn('⚠️  Database index creation timed out or failed:', error);
-  }
-  
-  // Initialize Redis if available
-  if (redis.isAvailable()) {
-    console.log('Redis is available, setting up services...');
-    
-    // Set up periodic stats updates
-    const cleanupStats = setupPeriodicStatsUpdates();
-    
-    // Return cleanup functions
-    return () => {
-      console.log('Cleaning up application services...');
-      cleanupStats();
-    };
-  } else {
-    console.log('Redis not available, running in fallback mode');
-    return () => {
-      console.log('Cleaning up application services...');
-    };
+    console.error('Error during application startup:', error);
+    throw error;
   }
 }

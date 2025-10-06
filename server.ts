@@ -20,15 +20,28 @@ app.prepare().then(() => {
       req.setTimeout(60000);
       res.setTimeout(60000);
       
+      // Add keep-alive settings
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Keep-Alive', 'timeout=60');
+      
       // Be sure to pass `true` as the second argument to `url.parse`.
       // This tells it to parse the query portion of the URL.
       const url = req.url || '/';
       const parsedUrl = parse(url, true);
-      await handle(req, res, parsedUrl);
+      
+      // Add timeout to the request handling
+      const requestPromise = handle(req, res, parsedUrl);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout after 60 seconds')), 60000);
+      });
+      
+      await Promise.race([requestPromise, timeoutPromise]);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);
-      res.statusCode = 500;
-      res.end('internal server error');
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.end('internal server error');
+      }
     }
   })
     .once('error', (err) => {
@@ -41,6 +54,10 @@ app.prepare().then(() => {
 
   // Set server timeout (60 seconds)
   server.setTimeout(60000);
+  
+  // Set keep-alive timeout
+  server.keepAliveTimeout = 65000; // 65 seconds
+  server.headersTimeout = 66000; // 66 seconds
 
   // Initialize Socket.IO
   const io = initSocket(server);

@@ -38,32 +38,29 @@ export async function updateDashboardStats() {
       new Promise((_, reject) => setTimeout(() => reject(new Error('Stations count timeout')), 3000))
     ]);
     
-    // Get unique locations count with timeout
-    const uniqueLocationsPromise = db.collection("stations").distinct("location");
-    const uniqueLocations = await Promise.race([
-      uniqueLocationsPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Locations count timeout')), 3000))
-    ]);
+    // Get unique locations count
+    const uniqueLocations = await db.collection("stations").distinct("city");
     const totalLocations = uniqueLocations.length;
     
     // Get total revenue from completed payments with timeout
     const paymentsPromise = db.collection("payments").find({ 
       status: "completed" 
     }).toArray();
-    const payments: Payment[] = await Promise.race([
+    
+    const payments = await Promise.race([
       paymentsPromise,
       new Promise((_, reject) => setTimeout(() => reject(new Error('Payments fetch timeout')), 3000))
-    ]);
+    ]) as Payment[];
     
-    const totalRevenue = payments.reduce((sum: number, payment: Payment) => sum + (payment.amount || 0), 0);
+    const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     
-    // Prepare stats data as requested
+    // Prepare stats data
     const stats = [
       {
         id: '1',
         name: 'Users',
         value: totalUsers,
-        change: 0, // Would calculate based on previous period in real implementation
+        change: 0, // We'll calculate this properly in the API route
         color: 'from-[#8B5CF6] to-[#10B981]',
         icon: 'user-group'
       },
@@ -97,7 +94,13 @@ export async function updateDashboardStats() {
     await redis.setex('dashboard_stats', 300, JSON.stringify(stats));
     
     // Publish stats update to Redis channel for real-time updates
-    await redis.enqueueMessage('stats_update', JSON.stringify(stats));
+    await redis.enqueueMessage('client_activity_channel', JSON.stringify({
+      event: 'eco_stats_update',
+      operationType: 'update',
+      documentKey: 'dashboard_stats',
+      fullDocument: stats,
+      timestamp: new Date().toISOString()
+    }));
     
     console.log('Dashboard stats updated successfully');
     return stats;

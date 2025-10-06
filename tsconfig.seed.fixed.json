@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": false,
+    "esModuleInterop": true,
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "verbatimModuleSyntax": false,
+    "module": "CommonJS"
+  },
+  "include": [
+    "seed.ts",
+    "src/lib/db/connection.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

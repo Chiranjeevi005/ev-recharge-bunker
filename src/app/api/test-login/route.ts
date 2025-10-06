@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db/connection";
+import { Db } from 'mongodb';
 
 export async function POST(request: Request) {
   try {
@@ -29,9 +30,10 @@ export async function POST(request: Request) {
 
     // Connect to MongoDB
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
 
     // Find client by email
-    const client = await db.collection("clients").findOne({ email });
+    const client = await typedDb.collection("clients").findOne({ email });
     
     console.log("Client found:", client);
 
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
 
     // For email/password clients, we'll check the Account record to verify the password
     // First, check if an account already exists for this client
-    const existingAccount = await db.collection("accounts").findOne({
+    const existingAccount = await typedDb.collection("accounts").findOne({
       userId: client._id.toString(),
       provider: "credentials"
     });
@@ -92,9 +94,9 @@ export async function POST(request: Request) {
         id: client._id.toString(),
        user: {
          id: client._id.toString(),
-         email: (client as Client).email,
-         name: (client as Client).name,
-         role: (client as Client).role,
+         email: (client as any).email,
+         name: (client as any).name,
+         role: (client as any).role,
        }      }
     }, { status: 200 });
 

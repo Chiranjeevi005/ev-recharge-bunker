@@ -2,11 +2,19 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
 import redis from '@/lib/realtime/redisQueue';
 
+// Add timeout utility
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => 
+    setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms)
+  );
+  return Promise.race([promise, timeout]) as Promise<T>;
+};
+
 // Helper function to get user growth data
 async function getUserGrowthData(db: any) {
   try {
-    // Get users grouped by month for the last 12 months
-    const userGrowth = await db.collection("clients").aggregate([
+    // Add timeout to prevent hanging
+    const userGrowthResult = await withTimeout(db.collection("clients").aggregate([
       {
         $match: {
           createdAt: {
@@ -29,7 +37,10 @@ async function getUserGrowthData(db: any) {
           "_id.month": 1
         }
       }
-    ]).toArray();
+    ]).toArray(), 5000); // 5 second timeout
+
+    // Type assertion for the result
+    const userGrowth: any[] = userGrowthResult as any[];
 
     // Format data for chart
     const formattedData = userGrowth.map((item: any) => ({
@@ -48,16 +59,23 @@ async function getUserGrowthData(db: any) {
 async function getRevenueByCityData(db: any) {
   try {
     // Get payments grouped by station city
-    const revenueByCity = await db.collection("payments").aggregate([
+    // Fixed the lookup to handle ObjectId vs String type mismatch
+    const revenueByCityResult = await withTimeout(db.collection("payments").aggregate([
       {
         $match: {
           status: "completed"
         }
       },
       {
+        $addFields: {
+          // Convert stationId string to ObjectId for proper lookup
+          stationIdObj: { $toObjectId: "$stationId" }
+        }
+      },
+      {
         $lookup: {
           from: "stations",
-          localField: "stationId",
+          localField: "stationIdObj",
           foreignField: "_id",
           as: "station"
         }
@@ -74,7 +92,17 @@ async function getRevenueByCityData(db: any) {
           recentRevenue: {
             $sum: {
               $cond: [
-                { $gte: ["$createdAt", new Date(new Date().setMonth(new Date().getMonth() - 1))] },
+                { 
+                  $gte: [
+                    "$createdAt", 
+                    {
+                      $dateFromParts: {
+                        year: { $year: new Date() },
+                        month: { $subtract: [{ $month: new Date() }, 1] }
+                      }
+                    }
+                  ]
+                },
                 "$amount",
                 0
               ]
@@ -83,7 +111,17 @@ async function getRevenueByCityData(db: any) {
           olderRevenue: {
             $sum: {
               $cond: [
-                { $lt: ["$createdAt", new Date(new Date().setMonth(new Date().getMonth() - 1))] },
+                { 
+                  $lt: [
+                    "$createdAt", 
+                    {
+                      $dateFromParts: {
+                        year: { $year: new Date() },
+                        month: { $subtract: [{ $month: new Date() }, 1] }
+                      }
+                    }
+                  ]
+                },
                 "$amount",
                 0
               ]
@@ -120,7 +158,10 @@ async function getRevenueByCityData(db: any) {
       {
         $limit: 10 // Top 10 cities
       }
-    ]).toArray();
+    ]).toArray(), 10000); // 10 second timeout
+
+    // Type assertion for the result
+    const revenueByCity: any[] = revenueByCityResult as any[];
 
     // Format data for chart with actual growth information
     const formattedData = revenueByCity.map((item: any) => ({
@@ -140,7 +181,7 @@ async function getRevenueByCityData(db: any) {
 async function getUserAndChargingUsageByCity(db: any) {
   try {
     // Get stations grouped by city with user and charging session counts
-    const cityData = await db.collection("stations").aggregate([
+    const cityDataResult = await withTimeout(db.collection("stations").aggregate([
       {
         $group: {
           _id: "$city",
@@ -181,7 +222,10 @@ async function getUserAndChargingUsageByCity(db: any) {
       {
         $limit: 10 // Top 10 cities
       }
-    ]).toArray();
+    ]).toArray(), 10000); // 10 second timeout
+
+    // Type assertion for the result
+    const cityData: any[] = cityDataResult as any[];
 
     // Format data for chart
     const formattedData = cityData.map((item: any) => ({
@@ -198,6 +242,25 @@ async function getUserAndChargingUsageByCity(db: any) {
 }
 
 export async function GET(request: Request) {
+  try {
+    // Add overall timeout for the entire request
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+    );
+    
+    const responsePromise = handleRequest(request);
+    
+    return await Promise.race([responsePromise, timeoutPromise]);
+  } catch (error) {
+    console.error("Error fetching chart data:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch chart data" }, 
+      { status: 500 }
+    );
+  }
+}
+
+async function handleRequest(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const chartType = searchParams.get('type');

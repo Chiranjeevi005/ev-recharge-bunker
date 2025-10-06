@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 
 interface Booking {
   _id?: ObjectId;
@@ -19,9 +19,10 @@ interface Booking {
 export async function GET() {
   try {
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     
     // Fetch all bookings
-    const bookings = await db.collection<Booking>("bookings").find({}).toArray();
+    const bookings = await typedDb.collection<Booking>("bookings").find({}).toArray();
     
     // Convert ObjectId to string for JSON serialization
     const serializedBookings = bookings.map(booking => ({
@@ -45,10 +46,11 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     const body = await request.json();
     
     // Insert new booking
-    const result = await db.collection<Booking>("bookings").insertOne({
+    const result = await typedDb.collection<Booking>("bookings").insertOne({
       ...body,
       status: "pending",
       createdAt: new Date(),
@@ -71,6 +73,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     const body = await request.json();
     
     const { bookingId, ...updateData } = body;
@@ -83,7 +86,7 @@ export async function PUT(request: Request) {
     }
     
     // Update booking
-    const result = await db.collection<Booking>("bookings").updateOne(
+    const result = await typedDb.collection<Booking>("bookings").updateOne(
       { _id: new ObjectId(bookingId) },
       { 
         $set: { 

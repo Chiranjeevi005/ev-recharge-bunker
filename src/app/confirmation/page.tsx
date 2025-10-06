@@ -49,7 +49,7 @@ interface Station {
 function ConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const bookingId = searchParams.get('bookingId');
+  const bookingId = searchParams?.get('bookingId') || null;
   
   const [booking, setBooking] = useState<Booking | null>(null);
   const [station, setStation] = useState<Station | null>(null);

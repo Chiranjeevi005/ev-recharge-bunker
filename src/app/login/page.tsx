@@ -47,7 +47,7 @@ function LoginContent() {
   // Focus on email field when tab is selected and pre-fill email from query params
   useEffect(() => {
     // Pre-fill email from query params if available
-    const emailParam = searchParams.get('email');
+    const emailParam = searchParams?.get('email') || null;
     if (emailParam) {
       if (activeTab === "client") {
         setClientCredentials(prev => ({

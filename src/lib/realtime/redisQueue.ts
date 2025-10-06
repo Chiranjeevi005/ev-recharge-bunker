@@ -224,5 +224,6 @@ export default {
   enqueueMessage,
   configureBatching,
   clearProcessedMessagesCache,
-  getQueueStats
+  getQueueStats,
+  isAvailable: redis.isAvailable
 };

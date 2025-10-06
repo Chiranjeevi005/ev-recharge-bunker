@@ -116,7 +116,7 @@ function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { hideLoader, showLoader } = useLoader();
-  const { isConnected, updates, joinUserRoom, data, loading, error } = useRealTimeData();
+  const { isConnected, updates, joinUserRoom, data: realTimeData, loading, error } = useRealTimeData();
   const dataFetchedRef = useRef(false);
   
   // Initialize route transition handler
@@ -124,8 +124,8 @@ function AdminDashboardContent() {
   // useRouteTransition();
 
   // Get initial tab state from URL parameters
-  const initialTab = searchParams.get('tab') || 'dashboard';
-  const initialSubTab = searchParams.get('subTab') || 
+  const initialTab = searchParams?.get('tab') || 'dashboard';
+  const initialSubTab = searchParams?.get('subTab') || 
     (initialTab === 'dashboard' ? 'overview' : 
      initialTab === 'clients' ? 'all' : 
      initialTab === 'stations' ? 'all' : 
@@ -143,8 +143,8 @@ function AdminDashboardContent() {
 
   // Handle URL parameters for tab navigation
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    const subTab = searchParams.get('subTab');
+    const tab = searchParams?.get('tab') || null;
+    const subTab = searchParams?.get('subTab') || null;
     
     if (tab && tab !== activeTab) {
       setActiveTab(tab);
@@ -200,7 +200,7 @@ function AdminDashboardContent() {
   const [errorState, setErrorState] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState(true);
 
-  // Enhanced data fetching with better error handling
+  // Enhanced data fetching with better error handling and timeout management
   const fetchData = useCallback(async () => {
     if (status === 'authenticated' && session?.user?.role === 'admin' && !dataFetchedRef.current) {
       dataFetchedRef.current = true;
@@ -228,35 +228,35 @@ function AdminDashboardContent() {
           Promise.race([
             fetch('/api/dashboard/stats'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Stats fetch timeout')), 20000)
+              setTimeout(() => reject(new Error('Stats fetch timeout')), 15000)
             )
           ]),
           // Fetch clients with timeout
           Promise.race([
             fetch('/api/clients'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Clients fetch timeout')), 20000)
+              setTimeout(() => reject(new Error('Clients fetch timeout')), 15000)
             )
           ]),
           // Fetch stations with timeout
           Promise.race([
             fetch('/api/stations'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Stations fetch timeout')), 20000)
+              setTimeout(() => reject(new Error('Stations fetch timeout')), 15000)
             )
           ]),
           // Fetch payments with timeout
           Promise.race([
             fetch('/api/payments'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Payments fetch timeout')), 20000)
+              setTimeout(() => reject(new Error('Payments fetch timeout')), 15000)
             )
           ]),
           // Fetch chart data with timeout
           Promise.race([
             fetch('/api/dashboard/charts'),
             new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Chart data fetch timeout')), 20000)
+              setTimeout(() => reject(new Error('Chart data fetch timeout')), 15000)
             )
           ])
         ]);
@@ -396,6 +396,21 @@ function AdminDashboardContent() {
     }
   }, [session, joinUserRoom]);
 
+  // Update local state with real-time data
+  useEffect(() => {
+    if (realTimeData.clients && realTimeData.clients.length > 0) {
+      setClients(realTimeData.clients);
+    }
+    
+    if (realTimeData.stations && realTimeData.stations.length > 0) {
+      setStations(realTimeData.stations);
+    }
+    
+    if (realTimeData.payments && realTimeData.payments.length > 0) {
+      setPayments(realTimeData.payments);
+    }
+  }, [realTimeData]);
+
   // Helper function to update URL parameters
   const updateUrl = (tab: string, subTab: string) => {
     const params = new URLSearchParams(window.location.search);
@@ -499,6 +514,71 @@ function AdminDashboardContent() {
                   return prevStations;
                 }
               });
+              
+              // Refresh usage by city chart when stations change
+              fetch('/api/dashboard/charts?type=usage-by-city')
+                .then(response => response.json())
+                .then(data => {
+                  if (data.usageByCity) {
+                    setUsageByCityData(data.usageByCity);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error fetching updated usage by city data:', error);
+                });
+            }
+            break;
+            
+          case 'client_update':
+            // Update clients data in real-time
+            if (latestUpdate.fullDocument) {
+              setClients(prevClients => {
+                const existingClientIndex = prevClients.findIndex(client => client._id === latestUpdate.fullDocument?._id);
+                if (existingClientIndex >= 0 && latestUpdate.fullDocument) {
+                  // Update existing client
+                  const updatedClients = [...prevClients];
+                  const fullDocument = latestUpdate.fullDocument;
+                  if (fullDocument && typeof fullDocument === 'object') {
+                    updatedClients[existingClientIndex] = {
+                      ...updatedClients[existingClientIndex],
+                      ...fullDocument,
+                      createdAt: fullDocument?.createdAt !== undefined && fullDocument?.createdAt !== null ? fullDocument?.createdAt : (updatedClients[existingClientIndex]?.createdAt || new Date().toISOString()),
+                      lastLogin: fullDocument?.lastLogin !== undefined && fullDocument?.lastLogin !== null ? fullDocument?.lastLogin : (updatedClients[existingClientIndex]?.lastLogin || undefined)
+                    };
+                  }
+                  return updatedClients;
+                } else if (latestUpdate.fullDocument) {
+                  // Add new client
+                  const fullDocument = latestUpdate.fullDocument;
+                  if (fullDocument && typeof fullDocument === 'object') {
+                    return [...prevClients, {
+                      _id: fullDocument._id,
+                      name: fullDocument.name || 'Unknown',
+                      email: fullDocument.email || '',
+                      role: fullDocument.role || 'user',
+                      status: fullDocument.status || 'active',
+                      lastLogin: fullDocument.lastLogin,
+                      createdAt: fullDocument.createdAt || new Date().toISOString()
+                    }];
+                  } else {
+                    return prevClients;
+                  }
+                } else {
+                  return prevClients;
+                }
+              });
+              
+              // Refresh usage by city chart when clients change
+              fetch('/api/dashboard/charts?type=usage-by-city')
+                .then(response => response.json())
+                .then(data => {
+                  if (data.usageByCity) {
+                    setUsageByCityData(data.usageByCity);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error fetching updated usage by city data:', error);
+                });
             }
             break;
             
@@ -542,16 +622,22 @@ function AdminDashboardContent() {
                 }
               });
               
-              // Refresh chart data when payments change
-              fetch('/api/dashboard/charts?type=revenue-by-city')
+              // Refresh all chart data when payments change to ensure consistency
+              fetch('/api/dashboard/charts')
                 .then(response => response.json())
                 .then(data => {
                   if (data.revenueByCity) {
                     setRevenueByCityData(data.revenueByCity);
                   }
+                  if (data.usageByCity) {
+                    setUsageByCityData(data.usageByCity);
+                  }
+                  if (data.userGrowth) {
+                    setUserGrowthData(data.userGrowth);
+                  }
                 })
                 .catch(error => {
-                  console.error('Error fetching updated revenue by city data:', error);
+                  console.error('Error fetching updated chart data:', error);
                 });
             }
             break;
@@ -610,6 +696,11 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
                 <p className="text-[#CBD5E1] mt-2">Welcome, {session?.user?.name || 'Admin'}. Here's what's happening today.</p>
+                {isConnected ? (
+                  <p className="text-green-400 text-sm mt-1">Real-time connection: Active</p>
+                ) : (
+                  <p className="text-yellow-400 text-sm mt-1">Real-time connection: Connecting...</p>
+                )}
               </div>
               
               {/* Sub-tabs for Dashboard - Mobile-first responsive design */ }
@@ -811,8 +902,8 @@ function AdminDashboardContent() {
           {activeTab === 'clients' && (
             <div className="w-full">
               <div className="mb-6">
-                <h1 className="text-3xl font-bold text-[#1E293B] mb-2">Admin Powerhouse</h1>
-                <p className="text-[#334155] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
+                <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
+                <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
                 <div>
@@ -1002,13 +1093,13 @@ function AdminDashboardContent() {
           {activeTab === 'stations' && (
             <div className="w-full">
               <div className="mb-6">
-                <h1 className="text-3xl font-bold text-[#1E293B] mb-2">Admin Powerhouse</h1>
-                <p className="text-[#334155] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
+                <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
+                <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
                 <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-[#1E293B] mb-1 md:mb-2">Station Management</h2>
-                  <p className="text-[#334155] text-sm md:text-base">Manage all charging stations in the network</p>
+                  <h2 className="text-xl md:text-2xl font-bold text-[#F1F5F9] mb-1 md:mb-2">Station Management</h2>
+                  <p className="text-[#CBD5E1] text-sm md:text-base">Manage all charging stations in the network</p>
                 </div>
                 <Button className="mt-3 md:mt-0 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white text-sm md:text-base">
                   <svg className="w-4 h-4 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1127,8 +1218,8 @@ function AdminDashboardContent() {
           {activeTab === 'payments' && (
             <div className="w-full">
               <div className="mb-6">
-                <h1 className="text-3xl font-bold text-[#1E293B] mb-2">Admin Powerhouse</h1>
-                <p className="text-[#334155] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
+                <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
+                <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
               <div className="mb-4 md:mb-6">
                 <h2 className="text-xl md:text-2xl font-bold text-[#F1F5F9] mb-1 md:mb-2">Payment Management</h2>
@@ -1668,4 +1759,3 @@ export default function AdminDashboard() {
     </Suspense>
   );
 }
-

@@ -1,17 +1,83 @@
 import { connectToDatabase } from '@/lib/db/connection';
+import { Db } from 'mongodb';
 import redis from '@/lib/realtime/redisQueue';
 import type { ChangeStreamDocument, ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ChangeStreamDeleteDocument } from 'mongodb';
 
 // Store change stream references for proper cleanup
 const changeStreams: any[] = [];
+let isReplicaSetMode = true;
+
+// Function to simulate change streams in standalone mode using polling
+async function setupPollingFallback(db: Db) {
+  console.log('Setting up polling fallback for standalone MongoDB mode');
+  
+  // Poll for changes every 10 seconds
+  const pollingInterval = setInterval(async () => {
+    try {
+      // For demo purposes, we'll simulate changes by publishing a dummy update
+      // In a real implementation, you would compare the current state with the previous state
+      const now = new Date().toISOString();
+      
+      // Simulate a client update
+      const clientEvent = {
+        event: 'client_update',
+        operationType: 'update',
+        documentKey: 'polling-' + now,
+        timestamp: now
+      };
+      
+      if (redis.isAvailable()) {
+        try {
+          await redis.enqueueMessage('client_activity_channel', JSON.stringify(clientEvent));
+          console.log('Published polling update to Redis');
+        } catch (error) {
+          console.error('Error publishing polling update to Redis:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in polling fallback:', error);
+    }
+  }, 10000);
+  
+  return pollingInterval;
+}
 
 // Initialize change streams for key collections
 export async function initializeChangeStreams() {
   try {
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
+    
+    console.log('Initializing change streams for database:', typedDb.databaseName);
+    
+    // Check if MongoDB is running in replica set mode
+    try {
+      const isMaster = await typedDb.admin().command({ isMaster: 1 });
+      if (!isMaster['setName']) {
+        console.warn('MongoDB is running in standalone mode - change streams not supported');
+        isReplicaSetMode = false;
+        
+        // Set up polling fallback
+        const pollingInterval = await setupPollingFallback(typedDb);
+        
+        // Store the polling interval for cleanup
+        changeStreams.push({ name: 'polling', interval: pollingInterval });
+        
+        return true;
+      }
+    } catch (error) {
+      console.error('Error checking MongoDB mode:', error);
+      isReplicaSetMode = false;
+      return false;
+    }
+    
+    if (!isReplicaSetMode) {
+      // Already set up polling fallback
+      return true;
+    }
     
     // Watch clients collection
-    const clientsCollection = db.collection('clients');
+    const clientsCollection = typedDb.collection('clients');
     const clientsChangeStream = clientsCollection.watch([], { 
       fullDocument: 'updateLookup',
       // Add resumable options
@@ -75,7 +141,7 @@ export async function initializeChangeStreams() {
     changeStreams.push({ name: 'clients', stream: clientsChangeStream });
     
     // Watch stations collection
-    const stationsCollection = db.collection('stations');
+    const stationsCollection = typedDb.collection('stations');
     const stationsChangeStream = stationsCollection.watch([], { 
       fullDocument: 'updateLookup',
       resumeAfter: null,
@@ -138,7 +204,7 @@ export async function initializeChangeStreams() {
     changeStreams.push({ name: 'stations', stream: stationsChangeStream });
     
     // Watch charging_sessions collection
-    const chargingSessionsCollection = db.collection('charging_sessions');
+    const chargingSessionsCollection = typedDb.collection('charging_sessions');
     const chargingSessionsChangeStream = chargingSessionsCollection.watch([], { 
       fullDocument: 'updateLookup',
       resumeAfter: null,
@@ -186,7 +252,7 @@ export async function initializeChangeStreams() {
     changeStreams.push({ name: 'charging_sessions', stream: chargingSessionsChangeStream });
     
     // Watch payments collection
-    const paymentsCollection = db.collection('payments');
+    const paymentsCollection = typedDb.collection('payments');
     const paymentsChangeStream = paymentsCollection.watch([], { 
       fullDocument: 'updateLookup',
       resumeAfter: null,
@@ -249,7 +315,7 @@ export async function initializeChangeStreams() {
     changeStreams.push({ name: 'payments', stream: paymentsChangeStream });
     
     // Watch eco_stats collection
-    const ecoStatsCollection = db.collection('eco_stats');
+    const ecoStatsCollection = typedDb.collection('eco_stats');
     const ecoStatsChangeStream = ecoStatsCollection.watch([], { 
       fullDocument: 'updateLookup',
       resumeAfter: null,
@@ -306,6 +372,21 @@ export async function initializeChangeStreams() {
       console.error('MongoDB authentication failed. Please check your credentials in .env.local');
     } else if (error.message && error.message.includes('connect ECONNREFUSED')) {
       console.error('MongoDB connection refused. Please check if your MongoDB server is running');
+    } else if (error.message && error.message.includes('The $changeStream stage is only supported on replica sets')) {
+      console.warn('MongoDB is running in standalone mode - change streams not supported. Setting up polling fallback.');
+      isReplicaSetMode = false;
+      
+      // Try to set up polling fallback
+      try {
+        const { db } = await connectToDatabase();
+        const typedDb = db as Db;
+        const pollingInterval = await setupPollingFallback(typedDb);
+        changeStreams.push({ name: 'polling', interval: pollingInterval });
+        console.log('Polling fallback initialized successfully');
+        return true;
+      } catch (pollingError) {
+        console.error('Error setting up polling fallback:', pollingError);
+      }
     }
     
     return false;
@@ -331,12 +412,17 @@ function handleChangeStreamError(error: any, collectionName: string) {
 // Cleanup function to close all change streams
 export function closeChangeStreams() {
   console.log('Closing MongoDB change streams...');
-  changeStreams.forEach(({ name, stream }) => {
+  changeStreams.forEach(({ name, stream, interval }) => {
     try {
-      stream.close();
-      console.log(`Closed change stream for ${name}`);
+      if (stream) {
+        stream.close();
+        console.log(`Closed change stream for ${name}`);
+      } else if (interval) {
+        clearInterval(interval);
+        console.log(`Closed polling interval for ${name}`);
+      }
     } catch (error) {
-      console.error(`Error closing change stream for ${name}:`, error);
+      console.error(`Error closing ${name}:`, error);
     }
   });
   changeStreams.length = 0; // Clear the array

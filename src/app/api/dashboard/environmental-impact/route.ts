@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
+import { Db } from 'mongodb';
 import redis from '@/lib/realtime/redisQueue';
 
 export async function GET(request: Request) {
@@ -31,9 +32,10 @@ export async function GET(request: Request) {
 
     // If not in Redis or Redis not available, calculate from MongoDB
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     
     // Get all confirmed bookings for the user (using bookings collection instead of charging_sessions)
-    const bookings = await db.collection("bookings").find({ 
+    const bookings = await typedDb.collection("bookings").find({ 
       userId: userId,
       status: "confirmed"
     }).toArray();
@@ -73,7 +75,7 @@ export async function GET(request: Request) {
     const costSavings = totalDistance * (PETROL_COST_PER_KM - EV_COST_PER_KM); // ₹
     
     // For community CO2 saved, we'll need to get the total for all users
-    const allBookings = await db.collection("bookings").find({ 
+    const allBookings = await typedDb.collection("bookings").find({ 
       status: "confirmed"
     }).toArray();
     

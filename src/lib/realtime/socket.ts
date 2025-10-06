@@ -14,7 +14,15 @@ export function initSocket(server: any) {
       },
       // Add connection options for better reliability
       transports: ["websocket", "polling"],
-      allowEIO3: true
+      allowEIO3: true,
+      // Add timeout configuration
+      pingTimeout: 20000, // 20 seconds
+      pingInterval: 25000, // 25 seconds
+      upgradeTimeout: 10000, // 10 seconds
+      // Add connection limits
+      maxHttpBufferSize: 1e6, // 1MB
+      // Add timeout for connection handshake
+      connectTimeout: 20000 // 20 seconds
     });
 
     io.on("connection", (socket) => {
@@ -97,10 +105,18 @@ export function initSocket(server: any) {
             // Handle legacy channels for backward compatibility
             switch (channel) {
               case "charging-session-update":
-                io?.to(`user-${data.userId}`).emit("charging-session-update", data);
+                if (data.userId) {
+                  io?.to(`user-${data.userId}`).emit("charging-session-update", data);
+                } else {
+                  io?.emit("charging-session-update", data);
+                }
                 break;
               case "payment-update":
-                io?.to(`user-${data.userId}`).emit("payment-update", data);
+                if (data.userId) {
+                  io?.to(`user-${data.userId}`).emit("payment-update", data);
+                } else {
+                  io?.emit("payment-update", data);
+                }
                 break;
               case "slot-availability-update":
                 // Broadcast to all users or specific users based on your needs

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
+import { Db } from 'mongodb';
 
 interface Station {
   _id: string;
@@ -21,10 +22,11 @@ export async function GET() {
   try {
     console.log('Debug API: Connecting to database');
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     console.log('Debug API: Connected to database');
     
     // Check if stations collection exists
-    const stationsCollection = db.collection('stations');
+    const stationsCollection = typedDb.collection('stations');
     
     // Count total stations
     const totalStations = await stationsCollection.countDocuments();
@@ -62,7 +64,7 @@ export async function GET() {
     }
     
     // Check clients collection
-    const clientsCollection = db.collection('clients');
+    const clientsCollection = typedDb.collection('clients');
     const totalClients = await clientsCollection.countDocuments();
     console.log('Debug API: Total clients:', totalClients);
     
