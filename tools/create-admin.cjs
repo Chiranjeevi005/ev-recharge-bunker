@@ -26,16 +26,27 @@ async function createAdminUser() {
     const db = client.db();
     console.log('Database name:', db.databaseName);
     
+    // Hash the admin password
+    const hashedPassword = await bcrypt.hash("admin123", 12);
+    
     // Check if admin already exists
     const existingAdmin = await db.collection("admins").findOne({ email: "admin@ebunker.com" });
     
     if (existingAdmin) {
-      console.log('Admin user already exists');
+      console.log('Admin user already exists, updating password...');
+      // Update the existing admin with the proper password
+      const result = await db.collection("admins").updateOne(
+        { email: "admin@ebunker.com" },
+        { 
+          $set: { 
+            password: hashedPassword,
+            updatedAt: new Date()
+          }
+        }
+      );
+      console.log('✅ Admin user password updated successfully');
       return;
     }
-    
-    // Hash the admin password
-    const hashedPassword = await bcrypt.hash("admin123", 12);
     
     // Create admin user
     const result = await db.collection("admins").insertOne({
@@ -57,9 +68,9 @@ async function createAdminUser() {
 }
 
 createAdminUser().then(() => {
-  console.log("\n🎉 Admin user creation completed successfully!");
+  console.log("\n🎉 Admin user creation/update completed successfully!");
   process.exit(0);
 }).catch((error) => {
-  console.error("\n💥 Admin user creation failed:", error);
+  console.error("\n💥 Admin user creation/update failed:", error);
   process.exit(1);
 });

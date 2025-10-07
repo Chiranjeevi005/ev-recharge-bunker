@@ -36,23 +36,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Return success response without sensitive data
-    const { password: _, ...adminWithoutPassword } = adminUser;
-    
+    // Return success response in the format that NextAuth expects
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        user: {
-          id: adminWithoutPassword['_id'],
-          email: adminWithoutPassword['email'],
-          role: 'admin'
-        }
+        id: adminUser['_id'].toString(),
+        email: adminUser['email'],
+        role: 'admin',
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
     // Log error internally but don't expose details to client
-    console.error("Login error");
+    console.error("Login error", error);
     return new Response(
       JSON.stringify({ error: "An error occurred during login" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

@@ -42,9 +42,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         try {
-          // For NextAuth v5, credentials are passed as the first parameter
-          // Let's log the entire credentials object to see what we're getting
-          console.log("Admin credentials object received");
+          console.log("Admin credentials object received:", credentials);
           
           // Extract email and password - handling different possible formats
           const email = credentials?.email || (credentials as any)?.body?.email;
@@ -81,7 +79,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: "admin",
           };
         } catch (error) {
-          console.error("Admin authentication error");
+          console.error("Admin authentication error", error);
           return null;
         }
       }
