@@ -1,5 +1,5 @@
 // Create admin user script
-require('dotenv').config({ path: '../config/.env.production' });
+require('dotenv').config({ path: './config/.env.production' });
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
 
