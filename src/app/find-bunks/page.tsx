@@ -123,7 +123,7 @@ export default function FindBunksPage() {
         setStations(stationsData);
         setFilteredStations(stationsData);
         hideLoader(); // Hide loader
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching stations:", error);
         // Set empty arrays on error to prevent map errors
         setStations([]);
@@ -381,7 +381,7 @@ export default function FindBunksPage() {
           type: 'error'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       hideLoader(); // Hide loader
       console.error("Payment error:", error);
       setToast({

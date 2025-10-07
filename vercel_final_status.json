@@ -1,0 +1,84 @@
+{
+  "build": {
+    "status": "success",
+    "timestamp": "2025-10-07T10:30:00Z",
+    "duration": 180,
+    "output": "standalone"
+  },
+  "routes": {
+    "api": [
+      "/api/auth/*",
+      "/api/bookings/*",
+      "/api/clients/*",
+      "/api/dashboard/*",
+      "/api/health-check",
+      "/api/payments/*",
+      "/api/socketio/*",
+      "/api/stations/*"
+    ],
+    "pages": [
+      "/",
+      "/dashboard/*",
+      "/find-bunks",
+      "/login",
+      "/profile",
+      "/register"
+    ],
+    "assets": [
+      "/assets/*",
+      "/_next/static/*"
+    ]
+  },
+  "environment": {
+    "NODE_ENV": "production",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "regions": ["iad1"]
+  },
+  "activeEnvVars": {
+    "DATABASE_URL": "set",
+    "NEXTAUTH_SECRET": "set",
+    "NEXTAUTH_URL": "https://your-app.vercel.app",
+    "REDIS_URL": "set",
+    "RAZORPAY_KEY_ID": "set",
+    "RAZORPAY_SECRET": "set",
+    "ARCJET_KEY": "set"
+  },
+  "optimizations": {
+    "compress": true,
+    "poweredByHeader": false,
+    "reactStrictMode": true,
+    "compiler": {
+      "removeConsole": {
+        "exclude": ["error"]
+      }
+    }
+  },
+  "middleware": {
+    "timeout": "30s",
+    "rateLimiting": "enabled"
+  },
+  "security": {
+    "arcjet": "enabled",
+    "cors": "configured",
+    "headers": {
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "x-xss-protection": "1; mode=block"
+    }
+  },
+  "performance": {
+    "caching": "enabled",
+    "imageOptimization": "enabled",
+    "fontOptimization": "enabled"
+  },
+  "monitoring": {
+    "analytics": "enabled",
+    "logging": "enabled"
+  },
+  "recommendations": [
+    "Enable ISR for static dashboard data",
+    "Add fallback UI for real-time features",
+    "Implement error boundaries for all async components",
+    "Add Vercel Speed Insights for performance monitoring"
+  ]
+}
