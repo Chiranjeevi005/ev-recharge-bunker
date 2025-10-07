@@ -29,6 +29,7 @@
 - ✅ Comprehensive Vercel deployment guide created
 - ✅ Environment variable requirements documented
 - ✅ Troubleshooting guide included
+- ✅ Payment-specific troubleshooting guide created (`PAYMENT_TROUBLESHOOTING.md`)
 
 ### 3. Testing
 - ✅ Build process verified
@@ -60,11 +61,35 @@ ARCJET_KEY=your_arcjet_key
 openssl rand -base64 32
 ```
 
+## Payment Integration Requirements
+
+For payment processing to work correctly, you must:
+
+1. **Set up a Razorpay account**:
+   - Sign up at https://razorpay.com
+   - Get your API keys from the dashboard
+
+2. **Configure environment variables**:
+   - `RAZORPAY_KEY_ID` - Your Razorpay key ID
+   - `RAZORPAY_KEY_SECRET` - Your Razorpay secret key
+   - `NEXT_PUBLIC_RAZORPAY_KEY_ID` - Same as RAZORPAY_KEY_ID (for frontend)
+
+3. **For testing**:
+   - Use Razorpay's test keys during development
+   - Use test card details:
+     - Card Number: 4111 1111 1111 1111
+     - Expiry: Any future date
+     - CVV: 123
+     - OTP: 123456
+
 ## Post-Deployment Verification Checklist
 
 - [ ] Authentication works (admin and client logins)
 - [ ] API endpoints respond correctly
 - [ ] Payment processing functions
+  - [ ] Can create payment orders
+  - [ ] Can verify payments
+  - [ ] Test with Razorpay test cards
 - [ ] Real-time features work (if Redis configured)
 - [ ] Dashboard charts and data display correctly
 - [ ] Responsive design works on all devices
@@ -73,8 +98,9 @@ openssl rand -base64 32
 
 For deployment issues:
 1. Check the `VERCEL_DEPLOYMENT_GUIDE.md` for detailed instructions
-2. Verify all environment variables are set correctly
-3. Check Vercel logs for any build or runtime errors
-4. Refer to the README.md for general project information
+2. For payment issues, check `PAYMENT_TROUBLESHOOTING.md`
+3. Verify all environment variables are set correctly
+4. Check Vercel logs for any build or runtime errors
+5. Refer to the README.md for general project information
 
 The application is fully prepared for production deployment on Vercel with all critical functionality tested and working.

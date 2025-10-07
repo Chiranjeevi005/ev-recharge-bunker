@@ -3,14 +3,38 @@ import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env['RAZORPAY_KEY_ID']!,
-  key_secret: process.env['RAZORPAY_KEY_SECRET']!
-});
-
 export async function POST(request: Request) {
   try {
+    // Initialize Razorpay instance inside the function for better compatibility with serverless environments
+    let razorpay: Razorpay | null = null;
+    
+    try {
+      if (!process.env['RAZORPAY_KEY_ID'] || !process.env['RAZORPAY_KEY_SECRET']) {
+        console.error("Razorpay environment variables not set");
+        return NextResponse.json(
+          { 
+            error: "Payment service not properly configured",
+            details: "Missing Razorpay API keys. Please check environment variables."
+          },
+          { status: 500 }
+        );
+      }
+      
+      razorpay = new Razorpay({
+        key_id: process.env['RAZORPAY_KEY_ID']!,
+        key_secret: process.env['RAZORPAY_KEY_SECRET']!
+      });
+    } catch (razorpayInitError: any) {
+      console.error("Error initializing Razorpay:", razorpayInitError);
+      return NextResponse.json(
+        { 
+          error: "Failed to initialize payment service", 
+          details: razorpayInitError.message || "Unknown error during Razorpay initialization"
+        },
+        { status: 500 }
+      );
+    }
+
     const { db } = await connectToDatabase();
 
     // Parse the request body safely
@@ -31,14 +55,23 @@ export async function POST(request: Request) {
     // Validate input with more detailed logging
     console.log("Validating input fields:", { stationId, slotId, duration, amount, userId });
     
-    // Ensure all values are properly converted to their expected types
-    const parsedStationId = String(stationId || '');
-    const parsedSlotId = String(slotId || '');
-    const parsedDuration = Number(duration);
-    const parsedAmount = Number(amount);
-    const parsedUserId = String(userId || '');
+    // Ensure all values are properly converted to their expected types with defaults
+    const parsedStationId = String(stationId || '').trim();
+    const parsedSlotId = String(slotId || '').trim();
+    const parsedDuration = Math.max(1, Math.min(24, Number(duration) || 1)); // Default to 1, clamp between 1-24
+    const parsedAmount = Number(amount) || 0;
+    const parsedUserId = String(userId || 'anonymous').trim();
     
-    if (!parsedStationId || parsedStationId === 'null' || parsedStationId === 'undefined') {
+    // Log parsed values for debugging
+    console.log("Parsed values:", { 
+      parsedStationId, 
+      parsedSlotId, 
+      parsedDuration, 
+      parsedAmount, 
+      parsedUserId 
+    });
+    
+    if (!parsedStationId) {
       console.error("Missing required field: stationId");
       return NextResponse.json(
         { error: "Missing required field: stationId" },
@@ -46,7 +79,7 @@ export async function POST(request: Request) {
       );
     }
     
-    if (!parsedSlotId || parsedSlotId === 'null' || parsedSlotId === 'undefined') {
+    if (!parsedSlotId) {
       console.error("Missing required field: slotId");
       return NextResponse.json(
         { error: "Missing required field: slotId" },
@@ -54,88 +87,29 @@ export async function POST(request: Request) {
       );
     }
     
-    if (isNaN(parsedDuration) || parsedDuration === null || parsedDuration === undefined || parsedDuration <= 0) {
-      console.error("Missing or invalid required field: duration", duration);
+    if (isNaN(parsedDuration) || parsedDuration <= 0) {
+      console.error("Invalid duration value:", parsedDuration);
       return NextResponse.json(
-        { error: "Missing or invalid required field: duration. Must be a positive number." },
+        { error: "Invalid duration. Must be a positive number between 1 and 24 hours." },
         { status: 400 }
       );
     }
     
-    if (isNaN(parsedAmount) || parsedAmount === null || parsedAmount === undefined || parsedAmount <= 0) {
-      console.error("Missing or invalid required field: amount", amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      console.error("Invalid amount value:", parsedAmount);
       return NextResponse.json(
-        { error: "Missing or invalid required field: amount. Must be a positive number." },
+        { error: "Invalid amount. Must be a positive number." },
         { status: 400 }
       );
     }
 
-    console.log("Creating payment order with parsed values:", { 
+    console.log("Creating payment order with validated values:", { 
       stationId: parsedStationId, 
       slotId: parsedSlotId, 
       duration: parsedDuration, 
       amount: parsedAmount, 
       userId: parsedUserId 
     });
-
-    // Validate amount with detailed error messages
-    if (isNaN(parsedAmount)) {
-      console.error("Amount is NaN:", parsedAmount);
-      return NextResponse.json(
-        { error: "Amount is not a valid number (NaN)" },
-        { status: 400 }
-      );
-    }
-    
-    if (parsedAmount <= 0) {
-      console.error("Invalid amount value:", parsedAmount);
-      return NextResponse.json(
-        { error: "Invalid amount. Must be greater than 0" },
-        { status: 400 }
-      );
-    }
-
-    // Validate duration with detailed error messages
-    if (isNaN(parsedDuration)) {
-      console.error("Duration is NaN:", parsedDuration);
-      return NextResponse.json(
-        { error: "Duration is not a valid number (NaN)" },
-        { status: 400 }
-      );
-    }
-    
-    if (parsedDuration <= 0) {
-      console.error("Invalid duration value:", parsedDuration);
-      return NextResponse.json(
-        { error: "Invalid duration. Must be greater than 0" },
-        { status: 400 }
-      );
-    }
-    
-    if (parsedDuration > 24) {
-      console.error("Invalid duration value:", parsedDuration);
-      return NextResponse.json(
-        { error: "Invalid duration. Must be between 1 and 24 hours." },
-        { status: 400 }
-      );
-    }
-    
-    // Validate stationId and slotId
-    if (typeof parsedStationId !== 'string') {
-      console.error("Invalid stationId type:", typeof parsedStationId, "Value:", parsedStationId);
-      return NextResponse.json(
-        { error: `Invalid stationId type. Expected string, got ${typeof parsedStationId}` },
-        { status: 400 }
-      );
-    }
-    
-    if (typeof parsedSlotId !== 'string') {
-      console.error("Invalid slotId type:", typeof parsedSlotId, "Value:", parsedSlotId);
-      return NextResponse.json(
-        { error: `Invalid slotId type. Expected string, got ${typeof parsedSlotId}` },
-        { status: 400 }
-      );
-    }
 
     // Create Razorpay order using the actual SDK
     // Fix: Shorten the receipt ID to be within 40 characters
@@ -144,8 +118,15 @@ export async function POST(request: Request) {
 
     let order;
     try {
+      if (!razorpay) {
+        throw new Error("Razorpay instance not initialized");
+      }
+      
+      // Ensure amount is at least 100 paise (₹1)
+      const razorpayAmount = Math.max(100, Math.round(parsedAmount * 100));
+      
       order = await razorpay.orders.create({
-        amount: Math.round(parsedAmount * 100), // Amount in paise, rounded to avoid floating point issues
+        amount: razorpayAmount,
         currency: 'INR',
         receipt: receiptId
       });
@@ -159,10 +140,19 @@ export async function POST(request: Request) {
       if (razorpayError.error) {
         console.error("Razorpay error details:", razorpayError.error);
       }
+      
+      // Return more specific error messages based on the error type
+      let errorMessage = "Failed to create payment order with Razorpay";
+      if (razorpayError.error && razorpayError.error.description) {
+        errorMessage = razorpayError.error.description;
+      } else if (razorpayError.message) {
+        errorMessage = razorpayError.message;
+      }
+      
       return NextResponse.json(
         { 
           error: "Failed to create payment order with Razorpay", 
-          details: razorpayError.message,
+          details: errorMessage,
           code: razorpayError.statusCode
         },
         { status: 500 }
@@ -181,7 +171,7 @@ export async function POST(request: Request) {
     // Store order in database with proper structure
     console.log("Creating payment record with orderId:", order.id);
     const paymentRecord = {
-      userId: parsedUserId || "anonymous",
+      userId: parsedUserId,
       stationId: parsedStationId,
       slotId: parsedSlotId,
       amount: parsedAmount,
@@ -196,10 +186,10 @@ export async function POST(request: Request) {
     let orderResult;
     try {
       orderResult = await db.collection("payments").insertOne(paymentRecord);
-    } catch (dbError) {
+    } catch (dbError: any) {
       console.error("Database error while storing payment record:", dbError);
       return NextResponse.json(
-        { error: "Failed to store payment record in database" },
+        { error: "Failed to store payment record in database", details: dbError.message },
         { status: 500 }
       );
     }

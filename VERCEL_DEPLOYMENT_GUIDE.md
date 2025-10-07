@@ -86,6 +86,8 @@ openssl rand -base64 32
    - `RAZORPAY_KEY_SECRET` (your Razorpay secret)
    - `NEXT_PUBLIC_RAZORPAY_KEY_ID` (same as RAZORPAY_KEY_ID)
 
+**Important**: For testing, you can use Razorpay's test keys. For production, make sure to use your live keys.
+
 ### 8. Configure Security (Arcjet)
 
 1. Sign up for an Arcjet account
@@ -125,6 +127,11 @@ openssl rand -base64 32
 - Try initiating a payment flow
 - Verify that the Razorpay checkout opens correctly
 - Test the payment verification process
+- Use Razorpay's test cards for testing:
+  - Card Number: 4111 1111 1111 1111
+  - Expiry: Any future date
+  - CVV: 123
+  - OTP: 123456
 
 ### 5. Test Responsive Design
 
@@ -150,6 +157,8 @@ openssl rand -base64 32
 4. **Payment Processing Issues**
    - Ensure both `RAZORPAY_KEY_ID` and `NEXT_PUBLIC_RAZORPAY_KEY_ID` are set
    - Check that you're using production keys, not test keys
+   - Verify the keys are correct and not expired
+   - Check server logs for detailed error messages
 
 5. **Real-time Features Not Working**
    - Verify Redis is configured correctly
@@ -189,3 +198,4 @@ For issues with deployment, check:
 - Vercel documentation: https://vercel.com/docs
 - Next.js documentation: https://nextjs.org/docs
 - This project's README.md and other documentation files
+- PAYMENT_TROUBLESHOOTING.md for payment-specific issues

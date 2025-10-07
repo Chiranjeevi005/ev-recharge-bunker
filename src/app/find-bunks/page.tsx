@@ -188,7 +188,7 @@ export default function FindBunksPage() {
   };
 
   const calculatePrice = () => {
-    if (!selectedStation || !selectedSlot || duration <= 0) {
+    if (!selectedStation || !selectedSlot || !duration || duration <= 0) {
       console.log("calculatePrice: Invalid parameters", { selectedStation, selectedSlot, duration });
       return 0;
     }
@@ -237,7 +237,7 @@ export default function FindBunksPage() {
         return;
       }
       
-      if (duration <= 0 || duration > 24) {
+      if (!duration || duration <= 0 || duration > 24) {
         setToast({
           message: "Invalid duration. Please select between 1 and 24 hours.",
           type: 'error'
@@ -247,11 +247,11 @@ export default function FindBunksPage() {
       
       // Ensure all values are proper numbers before sending to API
       const requestData = {
-        userId: user.id,
-        stationId: selectedStation._id,
-        slotId: selectedSlot,
-        duration: Number(duration),
-        amount: Number(amount),
+        userId: user.id || "anonymous",
+        stationId: selectedStation._id || "",
+        slotId: selectedSlot || "",
+        duration: Number(duration) || 1, // Default to 1 if null/undefined
+        amount: Number(amount) || 0, // Ensure it's a number
       };
       
       // Additional validation
@@ -263,7 +263,7 @@ export default function FindBunksPage() {
         return;
       }
       
-      if (isNaN(requestData.duration) || isNaN(requestData.amount)) {
+      if (isNaN(requestData.duration) || isNaN(requestData.amount) || requestData.amount <= 0) {
         setToast({
           message: "Invalid numeric values. Please try again.",
           type: 'error'
