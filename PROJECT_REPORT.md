@@ -15,7 +15,7 @@ EV Bunker is a comprehensive electric vehicle (EV) charging station management p
 - **Socket.IO** for real-time communication between client and server
 - **NextAuth.js** for authentication management
 - **Razorpay** for payment processing
-- **Arcjet Security** for bot detection and security
+- **Arcjet Security** for bot detection and securities
 
 ### UI/UX Libraries
 - **Framer Motion** for smooth animations and transitions
