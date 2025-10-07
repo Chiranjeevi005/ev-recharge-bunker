@@ -37,19 +37,29 @@ describe('fetchWithTimeout', () => {
   });
 
   it('should timeout when request takes too long', async () => {
-    // Mock a delayed response that exceeds timeout
-    (global.fetch as jest.Mock).mockImplementation(() => {
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve({ ok: true });
-        }, 20000); // 20 seconds
+    // Mock fetch to simulate a hanging request
+    (global.fetch as jest.Mock).mockImplementation((url, options) => {
+      return new Promise((resolve, reject) => {
+        // Listen for abort signal
+        options.signal.addEventListener('abort', () => {
+          // Simulate the actual AbortError that AbortController throws
+          const error = new Error('The user aborted a request.');
+          error.name = 'AbortError';
+          reject(error);
+        });
+        
+        // Don't resolve or reject - simulate hanging request
       });
     });
 
-    // Expect timeout error
-    await expect(fetchWithTimeout('https://example.com', { timeout: 1000 }))
-      .rejects
-      .toThrow('Request timeout after 1000ms');
+    // Start the fetch with timeout
+    const fetchPromise = fetchWithTimeout('https://example.com', { timeout: 1000 });
+    
+    // Advance timers to trigger the AbortController timeout
+    jest.advanceTimersByTime(1000);
+    
+    // Wait for the promise to reject
+    await expect(fetchPromise).rejects.toThrow('Request timeout after 1000ms');
   });
 });
 
