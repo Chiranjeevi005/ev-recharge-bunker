@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId, Db } from 'mongodb';
+import { connectToDatabase } from "@/lib/db/connection";
+import { ObjectId, Db } from "mongodb";
 
 interface Booking {
   _id?: ObjectId;
   userId: string;
   stationId: string;
   slotId: string;
-  startTime: string;
-  endTime: string;
-  amount: number;
-  paymentId?: string;
-  status: string;
+  startTime: Date;
+  endTime?: Date;
+  status: "active" | "completed" | "cancelled";
+  cost?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -20,95 +18,116 @@ export async function GET() {
   try {
     const { db } = await connectToDatabase();
     const typedDb = db as Db;
-    
-    // Fetch all bookings
+
     const bookings = await typedDb.collection<Booking>("bookings").find({}).toArray();
-    
+
     // Convert ObjectId to string for JSON serialization
     const serializedBookings = bookings.map(booking => ({
       ...booking,
-      _id: booking._id?.toString(),
-      userId: booking.userId,
-      stationId: booking.stationId,
-      slotId: booking.slotId
+      id: booking._id?.toString(),
+      _id: undefined
     }));
-    
-    return NextResponse.json(serializedBookings);
+
+    return new Response(
+      JSON.stringify(serializedBookings),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Error fetching bookings:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch bookings" }, 
-      { status: 500 }
+    console.error("Error fetching bookings");
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch bookings" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const { userId, stationId, slotId, startTime } = await request.json();
+
+    if (!userId || !stationId || !slotId || !startTime) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const { db } = await connectToDatabase();
     const typedDb = db as Db;
-    const body = await request.json();
-    
-    // Insert new booking
-    const result = await typedDb.collection<Booking>("bookings").insertOne({
-      ...body,
-      status: "pending",
+
+    const newBooking: Booking = {
+      userId,
+      stationId,
+      slotId,
+      startTime: new Date(startTime),
+      status: "active",
       createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    
-    return NextResponse.json({ 
-      success: true, 
-      id: result.insertedId.toString() 
-    });
+    };
+
+    const result = await typedDb.collection<Booking>("bookings").insertOne(newBooking);
+
+    const createdBooking = {
+      ...newBooking,
+      id: result.insertedId.toString(),
+      _id: undefined
+    };
+
+    return new Response(
+      JSON.stringify(createdBooking),
+      { status: 201, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Error creating booking:", error);
-    return NextResponse.json(
-      { error: "Failed to create booking" }, 
-      { status: 500 }
+    console.error("Error creating booking");
+    return new Response(
+      JSON.stringify({ error: "Failed to create booking" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
 
 export async function PUT(request: Request) {
   try {
+    const { bookingId, ...updateData } = await request.json();
+
+    if (!bookingId) {
+      return new Response(
+        JSON.stringify({ error: "Booking ID is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const { db } = await connectToDatabase();
     const typedDb = db as Db;
-    const body = await request.json();
-    
-    const { bookingId, ...updateData } = body;
-    
-    if (!bookingId) {
-      return NextResponse.json(
-        { error: "Booking ID is required" }, 
-        { status: 400 }
+
+    // Validate ObjectId
+    if (!ObjectId.isValid(bookingId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid booking ID" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
-    
-    // Update booking
+
     const result = await typedDb.collection<Booking>("bookings").updateOne(
       { _id: new ObjectId(bookingId) },
-      { 
-        $set: { 
-          ...updateData,
-          updatedAt: new Date()
-        } 
-      }
+      { $set: { ...updateData, updatedAt: new Date() } }
     );
-    
+
     if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: "Booking not found" }, 
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: "Booking not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
-    
-    return NextResponse.json({ success: true });
+
+    return new Response(
+      JSON.stringify({ success: true, modifiedCount: result.modifiedCount }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Error updating booking:", error);
-    return NextResponse.json(
-      { error: "Failed to update booking" }, 
-      { status: 500 }
+    console.error("Error updating booking");
+    return new Response(
+      JSON.stringify({ error: "Failed to update booking" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

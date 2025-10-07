@@ -1,26 +1,26 @@
-import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function POST() {
   try {
-    const response = NextResponse.json(
-      { message: "Logged out successfully" },
-      { status: 200 }
-    );
-
     // Clear the refresh token cookie
-    response.cookies.set("refreshToken", "", {
+    (await cookies()).set({
+      name: "refreshToken",
+      value: "",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 0, // Expire immediately
+      maxAge: 0,
       path: "/",
     });
 
-    return response;
+    return new Response(
+      JSON.stringify({ success: true }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Logout error:", error);
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 }
+    console.error("Logout error");
+    return new Response(
+      JSON.stringify({ error: "An error occurred during logout" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

@@ -8,8 +8,6 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   try {
     const { name } = await request.json();
 
-    console.log('Name API: Updating name for client ID:', id, 'to name:', name);
-
     if (!id || !name) {
       return NextResponse.json(
         { error: "Client ID and name are required" },
@@ -33,8 +31,6 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
     // First, check if client exists
     const existingClient = await db.collection("clients").findOne({ _id: objectId });
-    
-    console.log('Name API: Existing client:', existingClient);
 
     if (!existingClient) {
       return NextResponse.json(
@@ -48,8 +44,6 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       { _id: objectId },
       { $set: { name, updatedAt: new Date() } }
     );
-
-    console.log('Name API: Update result:', result);
 
     // Check if the operation was successful
     if (!result || result.modifiedCount === 0) {
@@ -84,19 +78,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       _id: undefined
     };
 
-    console.log('Name API: Successfully updated client name:', serializedClient);
     return NextResponse.json(serializedClient);
   } catch (error: any) {
-    console.error("Error updating client name:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
+    console.error("Error updating client name");
     
     return NextResponse.json(
       { 
         error: "Failed to update client name",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? 'Check server logs for details' : undefined
       },
       { status: 500 }
     );

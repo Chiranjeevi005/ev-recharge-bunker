@@ -44,7 +44,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           // For NextAuth v5, credentials are passed as the first parameter
           // Let's log the entire credentials object to see what we're getting
-          console.log("Admin credentials object:", credentials);
+          console.log("Admin credentials object received");
           
           // Extract email and password - handling different possible formats
           const email = credentials?.email || (credentials as any)?.body?.email;
@@ -56,23 +56,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null;
           }
 
-          // Check if credentials match the single admin account
-          const isAdmin = email === "admin@ebunker.com" && password === "admin123";
+          // Find admin user in the database
+          const { db } = await connectToDatabase();
+          const adminUser = await db.collection("admins").findOne({ email });
 
-          if (!isAdmin) {
-            console.log("Invalid admin credentials");
+          if (!adminUser) {
+            console.log("Admin user not found");
+            return null;
+          }
+
+          // Compare password
+          const passwordMatch = await bcrypt.compare(password, adminUser['password']);
+          
+          if (!passwordMatch) {
+            console.log("Password mismatch");
             return null;
           }
 
           // Return the admin user object
           console.log("Admin authentication successful");
           return {
-            id: "admin",
-            email: "admin@ebunker.com",
+            id: adminUser['_id'].toString(),
+            email: adminUser['email'],
             role: "admin",
           };
         } catch (error) {
-          console.error("Admin authentication error:", error);
+          console.error("Admin authentication error");
           return null;
         }
       }
@@ -88,7 +97,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           // For NextAuth v5, credentials are passed as the first parameter
           // Let's log the entire credentials object to see what we're getting
-          console.log("Client credentials object:", credentials);
+          console.log("Client credentials object received");
           
           // Extract email and password - handling different possible formats
           const email = credentials?.email || (credentials as any)?.body?.email;
@@ -146,7 +155,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: client['role'],
           };
         } catch (error) {
-          console.error("Client authentication error:", error);
+          console.error("Client authentication error");
           return null;
         }
       }
@@ -163,7 +172,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         return session;
       } catch (error) {
-        console.error("Session callback error:", error);
+        console.error("Session callback error");
         return session;
       }
     },
@@ -180,7 +189,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         return token;
       } catch (error) {
-        console.error("JWT callback error:", error);
+        console.error("JWT callback error");
         return token;
       }
     }
@@ -198,7 +207,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // Add custom session management
   events: {
     async signIn({ user, account, profile }) {
-      console.log("User signed in:", user.id);
+      console.log("User signed in");
     },
     async signOut() {
       console.log("User signed out");

@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
+import { connectToDatabase } from "@/lib/db/connection";
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 
-export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
-  const params = await context.params;
-  const { id } = params;
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
+    const { id } = params;
     const { location } = await request.json();
-
-    console.log('Location API: Updating location for client ID:', id, 'to location:', location);
 
     if (!id || !location) {
       return NextResponse.json(
@@ -25,16 +25,13 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       );
     }
 
-    // Connect to database
     const { db } = await connectToDatabase();
 
     // Create ObjectId
     const objectId = new ObjectId(id);
 
-    // First, check if client exists
+    // Check if client exists
     const existingClient = await db.collection("clients").findOne({ _id: objectId });
-    
-    console.log('Location API: Existing client:', existingClient);
 
     if (!existingClient) {
       return NextResponse.json(
@@ -43,66 +40,46 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       );
     }
 
-    // Update client's location - ensure we're handling the case where location field doesn't exist yet
+    // Update client location
     const result = await db.collection("clients").updateOne(
       { _id: objectId },
-      { 
-        $set: { 
-          location: location, 
-          updatedAt: new Date() 
-        } 
-      }
+      { $set: { location } }
     );
 
-    console.log('Location API: Update result:', result);
-
-    // Check if the operation was successful
-    if (!result || result.modifiedCount === 0) {
-      // Provide more detailed error information
+    if (result.matchedCount === 0) {
       return NextResponse.json(
-        { 
-          error: "Failed to update client location",
-          details: "Database update operation failed - no documents were modified",
-          clientId: id
-        },
-        { status: 500 }
+        { error: "Client not found" },
+        { status: 404 }
       );
     }
 
-    // Fetch the updated client to return the full document
+    // Fetch updated client
     const updatedClient = await db.collection("clients").findOne({ _id: objectId });
     
-    if (!updatedClient) {
-      return NextResponse.json(
-        { 
-          error: "Failed to fetch updated client",
-          details: "Client was updated but could not be retrieved",
-          clientId: id
-        },
-        { status: 500 }
-      );
+    // Remove sensitive fields and serialize ObjectId
+    if (updatedClient) {
+      const { googleId, ...serializedClient } = updatedClient;
+      return NextResponse.json({
+        success: true,
+        client: {
+          ...serializedClient,
+          id: serializedClient['_id'].toString(),
+          _id: undefined
+        }
+      });
+    } else {
+      return NextResponse.json({
+        success: true,
+        client: null
+      });
     }
 
-    // Convert ObjectId to string for JSON serialization
-    const serializedClient = {
-      ...updatedClient,
-      id: updatedClient['_id'].toString(),
-      _id: undefined
-    };
-
-    console.log('Location API: Successfully updated client location:', serializedClient);
-    return NextResponse.json(serializedClient);
-  } catch (error: any) {
-    console.error("Error updating client location:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
+  } catch (error) {
+    console.error("Error updating client location");
     return NextResponse.json(
       { 
         error: "Failed to update client location",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? 'Check server logs for details' : undefined
       },
       { status: 500 }
     );

@@ -1,9 +1,9 @@
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
-import { initSocket } from './src/lib/realtime/socket';
-import { startup } from './src/lib/startup';
-import { initRealTimeFeatures } from './src/lib/realtime/initRealTime';
+import { initSocket } from '../src/lib/realtime/socket';
+import { startup } from '../src/lib/startup';
+import { initRealTimeFeatures } from '../src/lib/realtime/initRealTime';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';

@@ -1,74 +1,61 @@
-import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db/connection";
+import bcrypt from "bcryptjs";
+import type { Db } from "mongodb";
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    // Validate input
     if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "Email and password are required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Check if credentials match the single admin account
-    const isAdmin = email === "admin@ebunker.com" && password === "admin123";
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
-
-    // Connect to MongoDB
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
 
-    // Check if admin user exists in database, create if not
-    let admin = await db.collection("admins").findOne({ email: "admin@ebunker.com" });
+    // Find admin user in the database
+    const adminUser = await typedDb.collection("admins").findOne({ email });
 
-    if (!admin) {
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 12);
-      
-      // Create the admin user
-      const result = await db.collection("admins").insertOne({
-        email: "admin@ebunker.com",
-        hashedPassword,
-        role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      
-      admin = await db.collection("admins").findOne({ _id: result.insertedId });
-    }
-
-    if (!admin) {
-      return NextResponse.json(
-        { error: "Failed to create admin user" },
-        { status: 500 }
+    if (!adminUser) {
+      return new Response(
+        JSON.stringify({ error: "Invalid credentials" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // For proper session management, we'll return success
-    // The frontend will handle the redirect and session creation
-    return NextResponse.json({
-      message: "Login successful",
-      user: {
-        id: admin._id.toString(),
-        email: admin['email'],
-        role: admin['role']
-      }
-    }, { status: 200 });
+    // Compare password
+    const passwordMatch = await bcrypt.compare(password, adminUser['password']);
+    
+    if (!passwordMatch) {
+      return new Response(
+        JSON.stringify({ error: "Invalid credentials" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
+    // Return success response without sensitive data
+    const { password: _, ...adminWithoutPassword } = adminUser;
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        user: {
+          id: adminWithoutPassword['_id'],
+          email: adminWithoutPassword['email'],
+          role: 'admin'
+        }
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 }
+    // Log error internally but don't expose details to client
+    console.error("Login error");
+    return new Response(
+      JSON.stringify({ error: "An error occurred during login" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

@@ -27,6 +27,11 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (window.location.pathname.includes('/dashboard')) {
         setIsLoading(false);
       }
+      // Always ensure the loader can show properly in deployed versions
+      else if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+        // In deployed versions, we might want to show loader for initial app load
+        // This is handled by the page-level loading screen, so we keep this as is
+      }
     }
   }, []);
 

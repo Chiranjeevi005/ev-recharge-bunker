@@ -7,17 +7,18 @@ export function MongoDBAdapter(): Adapter {
     async createUser(user) {
       const { db } = await connectToDatabase();
       
-      // Check if it's an admin user
-      const isAdmin = user.email === 'admin@ebunker.com';
+      // Check if user should be admin by querying the admins collection
+      const adminUser = await db.collection('admins').findOne({ email: user.email });
+      const isExistingAdmin = !!adminUser;
       
       const userData = {
         ...user,
-        role: isAdmin ? 'admin' : 'client',
+        role: isExistingAdmin ? 'admin' : 'client',
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
-      const result = await db.collection(isAdmin ? 'admins' : 'clients').insertOne(userData);
+      const result = await db.collection(isExistingAdmin ? 'admins' : 'clients').insertOne(userData);
       
       return {
         ...userData,

@@ -148,7 +148,7 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorative elements */ }
+      {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] opacity-10 blur-3xl"></div>
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-gradient-to-r from-[#10B981] to-[#059669] opacity-10 blur-3xl"></div>
@@ -160,7 +160,7 @@ function LoginContent() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="text-center mb-6 sm:mb-8">
+        <div className="text-center mb-8">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -189,12 +189,12 @@ function LoginContent() {
           </motion.p>
         </div>
 
-        <Card className="bg-[#1E293B]/80 backdrop-blur-xl border border-[#334155] shadow-2xl shadow-[#000000]/20">
+        <Card className="bg-[#1E293B]/80 backdrop-blur-xl border border-[#334155] shadow-2xl shadow-[#000000]/20 p-6 sm:p-8">
           {/* Tab Navigation */}
-          <div className="flex border-b border-[#334155] mb-6">
+          <div className="flex border-b border-[#334155] mb-8">
             <button
               onClick={() => setActiveTab("client")}
-              className={`flex-1 py-3 px-4 text-center font-medium transition-colors duration-200 ${
+              className={`flex-1 py-4 px-4 text-center font-medium transition-colors duration-200 ${
                 activeTab === "client"
                   ? "text-[#10B981] border-b-2 border-[#10B981]"
                   : "text-[#94A3B8] hover:text-[#CBD5E1]"
@@ -204,7 +204,7 @@ function LoginContent() {
             </button>
             <button
               onClick={() => setActiveTab("admin")}
-              className={`flex-1 py-3 px-4 text-center font-medium transition-colors duration-200 ${
+              className={`flex-1 py-4 px-4 text-center font-medium transition-colors duration-200 ${
                 activeTab === "admin"
                   ? "text-[#10B981] border-b-2 border-[#10B981]"
                   : "text-[#94A3B8] hover:text-[#CBD5E1]"
@@ -221,7 +221,7 @@ function LoginContent() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
               onSubmit={handleAdminLogin}
-              className="space-y-5 sm:space-y-6"
+              className="space-y-6"
             >
               <div>
                 <label htmlFor="admin-email" className="block text-sm font-medium text-[#CBD5E1] mb-2">
@@ -250,8 +250,9 @@ function LoginContent() {
                         email: e.target.value.trim(),
                       })
                     }
-                    className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
+                    className="w-full pl-10 pr-3 py-3 sm:py-4 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
                     placeholder="Enter your email"
+                    required
                   />
                 </div>
               </div>
@@ -281,8 +282,9 @@ function LoginContent() {
                         password: e.target.value.trim(),
                       })
                     }
-                    className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
+                    className="w-full pl-10 pr-3 py-3 sm:py-4 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
                     placeholder="Enter your password"
+                    required
                   />
                 </div>
               </div>
@@ -290,7 +292,7 @@ function LoginContent() {
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg border border-red-900/30"
+                  className="text-red-400 text-sm bg-red-900/20 p-4 rounded-lg border border-red-900/30"
                 >
                   {error}
                 </motion.div>
@@ -298,7 +300,8 @@ function LoginContent() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full"
+                className="w-full py-3"
+                size="lg"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -322,7 +325,7 @@ function LoginContent() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
               onSubmit={handleClientLogin}
-              className="space-y-5 sm:space-y-6"
+              className="space-y-6"
             >
               <div>
                 <label htmlFor="client-email" className="block text-sm font-medium text-[#CBD5E1] mb-2">
@@ -351,8 +354,9 @@ function LoginContent() {
                         email: e.target.value.trim(),
                       })
                     }
-                    className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
+                    className="w-full pl-10 pr-3 py-3 sm:py-4 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
                     placeholder="Enter your email"
+                    required
                   />
                 </div>
               </div>
@@ -382,8 +386,9 @@ function LoginContent() {
                         password: e.target.value.trim(),
                       })
                     }
-                    className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
+                    className="w-full pl-10 pr-3 py-3 sm:py-4 bg-[#334155] border border-[#475569] rounded-xl text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent placeholder-[#94A3B8] transition-all duration-200 text-sm sm:text-base"
                     placeholder="Enter your password"
+                    required
                   />
                 </div>
               </div>
@@ -391,7 +396,7 @@ function LoginContent() {
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg border border-red-900/30"
+                  className="text-red-400 text-sm bg-red-900/20 p-4 rounded-lg border border-red-900/30"
                 >
                   {error}
                 </motion.div>
@@ -399,7 +404,8 @@ function LoginContent() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full"
+                className="w-full py-3"
+                size="lg"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -416,7 +422,7 @@ function LoginContent() {
             </motion.form>
           )}
           
-          <div className="text-center text-sm text-[#94A3B8] mt-5 sm:mt-6">
+          <div className="text-center text-sm text-[#94A3B8] mt-8 pt-6 border-t border-[#334155]">
             <p>Don't have an account?{" "}
               <Link href="/register" className="text-[#10B981] hover:text-[#6EE7B7] font-medium transition-colors duration-200">
                 Register now

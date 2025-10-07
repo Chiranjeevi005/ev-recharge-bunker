@@ -69,9 +69,9 @@ function HomeContent() {
     // 2. After login (showLoadingAfterLogin is set)
     // 3. On page refresh
     // 4. When manually triggered via URL parameter
-    // 5. When on localhost (development environment)
+    // 5. Always show in deployed version for better user experience
     // BUT NOT when redirected from logo click
-    const shouldShowLoading = !isFromLogoClick && (!hasSeenLoadingScreen || showLoadingAfterLogin || isRefresh || forceLoading || isLocalhost);
+    const shouldShowLoading = !isFromLogoClick && (!hasSeenLoadingScreen || showLoadingAfterLogin || isRefresh || forceLoading || true); // Always show loading screen
 
     if (shouldShowLoading) {
       // Set loading screen timeout
