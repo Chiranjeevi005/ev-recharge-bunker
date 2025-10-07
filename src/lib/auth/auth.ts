@@ -41,35 +41,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // For NextAuth v5, credentials are passed as the first parameter
-        // Let's log the entire credentials object to see what we're getting
-        console.log("Admin credentials object:", credentials);
-        
-        // Extract email and password - handling different possible formats
-        const email = credentials?.email || (credentials as any)?.body?.email;
-        const password = credentials?.password || (credentials as any)?.body?.password;
+        try {
+          // For NextAuth v5, credentials are passed as the first parameter
+          // Let's log the entire credentials object to see what we're getting
+          console.log("Admin credentials object:", credentials);
+          
+          // Extract email and password - handling different possible formats
+          const email = credentials?.email || (credentials as any)?.body?.email;
+          const password = credentials?.password || (credentials as any)?.body?.password;
 
-        // Validate input
-        if (!email || !password) {
-          console.log("Missing email or password");
+          // Validate input
+          if (!email || !password) {
+            console.log("Missing email or password");
+            return null;
+          }
+
+          // Check if credentials match the single admin account
+          const isAdmin = email === "admin@ebunker.com" && password === "admin123";
+
+          if (!isAdmin) {
+            console.log("Invalid admin credentials");
+            return null;
+          }
+
+          // Return the admin user object
+          console.log("Admin authentication successful");
+          return {
+            id: "admin",
+            email: "admin@ebunker.com",
+            role: "admin",
+          };
+        } catch (error) {
+          console.error("Admin authentication error:", error);
           return null;
         }
-
-        // Check if credentials match the single admin account
-        const isAdmin = email === "admin@ebunker.com" && password === "admin123";
-
-        if (!isAdmin) {
-          console.log("Invalid admin credentials");
-          return null;
-        }
-
-        // Return the admin user object
-        console.log("Admin authentication successful");
-        return {
-          id: "admin",
-          email: "admin@ebunker.com",
-          role: "admin",
-        };
       }
     }),
     Credentials({
@@ -80,89 +85,104 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // For NextAuth v5, credentials are passed as the first parameter
-        // Let's log the entire credentials object to see what we're getting
-        console.log("Client credentials object:", credentials);
-        
-        // Extract email and password - handling different possible formats
-        const email = credentials?.email || (credentials as any)?.body?.email;
-        const password = credentials?.password || (credentials as any)?.body?.password;
-        
-        // Validate input
-        if (!email || !password) {
-          console.log("Missing email or password");
-          return null;
-        }
-
-        // Find client by email
-        const { db } = await connectToDatabase();
-        const client = await db.collection("clients").findOne({ email });
-
-        if (!client) {
-          console.log("Client not found");
-          return null;
-        }
-
-        // For email/password clients, check if they have a credentials-type identifier
-        // In our implementation, clients with googleId starting with "credentials-" are email/password clients
-        if (!client['googleId']?.startsWith("credentials-")) {
-          console.log("Client is not a credentials-type client");
-          // This is an OAuth client, they can't use password auth
-          return null;
-        }
-
-        // For email/password clients, we'll check the Account record to verify the password
-        // First, check if an account already exists for this client
-        const existingAccount = await db.collection("accounts").findOne({
-          userId: client._id.toString(),
-          provider: "client-credentials"
-        });
-
-        if (!existingAccount) {
-          console.log("No account found for client");
-          // This shouldn't happen - email/password clients should have an account
-          return null;
-        } else {
-          // Check if the provided password matches
-          // In a real implementation, you would compare hashed passwords
-          if (existingAccount['access_token'] !== password) {
-            console.log("Password mismatch");
-            return null; // Password doesn't match
+        try {
+          // For NextAuth v5, credentials are passed as the first parameter
+          // Let's log the entire credentials object to see what we're getting
+          console.log("Client credentials object:", credentials);
+          
+          // Extract email and password - handling different possible formats
+          const email = credentials?.email || (credentials as any)?.body?.email;
+          const password = credentials?.password || (credentials as any)?.body?.password;
+          
+          // Validate input
+          if (!email || !password) {
+            console.log("Missing email or password");
+            return null;
           }
-        }
 
-        // Return the client user object
-        console.log("Client authentication successful");
-        return {
-          id: client._id.toString(),
-          email: client['email'],
-          name: client['name'],
-          role: client['role'],
-        };
+          // Find client by email
+          const { db } = await connectToDatabase();
+          const client = await db.collection("clients").findOne({ email });
+
+          if (!client) {
+            console.log("Client not found");
+            return null;
+          }
+
+          // For email/password clients, check if they have a credentials-type identifier
+          // In our implementation, clients with googleId starting with "credentials-" are email/password clients
+          if (!client['googleId']?.startsWith("credentials-")) {
+            console.log("Client is not a credentials-type client");
+            // This is an OAuth client, they can't use password auth
+            return null;
+          }
+
+          // For email/password clients, we'll check the Account record to verify the password
+          // First, check if an account already exists for this client
+          const existingAccount = await db.collection("accounts").findOne({
+            userId: client._id.toString(),
+            provider: "client-credentials"
+          });
+
+          if (!existingAccount) {
+            console.log("No account found for client");
+            // This shouldn't happen - email/password clients should have an account
+            return null;
+          } else {
+            // Check if the provided password matches
+            // In a real implementation, you would compare hashed passwords
+            if (existingAccount['access_token'] !== password) {
+              console.log("Password mismatch");
+              return null; // Password doesn't match
+            }
+          }
+
+          // Return the client user object
+          console.log("Client authentication successful");
+          return {
+            id: client._id.toString(),
+            email: client['email'],
+            name: client['name'],
+            role: client['role'],
+          };
+        } catch (error) {
+          console.error("Client authentication error:", error);
+          return null;
+        }
       }
     })
 
   ],
   callbacks: {
     async session({ session, token }) {
-      // If the token exists, add the role and id to the session
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+      try {
+        // If the token exists, add the role and id to the session
+        if (token && session.user) {
+          session.user.id = token.id as string;
+          session.user.role = token.role as string;
+        }
+        return session;
+      } catch (error) {
+        console.error("Session callback error:", error);
+        return session;
       }
-      return session;
     },
     async jwt({ token, user }) {
-      // If user exists, add role to the token
-      if (user) {
-        if (user.role) {
-          token.role = user.role;
+      try {
+        // If user exists, add role to the token
+        if (user) {
+          if (user.role) {
+            token.role = user.role;
+          }
+          if (user.id) {
+            token.id = user.id;
+          }
         }
-        if (user.id) {
-          token.id = user.id;
-        }
+        return token;
+      } catch (error) {
+        console.error("JWT callback error:", error);
+        return token;
       }
-      return token;
     }
   },
   pages: {
@@ -174,7 +194,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
-  secret: process.env['AUTH_SECRET'] || "default_secret_key",
+  secret: process.env['NEXTAUTH_SECRET'] || process.env['AUTH_SECRET'] || "default_secret_key",
   // Add custom session management
   events: {
     async signIn({ user, account, profile }) {
@@ -184,4 +204,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       console.log("User signed out");
     },
   },
+  // Add debug logging for development
+  debug: process.env.NODE_ENV === 'development',
 });

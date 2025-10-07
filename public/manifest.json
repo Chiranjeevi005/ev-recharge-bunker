@@ -17,10 +17,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "serviceworker": {
-    "src": "/sw.js",
-    "scope": "/",
-    "update_via_cache": "none"
-  }
+  ]
 }

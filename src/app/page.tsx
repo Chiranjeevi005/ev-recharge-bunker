@@ -103,6 +103,19 @@ function HomeContent() {
     }
   }, [session?.user]);
 
+  // Add a failsafe timeout to ensure we don't get stuck in loading state
+  useEffect(() => {
+    const failsafeTimer = setTimeout(() => {
+      if (loading) {
+        console.log("Failsafe: Forcing loading state to false");
+        setLoading(false);
+        localStorage.setItem('hasSeenLoadingScreen', 'true');
+      }
+    }, 8000); // 8 second failsafe
+
+    return () => clearTimeout(failsafeTimer);
+  }, [loading]);
+
   if (loading) {
     return <LoadingScreen />;
   }

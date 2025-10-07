@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Add output tracing for better debugging on Vercel
+  output: 'standalone',
 };
 
 export default nextConfig;
