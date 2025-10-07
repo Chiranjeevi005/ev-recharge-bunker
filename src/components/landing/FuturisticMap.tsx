@@ -464,7 +464,7 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       
       // Initialize Razorpay
       const options = {
-        key: process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example',
+        key: (process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example').trim(),
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'EV Bunker',

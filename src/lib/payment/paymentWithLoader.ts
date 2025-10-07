@@ -45,7 +45,7 @@ export function usePayment() {
         initializeRazorpay: (prefillData: any = {}) => {
           // Initialize Razorpay
           const razorpay = new (window as any).Razorpay({
-            key: process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example',
+            key: (process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example').trim(),
             order_id: orderData.orderId,
             handler: async function (response: any) {
               try {

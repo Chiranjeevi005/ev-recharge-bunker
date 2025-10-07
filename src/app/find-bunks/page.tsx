@@ -344,7 +344,7 @@ export default function FindBunksPage() {
       
       if (orderData.orderId) {
         // Initialize Razorpay for real payments
-        const razorpayKey = process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'] || 'rzp_test_example';
+        const razorpayKey = (process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'] || 'rzp_test_example').trim();
         
         const options = {
           key: razorpayKey,
