@@ -7,6 +7,7 @@ During the audit, we identified several failing tests that need to be addressed.
 2. Database transaction issues
 3. Timeout handling issues
 4. Redis connection issues
+5. Map coordinate validation issues
 
 ## Detailed Error Analysis
 
@@ -38,6 +39,13 @@ During the audit, we identified several failing tests that need to be addressed.
 **Classification:** Integration - Realtime
 **Status:** **RESOLVED** - Expected behavior in test environment
 
+### 5. Map Coordinate Validation Issues
+**File:** `src/components/landing/FindBunksMap.tsx` and `src/components/landing/BunkFinderMap.tsx`
+**Error:** `Invalid LngLat object: (NaN, NaN)`
+**Root Cause:** Map components were passing invalid/NaN coordinates to MapLibre GL without validation
+**Classification:** Runtime - Client
+**Status:** **FIXED** - Added coordinate validation and error handling
+
 ## Reproduction Steps
 
 ### Security/Webhook Test Failure
@@ -56,22 +64,27 @@ During the audit, we identified several failing tests that need to be addressed.
 1. Run `npm test`
 2. Observe Redis fallback mode warnings
 
+### Map Coordinate Validation Issues
+1. Run the application with stations containing invalid coordinates
+2. Observe the "Invalid LngLat object: (NaN, NaN)" runtime error
+
 ## Categorization
 - **Build:** None
-- **Runtime (client/server):** Security/Webhook
+- **Runtime (client/server):** Security/Webhook, Map Coordinate Validation
 - **Data Integrity:** Database Transactions
 - **Realtime:** Redis Connection
 - **Integration:** Security/Webhook, Redis Connection
 - **Performance:** Timeout Handling
-- **Security:** Security/Webhook
 
 ## Priority Ranking
 1. Security/Webhook (High - affects payment processing) - **FIXED**
 2. Database Transactions (High - affects data integrity) - **FIXED**
 3. Timeout Handling (Medium - affects reliability) - **FIXED**
-4. Redis Connection (Medium - affects real-time features) - **RESOLVED**
+4. Map Coordinate Validation (High - affects user experience) - **FIXED**
+5. Redis Connection (Medium - affects real-time features) - **RESOLVED**
 
 ## Current Status
 - High priority issues: **RESOLVED**
 - Medium priority issues: **RESOLVED**
 - All critical functionality tests: **PASSING**
+- Runtime errors: **RESOLVED**

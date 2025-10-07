@@ -51,12 +51,15 @@ export async function GET(request: Request) {
       state: 1,
       country: 1,
       postalCode: 1,
-      location: 1,
+      lat: 1,
+      lng: 1,
       status: 1,
       totalSlots: 1,
       availableSlots: 1,
       "slots.slotId": 1,
       "slots.status": 1,
+      "slots.chargerType": 1,
+      "slots.pricePerHour": 1,
       createdAt: 1,
       updatedAt: 1
     };
@@ -89,13 +92,24 @@ export async function GET(request: Request) {
         : await db.collection("stations").countDocuments(filter);
     }
     
-    // Convert ObjectId to string for JSON serialization
-    const serializedStations = stations.map((station: any) => ({
-      ...station,
-      _id: station._id.toString(),
-      createdAt: station.createdAt,
-      updatedAt: station.updatedAt
-    }));
+    // Convert ObjectId to string for JSON serialization and transform location data
+    const serializedStations = stations.map((station: any) => {
+      // Use direct lat/lng fields instead of transforming from GeoJSON
+      let lat = station.lat || 0;
+      let lng = station.lng || 0;
+      
+      // Debug logging to see what we're getting
+      console.log(`Station ${station.name}: lat=${lat}, lng=${lng}`);
+      
+      return {
+        ...station,
+        _id: station._id.toString(),
+        lat,
+        lng,
+        createdAt: station.createdAt,
+        updatedAt: station.updatedAt
+      };
+    });
     
     const response = {
       success: true,
@@ -225,6 +239,8 @@ export async function PUT(request: Request) {
           availableSlots: 1,
           "slots.slotId": 1,
           "slots.status": 1,
+          "slots.chargerType": 1,
+          "slots.pricePerHour": 1,
           createdAt: 1,
           updatedAt: 1
         } 
@@ -238,17 +254,24 @@ export async function PUT(request: Request) {
       );
     }
     
+    // Transform location data for the response
+    let lat = result.value.lat || 0;
+    let lng = result.value.lng || 0;
+
+    const transformedResult = {
+      ...result.value,
+      _id: id,
+      lat,
+      lng
+    };
+    
     // Publish update to Redis for real-time sync
     if (redis.isAvailable()) {
       const stationData = {
         event: 'station_update',
         operationType: 'update',
         documentKey: id,
-        fullDocument: {
-          ...result.value,
-          _id: id,
-          updatedAt: new Date()
-        },
+        fullDocument: transformedResult,
         timestamp: new Date().toISOString()
       };
       
@@ -257,10 +280,7 @@ export async function PUT(request: Request) {
     
     return NextResponse.json({ 
       success: true, 
-      data: {
-        ...result.value,
-        _id: id
-      }
+      data: transformedResult
     });
   } catch (error: any) {
     console.error("Error updating station:", error);

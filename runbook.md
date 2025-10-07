@@ -155,6 +155,15 @@ Logs are available in the `logs/` directory:
    tail -f /var/log/redis/redis-server.log
    ```
 
+### Map Display Issues
+1. Verify that station coordinates are valid numbers
+2. Check browser console for "Invalid LngLat object: (NaN, NaN)" errors
+3. Ensure coordinate validation is implemented in map components:
+   - Validate coordinates before creating map markers
+   - Validate coordinates before setting map center
+   - Validate coordinates before extending map bounds
+   - Add proper error handling with try/catch blocks
+
 ## Performance Optimization
 
 ### Database Indexing
