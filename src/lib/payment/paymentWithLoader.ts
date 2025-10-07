@@ -45,7 +45,7 @@ export function usePayment() {
         initializeRazorpay: (prefillData: any = {}) => {
           // Initialize Razorpay
           const razorpay = new (window as any).Razorpay({
-            key: process.env["RAZORPAY_KEY_ID"],
+            key: process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example',
             order_id: orderData.orderId,
             handler: async function (response: any) {
               try {
@@ -58,9 +58,9 @@ export function usePayment() {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    orderId: orderData.orderId,
-                    paymentId: response.razorpay_payment_id,
-                    signature: response.razorpay_signature,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
                   }),
                 });
                 
