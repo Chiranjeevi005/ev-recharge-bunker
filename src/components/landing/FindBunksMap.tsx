@@ -19,6 +19,37 @@ interface Station {
   }[];
 }
 
+// Helper function to validate coordinates
+const isValidCoordinate = (value: any): boolean => {
+  // Check if value is null or undefined
+  if (value === null || value === undefined) return false;
+  
+  // Convert to number if it's a string
+  const num = typeof value === 'number' ? value : parseFloat(value);
+  
+  // Check if it's a finite number and within valid coordinate ranges
+  return isFinite(num) && Math.abs(num) <= 180; // 180 for longitude, 90 for latitude but we'll check that separately
+};
+
+// Helper function to parse coordinates safely
+const parseCoordinate = (value: any): number | null => {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === 'number' ? value : parseFloat(value);
+  return isFinite(num) ? num : null;
+};
+
+// Enhanced function to validate both latitude and longitude
+const isValidLatLng = (lat: any, lng: any): boolean => {
+  const parsedLat = parseCoordinate(lat);
+  const parsedLng = parseCoordinate(lng);
+  
+  // Both must be valid numbers
+  if (parsedLat === null || parsedLng === null) return false;
+  
+  // Check ranges: latitude [-90, 90], longitude [-180, 180]
+  return Math.abs(parsedLat) <= 90 && Math.abs(parsedLng) <= 180;
+};
+
 interface FindBunksMapProps {
   stations: Station[];
   onStationSelect: (station: Station) => void;
@@ -48,7 +79,7 @@ export const FindBunksMap: React.FC<FindBunksMapProps> = ({
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://tiles.openfreemap.org/styles/liberty',
-      center: firstStation ? [firstStation.lng, firstStation.lat] : [77.209021, 28.613939],
+      center: firstStation && isValidLatLng(firstStation.lat, firstStation.lng) ? [firstStation.lng, firstStation.lat] : [77.209021, 28.613939],
       zoom: stations.length > 0 ? 10 : 12,
       attributionControl: false
     });
@@ -81,6 +112,12 @@ export const FindBunksMap: React.FC<FindBunksMapProps> = ({
 
     // Add markers for each station
     stations.forEach(station => {
+      // Validate coordinates before creating marker
+      if (!isValidLatLng(station.lat, station.lng)) {
+        console.warn('FindBunksMap: Skipping station with invalid coordinates:', station);
+        return;
+      }
+      
       const el = document.createElement('div');
       el.className = 'station-marker';
       
@@ -104,35 +141,65 @@ export const FindBunksMap: React.FC<FindBunksMapProps> = ({
       });
       
       if (mapRef.current) {
-        const marker = new maplibregl.Marker({
-          element: el,
-          anchor: 'center'
-        })
-          .setLngLat([station.lng, station.lat])
-          .addTo(mapRef.current);
-        
-        markersRef.current.push(marker);
+        try {
+          const marker = new maplibregl.Marker({
+            element: el,
+            anchor: 'center'
+          })
+            .setLngLat([station.lng, station.lat])
+            .addTo(mapRef.current);
+          
+          markersRef.current.push(marker);
+        } catch (error) {
+          console.error('FindBunksMap: Error creating marker for station:', station, error);
+        }
       }
     });
 
     // Fit map to show all stations
     if (stations.length > 0 && mapRef.current) {
-      const bounds = new maplibregl.LngLatBounds();
-      
-      stations.forEach(station => {
-        bounds.extend([station.lng, station.lat]);
-      });
-      
-      mapRef.current.fitBounds(bounds, {
-        padding: 30,
-        maxZoom: 15
-      });
+      try {
+        const bounds = new maplibregl.LngLatBounds();
+        let validStationCount = 0;
+        
+        stations.forEach(station => {
+          // Validate coordinates before extending bounds
+          if (!isValidLatLng(station.lat, station.lng)) {
+            return;
+          }
+          
+          try {
+            bounds.extend([station.lng, station.lat]);
+            validStationCount++;
+          } catch (error) {
+            console.warn('FindBunksMap: Error extending bounds for station:', station, error);
+          }
+        });
+        
+        // Only fit bounds if we have valid stations
+        if (validStationCount > 0 && !bounds.isEmpty()) {
+          mapRef.current.fitBounds(bounds, {
+            padding: 50,
+            maxZoom: 15
+          });
+        } else {
+          console.warn('FindBunksMap: No valid stations to fit bounds');
+        }
+      } catch (error) {
+        console.error('FindBunksMap: Error fitting bounds:', error);
+      }
     }
   }, [stations, onStationSelect]);
 
   // Highlight selected station
   useEffect(() => {
     if (!mapRef.current || !selectedStation) return;
+    
+    // Validate coordinates before flying to station
+    if (!isValidLatLng(selectedStation.lat, selectedStation.lng)) {
+      console.warn('FindBunksMap: Skipping selected station with invalid coordinates:', selectedStation);
+      return;
+    }
     
     // Fly to selected station
     mapRef.current.flyTo({

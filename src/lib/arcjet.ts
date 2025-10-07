@@ -17,7 +17,7 @@ const aj = arcjet({
     // Detect and block bots
     detectBot({
       mode: "LIVE", // Will block requests. Use "DRY_RUN" to log only
-      allow: [], // Add any bots you want to allow e.g. ["Google", "Bing"]
+      allow: [], // Add any bots you want to allow
     }),
     // Detect sensitive information
     sensitiveInfo({

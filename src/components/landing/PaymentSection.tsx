@@ -13,7 +13,6 @@ export const PaymentSection: React.FC = () => {
     { id: "card", name: "Credit Card", icon: "💳" },
     { id: "paypal", name: "PayPal", icon: "🅿️" },
     { id: "apple", name: "Apple Pay", icon: "🍎" },
-    { id: "google", name: "Google Pay", icon: "🇬" },
   ];
 
   return (
