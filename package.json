@@ -13,6 +13,7 @@
     "seed:fixed": "npx tsc --project tsconfig.seed.json && node dist/seed.js",
     "test": "jest",
     "test:utils": "ts-node --project tsconfig.test.json src/test-utilities.ts",
+    "test:payment": "ts-node --project tsconfig.test.json src/test-payment-flow.ts",
     "type-check": "tsc --noEmit",
     "start:dev": "next dev",
     "validate-env": "node scripts/validate-env.js",

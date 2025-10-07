@@ -473,6 +473,10 @@ export class PaymentService {
       io.to(`user-${payment.userId}`).emit('payment-update', paymentUpdate);
       // Also emit to user-specific event
       io.to(`user-${payment.userId}`).emit('user-payment-update', paymentUpdate);
+      
+      console.log("Payment update emitted via Socket.IO:", paymentUpdate);
+    } else {
+      console.warn("Socket.IO not available for emitting payment update");
     }
   }
   
@@ -486,6 +490,8 @@ export class PaymentService {
     if (updatedPayment) {
       // Emit real-time update
       await this.emitPaymentUpdate(updatedPayment);
+    } else {
+      console.error("Failed to process successful payment - updatePaymentStatus returned null");
     }
   }
 }

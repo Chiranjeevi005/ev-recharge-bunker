@@ -3,7 +3,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.seedDatabase = seedDatabase;
 const connection_1 = require("@/lib/db/connection");
 // Load environment variables
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -492,4 +491,10 @@ async function seedDatabase() {
     }
 }
 // Run the seed function
-seedDatabase();
+seedDatabase().then(() => {
+    console.log("Seeding completed");
+    process.exit(0);
+}).catch((error) => {
+    console.error("Seeding failed:", error);
+    process.exit(1);
+});

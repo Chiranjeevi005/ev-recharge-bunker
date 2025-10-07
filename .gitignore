@@ -63,3 +63,4 @@ dist/
 *.swp
 *.swo
 *~
+.env*.local

@@ -19,6 +19,14 @@ export async function POST(request: Request) {
       );
     }
     
+    // Additional validation for data types
+    if (typeof razorpay_order_id !== 'string' || typeof razorpay_payment_id !== 'string' || typeof razorpay_signature !== 'string') {
+      return NextResponse.json(
+        { error: "Invalid parameter types. All parameters must be strings." }, 
+        { status: 400 }
+      );
+    }
+    
     // Verify Razorpay signature
     const isVerified = PaymentService.verifyRazorpaySignature(
       razorpay_order_id,
@@ -42,7 +50,11 @@ export async function POST(request: Request) {
     );
     
     if (!updatedPayment) {
-      throw new Error(`Failed to update payment status for orderId: '${razorpay_order_id}'`);
+      console.error(`Failed to update payment status for orderId: '${razorpay_order_id}'`);
+      return NextResponse.json(
+        { error: "Failed to update payment status" }, 
+        { status: 500 }
+      );
     }
     
     console.log("PaymentService.updatePaymentStatus result:", updatedPayment);
@@ -53,12 +65,16 @@ export async function POST(request: Request) {
     );
     
     if (!paymentRecord) {
-      throw new Error(`Payment record not found for orderId: '${razorpay_order_id}'`);
+      console.error(`Payment record not found for orderId: '${razorpay_order_id}'`);
+      return NextResponse.json(
+        { error: "Payment record not found" }, 
+        { status: 500 }
+      );
     }
     
     // Create booking record with proper structure
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + (paymentRecord['duration'] || 1) * 60 * 60 * 1000);
+    const endTime = new Date(startTime.getTime() + (Number(paymentRecord['duration'] || 1)) * 60 * 60 * 1000);
     
     const bookingData = {
       userId: paymentRecord['userId'] || "anonymous",
@@ -66,7 +82,7 @@ export async function POST(request: Request) {
       slotId: paymentRecord['slotId'],
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      amount: paymentRecord['amount'],
+      amount: Number(paymentRecord['amount']),
       paymentId: razorpay_payment_id,
       status: 'confirmed',
       createdAt: new Date(),
@@ -116,6 +132,11 @@ export async function POST(request: Request) {
       );
       
       console.log("Slot status update result:", updateResult);
+      
+      // Check if the update was successful
+      if (updateResult.matchedCount === 0) {
+        console.warn("No station slot matched for update. StationId:", paymentRecord['stationId'], "SlotId:", paymentRecord['slotId']);
+      }
     }
     
     // Emit real-time payment update
@@ -132,7 +153,7 @@ export async function POST(request: Request) {
       bookingId: bookingResult.insertedId.toString(),
       paymentId: razorpay_payment_id
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error verifying payment:", error);
     return NextResponse.json(
       { error: "Failed to verify payment", details: error instanceof Error ? error.message : 'Unknown error' }, 

@@ -149,6 +149,8 @@ npm run test:utils
 
 The application is ready for deployment to Vercel. See `VERCEL_DEPLOYMENT_GUIDE.md` for detailed deployment instructions.
 
+For a quick deployment status check, see `DEPLOYMENT_READY.md`.
+
 ### Environment Variables for Production
 
 When deploying to Vercel, set the following environment variables in the Vercel dashboard:

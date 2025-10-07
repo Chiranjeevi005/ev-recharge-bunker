@@ -54,18 +54,18 @@ export async function POST(request: Request) {
       );
     }
     
-    if (isNaN(parsedDuration) || parsedDuration === null || parsedDuration === undefined) {
+    if (isNaN(parsedDuration) || parsedDuration === null || parsedDuration === undefined || parsedDuration <= 0) {
       console.error("Missing or invalid required field: duration", duration);
       return NextResponse.json(
-        { error: "Missing or invalid required field: duration" },
+        { error: "Missing or invalid required field: duration. Must be a positive number." },
         { status: 400 }
       );
     }
     
-    if (isNaN(parsedAmount) || parsedAmount === null || parsedAmount === undefined) {
+    if (isNaN(parsedAmount) || parsedAmount === null || parsedAmount === undefined || parsedAmount <= 0) {
       console.error("Missing or invalid required field: amount", amount);
       return NextResponse.json(
-        { error: "Missing or invalid required field: amount" },
+        { error: "Missing or invalid required field: amount. Must be a positive number." },
         { status: 400 }
       );
     }
@@ -121,18 +121,18 @@ export async function POST(request: Request) {
     }
     
     // Validate stationId and slotId
-    if (typeof stationId !== 'string') {
-      console.error("Invalid stationId type:", typeof stationId, "Value:", stationId);
+    if (typeof parsedStationId !== 'string') {
+      console.error("Invalid stationId type:", typeof parsedStationId, "Value:", parsedStationId);
       return NextResponse.json(
-        { error: `Invalid stationId type. Expected string, got ${typeof stationId}` },
+        { error: `Invalid stationId type. Expected string, got ${typeof parsedStationId}` },
         { status: 400 }
       );
     }
     
-    if (typeof slotId !== 'string') {
-      console.error("Invalid slotId type:", typeof slotId, "Value:", slotId);
+    if (typeof parsedSlotId !== 'string') {
+      console.error("Invalid slotId type:", typeof parsedSlotId, "Value:", parsedSlotId);
       return NextResponse.json(
-        { error: `Invalid slotId type. Expected string, got ${typeof slotId}` },
+        { error: `Invalid slotId type. Expected string, got ${typeof parsedSlotId}` },
         { status: 400 }
       );
     }

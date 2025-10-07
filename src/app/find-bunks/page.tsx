@@ -129,6 +129,10 @@ export default function FindBunksPage() {
         setStations([]);
         setFilteredStations([]);
         hideLoader(); // Hide loader
+        setToast({
+          message: "Failed to load charging stations. Please try again.",
+          type: 'error'
+        });
       } finally {
         setIsLoading(false);
       }
@@ -346,10 +350,10 @@ export default function FindBunksPage() {
                   type: 'error'
                 });
               }
-            } catch (verifyError) {
+            } catch (verifyError: any) {
               console.error("Error verifying payment:", verifyError);
               setToast({
-                message: "Failed to verify payment. Please contact support.",
+                message: `Failed to verify payment: ${verifyError.message || 'Unknown error'}. Please contact support.`,
                 type: 'error'
               });
             } finally {
@@ -367,6 +371,10 @@ export default function FindBunksPage() {
             ondismiss: function() {
               console.log("Payment dialog closed by user");
               hideLoader(); // Hide loader when user closes the dialog
+              setToast({
+                message: "Payment cancelled by user.",
+                type: 'info'
+              });
             }
           }
         };
@@ -686,11 +694,17 @@ export default function FindBunksPage() {
                   <input
                     type="number"
                     min="1"
-                    max="12"
+                    max="24"
                     value={duration}
-                    onChange={(e) => setDuration(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value >= 1 && value <= 24) {
+                        setDuration(value);
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-[#334155] border border-[#475569] rounded-lg text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
                   />
+                  <p className="text-xs text-[#94A3B8] mt-1">Minimum 1 hour, maximum 24 hours</p>
                 </div>
                 
                 <div className="p-4 bg-[#334155]/50 rounded-lg">
