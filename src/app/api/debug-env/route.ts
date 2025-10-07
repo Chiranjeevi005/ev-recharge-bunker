@@ -11,7 +11,11 @@ export async function GET() {
   const keySecretValue = process.env['RAZORPAY_KEY_SECRET'] || 'NOT SET';
   const publicKeyIdValue = process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'] || 'NOT SET';
   
-  // Try to initialize Razorpay
+  // Trim whitespace from environment variables to handle potential newline characters
+  const trimmedKeyId = process.env['RAZORPAY_KEY_ID']?.trim() || 'NOT SET';
+  const trimmedKeySecret = process.env['RAZORPAY_KEY_SECRET']?.trim() || 'NOT SET';
+  
+  // Try to initialize Razorpay with trimmed values
   let razorpayInitialized = false;
   let razorpayError = null;
   let orderTestResult = null;
@@ -20,8 +24,8 @@ export async function GET() {
     if (keyIdSet && keySecretSet) {
       const Razorpay = require('razorpay');
       const razorpay = new Razorpay({
-        key_id: process.env['RAZORPAY_KEY_ID'],
-        key_secret: process.env['RAZORPAY_KEY_SECRET']
+        key_id: trimmedKeyId,
+        key_secret: trimmedKeySecret
       });
       razorpayInitialized = true;
       
@@ -55,7 +59,9 @@ export async function GET() {
     config: {
       RAZORPAY_KEY_ID: keyIdValue,
       RAZORPAY_KEY_SECRET: keySecretValue,
-      NEXT_PUBLIC_RAZORPAY_KEY_ID: publicKeyIdValue
+      NEXT_PUBLIC_RAZORPAY_KEY_ID: publicKeyIdValue,
+      TRIMMED_RAZORPAY_KEY_ID: trimmedKeyId,
+      TRIMMED_RAZORPAY_KEY_SECRET: trimmedKeySecret
     },
     razorpay: {
       initialized: razorpayInitialized,
