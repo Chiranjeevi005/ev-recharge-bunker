@@ -1,4 +1,5 @@
 import { updateDashboardStats, setupPeriodicStatsUpdates } from './realtime/updateStats';
+import { initRealTimeFeatures } from './realtime/initRealTime';
 import redisQueue from './realtime/redisQueue';
 import { vercelTimeoutGuard } from '@/utils/vercelTimeoutGuard';
 
@@ -9,6 +10,15 @@ import { vercelTimeoutGuard } from '@/utils/vercelTimeoutGuard';
 export async function startup() {
   try {
     console.log('Starting application services...');
+    
+    // Initialize real-time features
+    console.log('Initializing real-time features...');
+    const realTimeInitialized = await initRealTimeFeatures();
+    if (realTimeInitialized) {
+      console.log('✅ Real-time features initialized successfully');
+    } else {
+      console.log('⚠️ Real-time features initialization failed or not available');
+    }
     
     // Redis queue is already initialized as a module, just check if it's available
     if (redisQueue.isAvailable()) {

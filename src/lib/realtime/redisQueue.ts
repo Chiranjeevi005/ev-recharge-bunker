@@ -158,6 +158,10 @@ async function publishBatch(): Promise<void> {
               messageQueue.push(message);
             }
           }
+        } else {
+          // If Redis is not available, keep messages in queue for retry
+          console.log(`Redis not available, keeping ${messages.length} messages in queue for retry`);
+          messageQueue.push(...messages);
         }
       } else {
         // Multiple messages, create a batch message
@@ -180,6 +184,10 @@ async function publishBatch(): Promise<void> {
             // Re-queue failed messages
             messageQueue.push(...messages);
           }
+        } else {
+          // If Redis is not available, keep messages in queue for retry
+          console.log(`Redis not available, keeping ${messages.length} messages in queue for retry`);
+          messageQueue.push(...messages);
         }
       }
     }
@@ -217,6 +225,14 @@ export function getQueueStats(): {
     processedCount: processedMessages.size
   };
 }
+
+// Periodically try to reconnect to Redis if it's not available
+setInterval(() => {
+  if (!redis.isAvailable()) {
+    console.log('Attempting to reconnect to Redis...');
+    redis.reconnect().catch(console.error);
+  }
+}, 30000); // Try to reconnect every 30 seconds
 
 // Export the enhanced Redis module with batching capabilities
 export default {

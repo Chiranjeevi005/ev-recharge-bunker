@@ -21,7 +21,16 @@ interface Station {
 }
 
 // Demo data for 8 metro cities with accurate coordinates
-const metroCities = [
+const metroCities: {
+  name: string;
+  stations: {
+    name: string;
+    address: string;
+    lat: number;
+    lng: number;
+    slots: Slot[];
+  }[];
+}[] = [
   {
     name: "Delhi",
     stations: [
@@ -476,7 +485,7 @@ const metroCities = [
   }
 ];
 
-export async function seedDatabase() {
+async function seedDatabase() {
   try {
     const { db } = await connectToDatabase();
     const typedDb = db as Db;
@@ -509,4 +518,10 @@ export async function seedDatabase() {
 }
 
 // Run the seed function
-seedDatabase();
+seedDatabase().then(() => {
+  console.log("Seeding completed");
+  process.exit(0);
+}).catch((error) => {
+  console.error("Seeding failed:", error);
+  process.exit(1);
+});

@@ -6,7 +6,12 @@ import { LoaderProvider } from "@/context/LoaderContext";
 import { RouteTransitionHandler } from '@/components/RouteTransitionHandler';
 
 // Initialize real-time features
-import '@/lib/startup';
+import { startup } from '@/lib/startup';
+
+// Call the startup function
+startup().catch(error => {
+  console.error('Failed to start application services:', error);
+});
 
 const inter = Inter({
   subsets: ["latin"],
