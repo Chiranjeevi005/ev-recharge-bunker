@@ -69,9 +69,13 @@ export async function POST(request: Request) {
         );
       }
       
+      // Trim whitespace from environment variables to handle potential newline characters
+      const razorpayKeyId = process.env['RAZORPAY_KEY_ID'].trim();
+      const razorpayKeySecret = process.env['RAZORPAY_KEY_SECRET'].trim();
+      
       razorpay = new Razorpay({
-        key_id: process.env['RAZORPAY_KEY_ID']!,
-        key_secret: process.env['RAZORPAY_KEY_SECRET']!
+        key_id: razorpayKeyId,
+        key_secret: razorpayKeySecret
       });
     } catch (razorpayInitError: any) {
       console.error("Error initializing Razorpay:", razorpayInitError);

@@ -6,6 +6,9 @@ import redis from '@/lib/realtime/redisQueue';
 
 export async function POST(request: Request) {
   try {
+    // Trim whitespace from environment variables to handle potential newline characters
+    const razorpayKeySecret = process.env['RAZORPAY_KEY_SECRET']?.trim();
+    
     const { db } = await connectToDatabase(); // Removed client since we're not using transactions
     const body = await request.json();
     
@@ -28,10 +31,11 @@ export async function POST(request: Request) {
     }
     
     // Verify Razorpay signature
-    const isVerified = PaymentService.verifyRazorpaySignature(
+    const isVerified = await PaymentService.verifyRazorpaySignature(
       razorpay_order_id,
       razorpay_payment_id,
-      razorpay_signature
+      razorpay_signature,
+      razorpayKeySecret
     );
     
     if (!isVerified) {

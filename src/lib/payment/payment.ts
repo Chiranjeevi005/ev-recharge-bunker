@@ -30,10 +30,12 @@ export interface Payment {
 }
 
 export class PaymentService {
-  static async verifyRazorpaySignature(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string): Promise<boolean> {
+  static async verifyRazorpaySignature(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string, secret?: string): Promise<boolean> {
     try {
-      const secret = process.env['RAZORPAY_KEY_SECRET'];
-      if (!secret) {
+      // Use provided secret or get from environment variables, and trim whitespace
+      const keySecret = (secret || process.env['RAZORPAY_KEY_SECRET'] || '').trim();
+      
+      if (!keySecret) {
         console.error('Razorpay key secret not found in environment variables');
         return false;
       }
@@ -49,7 +51,7 @@ export class PaymentService {
       }
       
       const signature = razorpay_signature;
-      const shasum = crypto.createHmac('sha256', secret);
+      const shasum = crypto.createHmac('sha256', keySecret);
       shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
       const digest = shasum.digest('hex');
       
