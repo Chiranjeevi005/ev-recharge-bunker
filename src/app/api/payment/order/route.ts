@@ -31,7 +31,14 @@ export async function POST(request: Request) {
     // Validate input with more detailed logging
     console.log("Validating input fields:", { stationId, slotId, duration, amount, userId });
     
-    if (!stationId) {
+    // Ensure all values are properly converted to their expected types
+    const parsedStationId = String(stationId || '');
+    const parsedSlotId = String(slotId || '');
+    const parsedDuration = Number(duration);
+    const parsedAmount = Number(amount);
+    const parsedUserId = String(userId || '');
+    
+    if (!parsedStationId || parsedStationId === 'null' || parsedStationId === 'undefined') {
       console.error("Missing required field: stationId");
       return NextResponse.json(
         { error: "Missing required field: stationId" },
@@ -39,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
     
-    if (!slotId) {
+    if (!parsedSlotId || parsedSlotId === 'null' || parsedSlotId === 'undefined') {
       console.error("Missing required field: slotId");
       return NextResponse.json(
         { error: "Missing required field: slotId" },
@@ -47,43 +54,41 @@ export async function POST(request: Request) {
       );
     }
     
-    if (duration === undefined || duration === null) {
-      console.error("Missing required field: duration");
+    if (isNaN(parsedDuration) || parsedDuration === null || parsedDuration === undefined) {
+      console.error("Missing or invalid required field: duration", duration);
       return NextResponse.json(
-        { error: "Missing required field: duration" },
+        { error: "Missing or invalid required field: duration" },
         { status: 400 }
       );
     }
     
-    if (amount === undefined || amount === null) {
-      console.error("Missing required field: amount");
+    if (isNaN(parsedAmount) || parsedAmount === null || parsedAmount === undefined) {
+      console.error("Missing or invalid required field: amount", amount);
       return NextResponse.json(
-        { error: "Missing required field: amount" },
+        { error: "Missing or invalid required field: amount" },
         { status: 400 }
       );
     }
 
-    console.log("Creating payment order with:", { stationId, slotId, duration, amount, userId });
+    console.log("Creating payment order with parsed values:", { 
+      stationId: parsedStationId, 
+      slotId: parsedSlotId, 
+      duration: parsedDuration, 
+      amount: parsedAmount, 
+      userId: parsedUserId 
+    });
 
     // Validate amount with detailed error messages
-    if (typeof amount !== 'number') {
-      console.error("Invalid amount type:", typeof amount, "Value:", amount);
-      return NextResponse.json(
-        { error: `Invalid amount type. Expected number, got ${typeof amount}` },
-        { status: 400 }
-      );
-    }
-    
-    if (isNaN(amount)) {
-      console.error("Amount is NaN:", amount);
+    if (isNaN(parsedAmount)) {
+      console.error("Amount is NaN:", parsedAmount);
       return NextResponse.json(
         { error: "Amount is not a valid number (NaN)" },
         { status: 400 }
       );
     }
     
-    if (amount <= 0) {
-      console.error("Invalid amount value:", amount);
+    if (parsedAmount <= 0) {
+      console.error("Invalid amount value:", parsedAmount);
       return NextResponse.json(
         { error: "Invalid amount. Must be greater than 0" },
         { status: 400 }
@@ -91,32 +96,24 @@ export async function POST(request: Request) {
     }
 
     // Validate duration with detailed error messages
-    if (typeof duration !== 'number') {
-      console.error("Invalid duration type:", typeof duration, "Value:", duration);
-      return NextResponse.json(
-        { error: `Invalid duration type. Expected number, got ${typeof duration}` },
-        { status: 400 }
-      );
-    }
-    
-    if (isNaN(duration)) {
-      console.error("Duration is NaN:", duration);
+    if (isNaN(parsedDuration)) {
+      console.error("Duration is NaN:", parsedDuration);
       return NextResponse.json(
         { error: "Duration is not a valid number (NaN)" },
         { status: 400 }
       );
     }
     
-    if (duration <= 0) {
-      console.error("Invalid duration value:", duration);
+    if (parsedDuration <= 0) {
+      console.error("Invalid duration value:", parsedDuration);
       return NextResponse.json(
         { error: "Invalid duration. Must be greater than 0" },
         { status: 400 }
       );
     }
     
-    if (duration > 24) {
-      console.error("Invalid duration value:", duration);
+    if (parsedDuration > 24) {
+      console.error("Invalid duration value:", parsedDuration);
       return NextResponse.json(
         { error: "Invalid duration. Must be between 1 and 24 hours." },
         { status: 400 }
@@ -148,7 +145,7 @@ export async function POST(request: Request) {
     let order;
     try {
       order = await razorpay.orders.create({
-        amount: Math.round(amount * 100), // Amount in paise, rounded to avoid floating point issues
+        amount: Math.round(parsedAmount * 100), // Amount in paise, rounded to avoid floating point issues
         currency: 'INR',
         receipt: receiptId
       });
@@ -184,11 +181,11 @@ export async function POST(request: Request) {
     // Store order in database with proper structure
     console.log("Creating payment record with orderId:", order.id);
     const paymentRecord = {
-      userId: userId || "anonymous",
-      stationId,
-      slotId,
-      amount,
-      duration,
+      userId: parsedUserId || "anonymous",
+      stationId: parsedStationId,
+      slotId: parsedSlotId,
+      amount: parsedAmount,
+      duration: parsedDuration,
       currency: 'INR',
       orderId: order.id,
       status: 'pending',
@@ -210,11 +207,11 @@ export async function POST(request: Request) {
     console.log("Payment record created:", {
       insertedId: orderResult.insertedId.toString(),
       orderId: order.id,
-      userId,
-      stationId,
-      slotId,
-      amount,
-      duration
+      userId: parsedUserId,
+      stationId: parsedStationId,
+      slotId: parsedSlotId,
+      amount: parsedAmount,
+      duration: parsedDuration
     });
 
     return NextResponse.json({

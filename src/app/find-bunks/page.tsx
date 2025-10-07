@@ -195,14 +195,27 @@ export default function FindBunksPage() {
       return 0;
     }
     
-    const price = slot.pricePerHour * duration;
-    console.log("calculatePrice: Calculated price", { pricePerHour: slot.pricePerHour, duration, price });
+    // Ensure we have valid numbers
+    const pricePerHour = Number(slot.pricePerHour) || 0;
+    const durationValue = Number(duration) || 0;
+    
+    if (pricePerHour <= 0 || durationValue <= 0) {
+      console.log("calculatePrice: Invalid price or duration values", { pricePerHour, durationValue });
+      return 0;
+    }
+    
+    const price = pricePerHour * durationValue;
+    console.log("calculatePrice: Calculated price", { pricePerHour, duration: durationValue, price });
     return price;
   };
 
   const handlePayment = async () => {
     if (!selectedStation || !selectedSlot || !user) {
       console.log("handlePayment: Missing required data", { selectedStation, selectedSlot, user: !!user });
+      setToast({
+        message: "Missing required data. Please try again.",
+        type: 'error'
+      });
       return;
     }
     
@@ -228,6 +241,32 @@ export default function FindBunksPage() {
         return;
       }
       
+      // Ensure all values are proper numbers before sending to API
+      const requestData = {
+        userId: user.id,
+        stationId: selectedStation._id,
+        slotId: selectedSlot,
+        duration: Number(duration),
+        amount: Number(amount),
+      };
+      
+      // Additional validation
+      if (!requestData.stationId || !requestData.slotId) {
+        setToast({
+          message: "Invalid station or slot selection.",
+          type: 'error'
+        });
+        return;
+      }
+      
+      if (isNaN(requestData.duration) || isNaN(requestData.amount)) {
+        setToast({
+          message: "Invalid numeric values. Please try again.",
+          type: 'error'
+        });
+        return;
+      }
+      
       showLoader("Processing payment..."); // Show loader
       
       // Load Razorpay script first
@@ -243,26 +282,14 @@ export default function FindBunksPage() {
       }
       
       // Create booking order
-      console.log("Creating payment order with:", {
-        userId: user.id,
-        stationId: selectedStation._id,
-        slotId: selectedSlot,
-        duration,
-        amount,
-      });
+      console.log("Creating payment order with:", requestData);
       
       const response = await fetch("/api/payment/order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userId: user.id, // Include userId in the request
-          stationId: selectedStation._id,
-          slotId: selectedSlot,
-          duration: Number(duration), // Ensure it's a number
-          amount: Number(amount), // Ensure it's a number
-        }),
+        body: JSON.stringify(requestData),
       });
       
       const orderData = await response.json();
@@ -272,7 +299,7 @@ export default function FindBunksPage() {
         hideLoader(); // Hide loader
         console.error("Payment order creation failed:", orderData.error);
         setToast({
-          message: `Payment order creation failed: ${orderData.error}`,
+          message: `Payment order creation failed: ${orderData.error || 'Unknown error'}`,
           type: 'error'
         });
         return;
@@ -358,7 +385,7 @@ export default function FindBunksPage() {
       hideLoader(); // Hide loader
       console.error("Payment error:", error);
       setToast({
-        message: "Payment failed. Please try again.",
+        message: `Payment failed: ${error.message || 'Unknown error'}. Please try again.`,
         type: 'error'
       });
     }
