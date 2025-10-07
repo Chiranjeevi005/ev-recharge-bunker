@@ -1,13 +1,10 @@
-import { createServer } from 'http';
-import { parse } from 'url';
-import next from 'next';
-import { initSocket } from './src/lib/realtime/socket';
-import { startup } from './src/lib/startup';
-import { initRealTimeFeatures } from './src/lib/realtime/initRealTime';
+const { createServer } = require('http');
+const { parse } = require('url');
+const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
-const port = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3002;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3002;
 
 // when using middleware `hostname` and `port` must be provided below
 const app = next({ dev, hostname, port });
@@ -58,15 +55,6 @@ app.prepare().then(() => {
   // Set keep-alive timeout
   server.keepAliveTimeout = 65000; // 65 seconds
   server.headersTimeout = 66000; // 66 seconds
-
-  // Initialize Socket.IO
-  initSocket(server);
-  
-  // Initialize application services
-  startup().catch(console.error);
-  
-  // Initialize real-time features
-  initRealTimeFeatures().catch(console.error);
 
   // Graceful shutdown
   process.on('SIGTERM', () => {

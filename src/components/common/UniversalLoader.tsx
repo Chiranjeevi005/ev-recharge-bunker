@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -70,7 +70,7 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
   ];
 
   // Initialize focused GSAP animations
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!containerRef.current || !logoRef.current) return;
     
     const logo = logoRef.current;

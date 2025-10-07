@@ -36,6 +36,12 @@ const nextConfig: NextConfig = {
       topLevelAwait: true,
     };
     
+    // Ensure animation libraries work in production
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
+    
     return config;
   },
   // Enable compression for better performance
@@ -44,6 +50,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Enable strict mode for better error handling
   reactStrictMode: true,
+  // Optimize for animations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error'],
+    } : false,
+  },
   // Suppress ESLint warnings during build
   eslint: {
     ignoreDuringBuilds: true,

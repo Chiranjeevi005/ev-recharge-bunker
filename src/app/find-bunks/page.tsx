@@ -184,18 +184,50 @@ export default function FindBunksPage() {
   };
 
   const calculatePrice = () => {
-    if (!selectedStation || !selectedSlot || duration <= 0) return 0;
+    if (!selectedStation || !selectedSlot || duration <= 0) {
+      console.log("calculatePrice: Invalid parameters", { selectedStation, selectedSlot, duration });
+      return 0;
+    }
     
     const slot = selectedStation.slots.find(s => s.slotId === selectedSlot);
-    if (!slot) return 0;
+    if (!slot) {
+      console.log("calculatePrice: Slot not found", { slotId: selectedSlot, slots: selectedStation.slots });
+      return 0;
+    }
     
-    return slot.pricePerHour * duration;
+    const price = slot.pricePerHour * duration;
+    console.log("calculatePrice: Calculated price", { pricePerHour: slot.pricePerHour, duration, price });
+    return price;
   };
 
   const handlePayment = async () => {
-    if (!selectedStation || !selectedSlot || !user) return;
+    if (!selectedStation || !selectedSlot || !user) {
+      console.log("handlePayment: Missing required data", { selectedStation, selectedSlot, user: !!user });
+      return;
+    }
     
     try {
+      // Calculate price and validate
+      const amount = calculatePrice();
+      console.log("handlePayment: Calculated amount", { amount, duration });
+      
+      // Validate amount before proceeding
+      if (amount <= 0) {
+        setToast({
+          message: "Invalid booking amount. Please check duration and try again.",
+          type: 'error'
+        });
+        return;
+      }
+      
+      if (duration <= 0 || duration > 24) {
+        setToast({
+          message: "Invalid duration. Please select between 1 and 24 hours.",
+          type: 'error'
+        });
+        return;
+      }
+      
       showLoader("Processing payment..."); // Show loader
       
       // Load Razorpay script first
@@ -216,7 +248,7 @@ export default function FindBunksPage() {
         stationId: selectedStation._id,
         slotId: selectedSlot,
         duration,
-        amount: calculatePrice(),
+        amount,
       });
       
       const response = await fetch("/api/payment/order", {
@@ -228,8 +260,8 @@ export default function FindBunksPage() {
           userId: user.id, // Include userId in the request
           stationId: selectedStation._id,
           slotId: selectedSlot,
-          duration,
-          amount: calculatePrice(),
+          duration: Number(duration), // Ensure it's a number
+          amount: Number(amount), // Ensure it's a number
         }),
       });
       

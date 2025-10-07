@@ -28,29 +28,95 @@ export async function POST(request: Request) {
 
     const { stationId, slotId, duration, amount, userId } = body;
 
-    // Validate input
-    if (!stationId || !slotId || !duration || amount === undefined || amount === null) {
-      console.error("Missing required fields:", { stationId, slotId, duration, amount });
+    // Validate input with more detailed logging
+    console.log("Validating input fields:", { stationId, slotId, duration, amount, userId });
+    
+    if (!stationId) {
+      console.error("Missing required field: stationId");
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required field: stationId" },
+        { status: 400 }
+      );
+    }
+    
+    if (!slotId) {
+      console.error("Missing required field: slotId");
+      return NextResponse.json(
+        { error: "Missing required field: slotId" },
+        { status: 400 }
+      );
+    }
+    
+    if (duration === undefined || duration === null) {
+      console.error("Missing required field: duration");
+      return NextResponse.json(
+        { error: "Missing required field: duration" },
+        { status: 400 }
+      );
+    }
+    
+    if (amount === undefined || amount === null) {
+      console.error("Missing required field: amount");
+      return NextResponse.json(
+        { error: "Missing required field: amount" },
         { status: 400 }
       );
     }
 
     console.log("Creating payment order with:", { stationId, slotId, duration, amount, userId });
 
-    // Validate amount
-    if (typeof amount !== 'number' || amount <= 0) {
-      console.error("Invalid amount:", amount);
+    // Validate amount with detailed error messages
+    if (typeof amount !== 'number') {
+      console.error("Invalid amount type:", typeof amount, "Value:", amount);
       return NextResponse.json(
-        { error: "Invalid amount" },
+        { error: `Invalid amount type. Expected number, got ${typeof amount}` },
+        { status: 400 }
+      );
+    }
+    
+    if (isNaN(amount)) {
+      console.error("Amount is NaN:", amount);
+      return NextResponse.json(
+        { error: "Amount is not a valid number (NaN)" },
+        { status: 400 }
+      );
+    }
+    
+    if (amount <= 0) {
+      console.error("Invalid amount value:", amount);
+      return NextResponse.json(
+        { error: "Invalid amount. Must be greater than 0" },
         { status: 400 }
       );
     }
 
-    // Validate duration
-    if (typeof duration !== 'number' || duration <= 0 || duration > 24) {
-      console.error("Invalid duration:", duration);
+    // Validate duration with detailed error messages
+    if (typeof duration !== 'number') {
+      console.error("Invalid duration type:", typeof duration, "Value:", duration);
+      return NextResponse.json(
+        { error: `Invalid duration type. Expected number, got ${typeof duration}` },
+        { status: 400 }
+      );
+    }
+    
+    if (isNaN(duration)) {
+      console.error("Duration is NaN:", duration);
+      return NextResponse.json(
+        { error: "Duration is not a valid number (NaN)" },
+        { status: 400 }
+      );
+    }
+    
+    if (duration <= 0) {
+      console.error("Invalid duration value:", duration);
+      return NextResponse.json(
+        { error: "Invalid duration. Must be greater than 0" },
+        { status: 400 }
+      );
+    }
+    
+    if (duration > 24) {
+      console.error("Invalid duration value:", duration);
       return NextResponse.json(
         { error: "Invalid duration. Must be between 1 and 24 hours." },
         { status: 400 }
@@ -58,10 +124,18 @@ export async function POST(request: Request) {
     }
     
     // Validate stationId and slotId
-    if (typeof stationId !== 'string' || typeof slotId !== 'string') {
-      console.error("Invalid stationId or slotId:", { stationId, slotId });
+    if (typeof stationId !== 'string') {
+      console.error("Invalid stationId type:", typeof stationId, "Value:", stationId);
       return NextResponse.json(
-        { error: "Invalid stationId or slotId" },
+        { error: `Invalid stationId type. Expected string, got ${typeof stationId}` },
+        { status: 400 }
+      );
+    }
+    
+    if (typeof slotId !== 'string') {
+      console.error("Invalid slotId type:", typeof slotId, "Value:", slotId);
+      return NextResponse.json(
+        { error: `Invalid slotId type. Expected string, got ${typeof slotId}` },
         { status: 400 }
       );
     }
@@ -74,7 +148,7 @@ export async function POST(request: Request) {
     let order;
     try {
       order = await razorpay.orders.create({
-        amount: amount * 100, // Amount in paise
+        amount: Math.round(amount * 100), // Amount in paise, rounded to avoid floating point issues
         currency: 'INR',
         receipt: receiptId
       });

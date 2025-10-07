@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import Image from 'next/image';
@@ -73,7 +73,7 @@ const energyLinePositions = [
 const AnimatedText: React.FC<{ text: string }> = ({ text }) => {
   const textRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (textRef.current) {
       // Get the original text content
       const originalText = textRef.current.textContent || '';
