@@ -6,13 +6,10 @@ export async function GET() {
   const keySecretSet = !!process.env['RAZORPAY_KEY_SECRET'];
   const publicKeyIdSet = !!process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'];
   
-  // Get the actual values (first few characters for security)
-  const keyIdValue = process.env['RAZORPAY_KEY_ID'] ? 
-    process.env['RAZORPAY_KEY_ID'].substring(0, 10) + '...' : 'NOT SET';
-  const keySecretValue = process.env['RAZORPAY_KEY_SECRET'] ? 
-    process.env['RAZORPAY_KEY_SECRET'].substring(0, 10) + '...' : 'NOT SET';
-  const publicKeyIdValue = process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'] ? 
-    process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'].substring(0, 10) + '...' : 'NOT SET';
+  // Get the actual values (be careful with security)
+  const keyIdValue = process.env['RAZORPAY_KEY_ID'] || 'NOT SET';
+  const keySecretValue = process.env['RAZORPAY_KEY_SECRET'] || 'NOT SET';
+  const publicKeyIdValue = process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'] || 'NOT SET';
   
   // Try to initialize Razorpay
   let razorpayInitialized = false;
