@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 
 interface Booking {
   _id?: ObjectId;
@@ -20,6 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     
     // Validate booking ID
     if (!ObjectId.isValid(id)) {
@@ -30,7 +31,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
     
     // Fetch specific booking
-    const booking = await db.collection<Booking>("bookings").findOne({ 
+    const booking = await typedDb.collection<Booking>("bookings").findOne({ 
       _id: new ObjectId(id) 
     });
     

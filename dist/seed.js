@@ -1,6 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const connection_1 = require("./src/lib/db/connection");
+exports.seedDatabase = seedDatabase;
+const connection_1 = require("@/lib/db/connection");
+// Load environment variables
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 // Demo data for 8 metro cities with accurate coordinates
 const metroCities = [
     {
@@ -459,6 +466,7 @@ const metroCities = [
 async function seedDatabase() {
     try {
         const { db } = await (0, connection_1.connectToDatabase)();
+        const typedDb = db;
         // Clear existing data
         await db.collection("stations").deleteMany({});
         await db.collection("bookings").deleteMany({});
@@ -474,7 +482,7 @@ async function seedDatabase() {
                     lng: station.lng,
                     slots: station.slots
                 };
-                await db.collection("stations").insertOne(stationData);
+                await typedDb.collection("stations").insertOne(stationData);
             }
         }
         console.log("Database seeded successfully with demo data for 8 metro cities!");

@@ -1,4 +1,5 @@
 import { connectToDatabase } from '@/lib/db/connection';
+import type { Db } from 'mongodb';
 // Load environment variables
 import dotenv from 'dotenv';
 dotenv.config();
@@ -475,9 +476,10 @@ const metroCities = [
   }
 ];
 
-async function seedDatabase() {
+export async function seedDatabase() {
   try {
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     
     // Clear existing data
     await db.collection("stations").deleteMany({});
@@ -496,7 +498,7 @@ async function seedDatabase() {
           slots: station.slots
         };
         
-        await db.collection<Station>("stations").insertOne(stationData);
+        await typedDb.collection<Station>("stations").insertOne(stationData);
       }
     }
     

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/connection';
-import { ObjectId } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 
 interface Booking {
   _id: ObjectId;
@@ -19,6 +19,7 @@ interface Booking {
 export async function GET(request: Request) {
   try {
     const { db } = await connectToDatabase();
+    const typedDb = db as Db;
     
     // Get userId from query parameters
     const { searchParams } = new URL(request.url);
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     }
     
     // Fetch completed bookings for the user
-    const bookings = await db.collection<Booking>("bookings").find({ 
+    const bookings = await typedDb.collection<Booking>("bookings").find({ 
       userId: userId,
       status: 'completed'
     }).sort({ createdAt: -1 }).toArray();

@@ -8,14 +8,16 @@
     "strict": true,
     "noEmit": false,
     "esModuleInterop": true,
-    "module": "commonjs",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
     "outDir": "./dist",
-    "rootDir": "./"
+    "rootDir": "./",
+    "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "seed.ts",

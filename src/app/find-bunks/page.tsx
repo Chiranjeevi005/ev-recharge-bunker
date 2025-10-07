@@ -117,11 +117,17 @@ export default function FindBunksPage() {
         
         const response = await fetch("/api/stations");
         const data = await response.json();
-        setStations(data);
-        setFilteredStations(data);
+        
+        // Extract stations from the response data structure
+        const stationsData = data.success ? data.data : [];
+        setStations(stationsData);
+        setFilteredStations(stationsData);
         hideLoader(); // Hide loader
       } catch (error) {
         console.error("Error fetching stations:", error);
+        // Set empty arrays on error to prevent map errors
+        setStations([]);
+        setFilteredStations([]);
         hideLoader(); // Hide loader
       } finally {
         setIsLoading(false);

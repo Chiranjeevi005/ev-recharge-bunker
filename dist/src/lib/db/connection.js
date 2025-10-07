@@ -1,23 +1,105 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.connectToDatabase = connectToDatabase;
+exports.closeDatabaseConnection = closeDatabaseConnection;
+exports.getDatabase = getDatabase;
 const mongodb_1 = require("mongodb");
-const MONGODB_URI = process.env.DATABASE_URL;
-if (!MONGODB_URI) {
-    throw new Error('Please define the DATABASE_URL environment variable');
+// Default configuration
+const DEFAULT_RETRY_ATTEMPTS = 3;
+const DEFAULT_RETRY_DELAY = 1000; // 1 second
+const DEFAULT_CONNECTION_TIMEOUT = 10000; // 10 seconds
+const DEFAULT_SOCKET_TIMEOUT = 20000; // 20 seconds
+// MongoDB connection URI from environment variables
+const MONGODB_URI = process.env['DATABASE_URL'] || process.env['MONGODB_URI'] || 'mongodb://localhost:27017';
+// Global variables to cache the client and connection state
+let cachedClient = null;
+let cachedDb = null;
+/**
+ * Simple logger function
+ */
+function log(message, ...optionalParams) {
+    console.log(`[DB Connection] ${message}`, ...optionalParams);
 }
-let cachedClient;
-let cachedDb;
-async function connectToDatabase() {
+/**
+ * Creates a MongoDB client with retry logic and timeout configuration
+ */
+async function connectToDatabase(retries = DEFAULT_RETRY_ATTEMPTS, retryDelay = DEFAULT_RETRY_DELAY) {
+    // Return cached connection if available
     if (cachedClient && cachedDb) {
+        log('Returning cached connection');
         return { client: cachedClient, db: cachedDb };
     }
-    if (!global.mongoClient) {
-        const client = new mongodb_1.MongoClient(MONGODB_URI);
-        await client.connect();
-        global.mongoClient = client;
+    const options = {
+        serverSelectionTimeoutMS: DEFAULT_CONNECTION_TIMEOUT,
+        connectTimeoutMS: DEFAULT_CONNECTION_TIMEOUT,
+        socketTimeoutMS: DEFAULT_SOCKET_TIMEOUT,
+        maxIdleTimeMS: 30000, // 30 seconds
+        maxPoolSize: 10,
+        minPoolSize: 5,
+        waitQueueTimeoutMS: 5000 // 5 seconds
+    };
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            log(`Connecting to MongoDB (attempt ${attempt}/${retries})`);
+            log(`Using MongoDB URI: ${MONGODB_URI}`);
+            // Add timeout to the connection promise
+            const connectionPromise = new Promise((resolve, reject) => {
+                const client = new mongodb_1.MongoClient(MONGODB_URI, options);
+                client.connect()
+                    .then(() => resolve(client))
+                    .catch(reject);
+                // Add timeout to reject if connection takes too long
+                setTimeout(() => reject(new Error('MongoDB connection timeout')), DEFAULT_CONNECTION_TIMEOUT);
+            });
+            const client = await connectionPromise;
+            const db = client.db(); // Use database from URI or default
+            log(`Connected to database: ${db.databaseName}`);
+            // List collections to verify connection with timeout
+            const collectionsPromise = new Promise((resolve, reject) => {
+                db.listCollections().toArray()
+                    .then(resolve)
+                    .catch(reject);
+                // Add timeout to reject if listing takes too long
+                setTimeout(() => reject(new Error('MongoDB collections list timeout')), 5000);
+            });
+            const collections = await collectionsPromise;
+            log(`Available collections:`, collections.map((c) => c.name));
+            // Cache the connection
+            cachedClient = client;
+            cachedDb = db;
+            log('Successfully connected to MongoDB');
+            return { client, db };
+        }
+        catch (error) {
+            log(`MongoDB connection attempt ${attempt} failed:`, error);
+            // If this is the last attempt, throw the error
+            if (attempt === retries) {
+                throw new Error(`Failed to connect to MongoDB after ${retries} attempts: ${error}`);
+            }
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
     }
-    cachedClient = global.mongoClient;
-    cachedDb = cachedClient.db();
-    return { client: cachedClient, db: cachedDb };
+    // This should never be reached, but TypeScript requires it
+    throw new Error('Unexpected error in MongoDB connection');
+}
+/**
+ * Closes the MongoDB connection
+ */
+async function closeDatabaseConnection() {
+    if (cachedClient) {
+        await cachedClient.close();
+        cachedClient = null;
+        cachedDb = null;
+        log('MongoDB connection closed');
+    }
+}
+/**
+ * Gets the current database instance
+ */
+function getDatabase() {
+    if (!cachedDb) {
+        throw new Error('Database not connected. Call connectToDatabase first.');
+    }
+    return cachedDb;
 }
