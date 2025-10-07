@@ -60,9 +60,7 @@ app.prepare().then(() => {
   server.headersTimeout = 66000; // 66 seconds
 
   // Initialize Socket.IO
-  const io = initSocket(server);
-  // Use io to prevent unused variable warning
-  console.log('Socket.IO initialized');
+  initSocket(server);
   
   // Initialize application services
   startup().catch(console.error);

@@ -13,7 +13,9 @@
     "test": "jest",
     "test:utils": "ts-node --project tsconfig.test.json src/test-utilities.ts",
     "type-check": "tsc --noEmit",
-    "start:dev": "next dev"
+    "start:dev": "next dev",
+    "validate-env": "node scripts/validate-env.js",
+    "deploy:vercel": "node scripts/deploy-vercel.js"
   },
   "dependencies": {
     "@arcjet/next": "^1.0.0-beta.12",

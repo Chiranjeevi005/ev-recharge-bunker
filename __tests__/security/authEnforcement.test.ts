@@ -7,8 +7,8 @@ describe('Auth Enforcement', () => {
   let hasEnhancedPermission: any;
   
   beforeAll(async () => {
-    const module = await import('@/lib/security/authEnforcement');
-    hasEnhancedPermission = module.hasEnhancedPermission;
+    const authModule = await import('@/lib/security/authEnforcement');
+    hasEnhancedPermission = authModule.hasEnhancedPermission;
   });
 
   describe('hasEnhancedPermission', () => {

@@ -56,6 +56,7 @@ interface RealTimeData {
   chargingSessions: any[];
   payments: any[];
   ecoStats: any[];
+  activityLog: any[];
 }
 
 // Enhanced return type to include processed data
@@ -79,7 +80,8 @@ export function useRealTimeData(): UseRealTimeDataReturn {
     stations: [],
     chargingSessions: [],
     payments: [],
-    ecoStats: []
+    ecoStats: [],
+    activityLog: []
   });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -278,7 +280,9 @@ export function useRealTimeData(): UseRealTimeDataReturn {
               clients.push(updateData.fullDocument);
             }
           }
-          return { ...prev, clients };
+          // Add to activity log
+          const activityLog = [...prev.activityLog, updateData];
+          return { ...prev, clients, activityLog };
         });
         
         // If we receive a real update, change streams are working
@@ -304,7 +308,9 @@ export function useRealTimeData(): UseRealTimeDataReturn {
               stations.push(updateData.fullDocument);
             }
           }
-          return { ...prev, stations };
+          // Add to activity log
+          const activityLog = [...prev.activityLog, updateData];
+          return { ...prev, stations, activityLog };
         });
         
         // If we receive a real update, change streams are working
@@ -330,7 +336,9 @@ export function useRealTimeData(): UseRealTimeDataReturn {
               chargingSessions.push(updateData.fullDocument);
             }
           }
-          return { ...prev, chargingSessions };
+          // Add to activity log
+          const activityLog = [...prev.activityLog, updateData];
+          return { ...prev, chargingSessions, activityLog };
         });
         
         // If we receive a real update, change streams are working
@@ -356,7 +364,9 @@ export function useRealTimeData(): UseRealTimeDataReturn {
               payments.push(updateData.fullDocument);
             }
           }
-          return { ...prev, payments };
+          // Add to activity log
+          const activityLog = [...prev.activityLog, updateData];
+          return { ...prev, payments, activityLog };
         });
         
         // If we receive a real update, change streams are working
@@ -382,7 +392,9 @@ export function useRealTimeData(): UseRealTimeDataReturn {
               ecoStats.push(updateData.fullDocument);
             }
           }
-          return { ...prev, ecoStats };
+          // Add to activity log
+          const activityLog = [...prev.activityLog, updateData];
+          return { ...prev, ecoStats, activityLog };
         });
         
         // If we receive a real update, change streams are working
@@ -398,6 +410,11 @@ export function useRealTimeData(): UseRealTimeDataReturn {
       socketInstance.on('update', (updateData: any) => {
         console.log('Received general update:', updateData);
         setUpdates(prev => [...prev, updateData]);
+        // Add to activity log
+        setData(prev => {
+          const activityLog = [...prev.activityLog, updateData];
+          return { ...prev, activityLog };
+        });
       });
 
       setSocket(socketInstance);
