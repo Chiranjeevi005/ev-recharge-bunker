@@ -121,7 +121,7 @@ export class PaymentService {
       });
       
       // If the record already has the desired status and paymentId, return it
-      if ((existingRecord as any).status === status && (existingRecord as any).paymentId === paymentId) {
+      if (existingRecord['status'] === status && existingRecord['paymentId'] === paymentId) {
         console.log(`Payment record already has desired status '${status}' and paymentId '${paymentId}'`);
         return {
           ...existingRecord,
@@ -146,23 +146,23 @@ export class PaymentService {
         
         console.log("findOneAndUpdate result for paymentId update:", result);
         
-        if (!result || !(result as any).value) {
+        if (!result || !result.value) {
           console.error(`Failed to update paymentId for orderId: '${orderId}'`);
           return null;
         }
         
         console.log(`Successfully updated paymentId for orderId: '${orderId}'`);
         const updatedPayment = {
-          ...result['value'],
-          id: result['value']._id.toString(),
-          _id: result['value']._id
+          ...result.value,
+          id: result.value._id.toString(),
+          _id: result.value._id
         } as Payment;
         
         // Clear Redis cache for this user by setting a short TTL
         if (redis.isAvailable()) {
           try {
-            await redis.setex(`payment:history:${updatedPayment.userId}`, 1, JSON.stringify([]));
-            await redis.setex(`payment:history:all:${updatedPayment.userId}`, 1, JSON.stringify([]));
+            await redis.setex(`payment:history:${updatedPayment['userId']}`, 1, JSON.stringify([]));
+            await redis.setex(`payment:history:all:${updatedPayment['userId']}`, 1, JSON.stringify([]));
           } catch (redisError) {
             console.error("Error clearing Redis cache:", redisError);
           }
@@ -189,7 +189,7 @@ export class PaymentService {
       
       // Check if a document was found and updated
       // The result object has a 'value' property that contains the updated document
-      if (!result || !result['value']) {
+      if (!result || !result.value) {
         console.error(`Payment record not found for orderId: '${orderId}' after update attempt`);
         // Let's try one more time with a direct update operation
         try {
@@ -219,8 +219,8 @@ export class PaymentService {
             // Clear Redis cache for this user by setting a short TTL
             if (redis.isAvailable()) {
               try {
-                await redis.setex(`payment:history:${updatedPayment.userId}`, 1, JSON.stringify([]));
-                await redis.setex(`payment:history:all:${updatedPayment.userId}`, 1, JSON.stringify([]));
+                await redis.setex(`payment:history:${updatedPayment['userId']}`, 1, JSON.stringify([]));
+                await redis.setex(`payment:history:all:${updatedPayment['userId']}`, 1, JSON.stringify([]));
               } catch (redisError) {
                 console.error("Error clearing Redis cache:", redisError);
               }
@@ -238,17 +238,17 @@ export class PaymentService {
       console.log(`Successfully updated payment status for orderId: '${orderId}'`);
       
       const updatedPayment = {
-        ...(result as any).value,
-        id: (result as any).value._id.toString(),
-        _id: (result as any).value._id
+        ...result.value,
+        id: result.value._id.toString(),
+        _id: result.value._id
       } as Payment;
       
       // Clear Redis cache for this user by setting a short TTL
       if (redis.isAvailable()) {
         try {
           // Clear both recent payments cache and all payments cache
-          await redis.setex(`payment:history:${updatedPayment.userId}`, 1, JSON.stringify([]));
-          await redis.setex(`payment:history:all:${updatedPayment.userId}`, 1, JSON.stringify([]));
+          await redis.setex(`payment:history:${updatedPayment['userId']}`, 1, JSON.stringify([]));
+          await redis.setex(`payment:history:all:${updatedPayment['userId']}`, 1, JSON.stringify([]));
         } catch (redisError) {
           console.error("Error clearing Redis cache:", redisError);
         }

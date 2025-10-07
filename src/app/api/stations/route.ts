@@ -231,7 +231,7 @@ export async function PUT(request: Request) {
       }
     );
     
-    if (!result || !result['ok']) {
+    if (!result || !result.ok) {
       return NextResponse.json(
         { error: "Station not found" },
         { status: 404 }
@@ -245,7 +245,7 @@ export async function PUT(request: Request) {
         operationType: 'update',
         documentKey: id,
         fullDocument: {
-          ...result['value'],
+          ...result.value,
           _id: id,
           updatedAt: new Date()
         },
@@ -258,7 +258,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ 
       success: true, 
       data: {
-        ...result['value'],
+        ...result.value,
         _id: id
       }
     });
