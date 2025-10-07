@@ -228,8 +228,11 @@ export default function FindBunksPage() {
       const amount = calculatePrice();
       console.log("handlePayment: Calculated amount", { amount, duration });
       
-      // Validate amount before proceeding
-      if (amount <= 0) {
+      // Validate amount before proceeding - ensure it's at least 1
+      const validAmount = Math.max(1, Number(amount) || 1);
+      const validDuration = Math.max(1, Math.min(24, Number(duration) || 1));
+      
+      if (validAmount <= 0) {
         setToast({
           message: "Invalid booking amount. Please check duration and try again.",
           type: 'error'
@@ -237,7 +240,7 @@ export default function FindBunksPage() {
         return;
       }
       
-      if (!duration || duration <= 0 || duration > 24) {
+      if (validDuration <= 0 || validDuration > 24) {
         setToast({
           message: "Invalid duration. Please select between 1 and 24 hours.",
           type: 'error'
@@ -250,9 +253,19 @@ export default function FindBunksPage() {
         userId: user.id || "anonymous",
         stationId: selectedStation._id || "",
         slotId: selectedSlot || "",
-        duration: Number(duration) || 1, // Default to 1 if null/undefined
-        amount: Number(amount) || 0, // Ensure it's a number
+        duration: validDuration, // Use validated duration
+        amount: validAmount, // Use validated amount
       };
+      
+      // DEBUG: Log the request data
+      console.log("PAYMENT REQUEST DATA:", requestData);
+      console.log("DATA TYPES:", {
+        userIdType: typeof requestData.userId,
+        stationIdType: typeof requestData.stationId,
+        slotIdType: typeof requestData.slotId,
+        durationType: typeof requestData.duration,
+        amountType: typeof requestData.amount
+      });
       
       // Additional validation
       if (!requestData.stationId || !requestData.slotId) {

@@ -52,6 +52,17 @@ export async function POST(request: Request) {
 
     const { stationId, slotId, duration, amount, userId } = body;
 
+    // DEBUG: Log raw values before processing
+    console.log("RAW VALUES BEFORE PROCESSING:", { 
+      stationId, 
+      slotId, 
+      duration: duration,
+      amount: amount,
+      userId,
+      durationType: typeof duration,
+      amountType: typeof amount
+    });
+
     // Validate input with more detailed logging
     console.log("Validating input fields:", { stationId, slotId, duration, amount, userId });
     
@@ -62,15 +73,18 @@ export async function POST(request: Request) {
     const parsedAmount = Number(amount) || 0;
     const parsedUserId = String(userId || 'anonymous').trim();
     
-    // Log parsed values for debugging
-    console.log("Parsed values:", { 
+    // DEBUG: Log parsed values
+    console.log("PARSED VALUES:", { 
       parsedStationId, 
       parsedSlotId, 
       parsedDuration, 
       parsedAmount, 
-      parsedUserId 
+      parsedUserId,
+      parsedDurationType: typeof parsedDuration,
+      parsedAmountType: typeof parsedAmount
     });
     
+    // Validate required fields
     if (!parsedStationId) {
       console.error("Missing required field: stationId");
       return NextResponse.json(
@@ -87,8 +101,9 @@ export async function POST(request: Request) {
       );
     }
     
+    // Validate numeric fields
     if (isNaN(parsedDuration) || parsedDuration <= 0) {
-      console.error("Invalid duration value:", parsedDuration);
+      console.error("Invalid duration value:", parsedDuration, "Original:", duration);
       return NextResponse.json(
         { error: "Invalid duration. Must be a positive number between 1 and 24 hours." },
         { status: 400 }
@@ -96,7 +111,7 @@ export async function POST(request: Request) {
     }
     
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      console.error("Invalid amount value:", parsedAmount);
+      console.error("Invalid amount value:", parsedAmount, "Original:", amount);
       return NextResponse.json(
         { error: "Invalid amount. Must be a positive number." },
         { status: 400 }
@@ -124,6 +139,12 @@ export async function POST(request: Request) {
       
       // Ensure amount is at least 100 paise (₹1)
       const razorpayAmount = Math.max(100, Math.round(parsedAmount * 100));
+      
+      console.log("RAZORPAY ORDER REQUEST:", {
+        amount: razorpayAmount,
+        currency: 'INR',
+        receipt: receiptId
+      });
       
       order = await razorpay.orders.create({
         amount: razorpayAmount,
