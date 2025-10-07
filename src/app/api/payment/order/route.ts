@@ -3,6 +3,55 @@ import { connectToDatabase } from '@/lib/db/connection';
 import { ObjectId } from 'mongodb';
 import Razorpay from 'razorpay';
 
+// Add a validation function for the API
+const validatePaymentRequest = (body: any) => {
+  const errors: string[] = [];
+  const validatedData: any = {};
+  
+  // Validate userId
+  if (body.userId === undefined || body.userId === null) {
+    validatedData.userId = 'anonymous';
+  } else {
+    validatedData.userId = String(body.userId).trim() || 'anonymous';
+  }
+  
+  // Validate stationId
+  if (!body.stationId || String(body.stationId).trim() === '') {
+    errors.push('Station ID is required');
+  } else {
+    validatedData.stationId = String(body.stationId).trim();
+  }
+  
+  // Validate slotId
+  if (!body.slotId || String(body.slotId).trim() === '') {
+    errors.push('Slot ID is required');
+  } else {
+    validatedData.slotId = String(body.slotId).trim();
+  }
+  
+  // Validate duration
+  const duration = Number(body.duration);
+  if (isNaN(duration) || duration <= 0 || duration > 24) {
+    validatedData.duration = 1; // Default to 1 hour
+  } else {
+    validatedData.duration = Math.max(1, Math.min(24, duration));
+  }
+  
+  // Validate amount
+  const amount = Number(body.amount);
+  if (isNaN(amount) || amount <= 0) {
+    validatedData.amount = 1; // Default to ₹1
+  } else {
+    validatedData.amount = Math.max(1, amount);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    data: validatedData
+  };
+};
+
 export async function POST(request: Request) {
   try {
     // Initialize Razorpay instance inside the function for better compatibility with serverless environments
@@ -50,89 +99,36 @@ export async function POST(request: Request) {
       );
     }
 
-    // SAFEGUARD: Ensure no null/undefined values reach validation
-    const safeBody = {
-      stationId: String(body.stationId || '').trim(),
-      slotId: String(body.slotId || '').trim(),
-      duration: Math.max(1, Math.min(24, Number(body.duration) || 1)),
-      amount: Math.max(1, Number(body.amount) || 1),
-      userId: String(body.userId || 'anonymous').trim()
-    };
+    // Validate the request data
+    const validation = validatePaymentRequest(body);
+    
+    if (!validation.isValid) {
+      console.error("Validation errors:", validation.errors);
+      return NextResponse.json(
+        { error: "Validation failed", details: validation.errors.join(', ') },
+        { status: 400 }
+      );
+    }
+    
+    const { stationId, slotId, duration, amount, userId } = validation.data;
 
-    const { stationId, slotId, duration, amount, userId } = safeBody;
-
-    // DEBUG: Log raw values before processing
-    console.log("RAW VALUES BEFORE PROCESSING:", { 
+    // DEBUG: Log validated values
+    console.log("VALIDATED VALUES:", { 
       stationId, 
       slotId, 
-      duration: duration,
-      amount: amount,
+      duration,
+      amount,
       userId,
       durationType: typeof duration,
       amountType: typeof amount
     });
 
-    // Validate input with more detailed logging
-    console.log("Validating input fields:", { stationId, slotId, duration, amount, userId });
-    
-    // Ensure all values are properly converted to their expected types with defaults
-    const parsedStationId = String(stationId || '').trim();
-    const parsedSlotId = String(slotId || '').trim();
-    const parsedDuration = Math.max(1, Math.min(24, Number(duration) || 1)); // Default to 1, clamp between 1-24
-    const parsedAmount = Math.max(1, Number(amount) || 1);
-    const parsedUserId = String(userId || 'anonymous').trim();
-    
-    // DEBUG: Log parsed values
-    console.log("PARSED VALUES:", { 
-      parsedStationId, 
-      parsedSlotId, 
-      parsedDuration, 
-      parsedAmount, 
-      parsedUserId,
-      parsedDurationType: typeof parsedDuration,
-      parsedAmountType: typeof parsedAmount
-    });
-    
-    // Validate required fields
-    if (!parsedStationId) {
-      console.error("Missing required field: stationId");
-      return NextResponse.json(
-        { error: "Missing required field: stationId" },
-        { status: 400 }
-      );
-    }
-    
-    if (!parsedSlotId) {
-      console.error("Missing required field: slotId");
-      return NextResponse.json(
-        { error: "Missing required field: slotId" },
-        { status: 400 }
-      );
-    }
-    
-    // Validate numeric fields
-    if (isNaN(parsedDuration) || parsedDuration <= 0) {
-      console.error("Invalid duration value:", parsedDuration, "Original:", duration);
-      return NextResponse.json(
-        { error: "Invalid duration. Must be a positive number between 1 and 24 hours." },
-        { status: 400 }
-      );
-    }
-    
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      console.error("Invalid amount value:", parsedAmount, "Original:", amount);
-      return NextResponse.json(
-        { error: "Invalid amount. Must be a positive number." },
-        { status: 400 }
-      );
-    }
-
     console.log("Creating payment order with validated values:", { 
-      stationId: parsedStationId, 
-      slotId: parsedSlotId, 
-      duration: parsedDuration, 
-      amount: parsedAmount, 
-      userId: parsedUserId 
+      stationId, 
+      slotId, 
+      duration, 
+      amount, 
+      userId 
     });
 
     // Create Razorpay order using the actual SDK
@@ -147,7 +143,7 @@ export async function POST(request: Request) {
       }
       
       // Ensure amount is at least 100 paise (₹1)
-      const razorpayAmount = Math.max(100, Math.round(parsedAmount * 100));
+      const razorpayAmount = Math.max(100, Math.round(amount * 100));
       
       console.log("RAZORPAY ORDER REQUEST:", {
         amount: razorpayAmount,
@@ -201,11 +197,11 @@ export async function POST(request: Request) {
     // Store order in database with proper structure
     console.log("Creating payment record with orderId:", order.id);
     const paymentRecord = {
-      userId: parsedUserId,
-      stationId: parsedStationId,
-      slotId: parsedSlotId,
-      amount: parsedAmount,
-      duration: parsedDuration,
+      userId: userId,
+      stationId: stationId,
+      slotId: slotId,
+      amount: amount,
+      duration: duration,
       currency: 'INR',
       orderId: order.id,
       status: 'pending',
@@ -227,11 +223,11 @@ export async function POST(request: Request) {
     console.log("Payment record created:", {
       insertedId: orderResult.insertedId.toString(),
       orderId: order.id,
-      userId: parsedUserId,
-      stationId: parsedStationId,
-      slotId: parsedSlotId,
-      amount: parsedAmount,
-      duration: parsedDuration
+      userId: userId,
+      stationId: stationId,
+      slotId: slotId,
+      amount: amount,
+      duration: duration
     });
 
     return NextResponse.json({

@@ -43,3 +43,35 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+
+// Add a POST endpoint to test with actual data
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    console.log("TEST ENDPOINT - Received body:", body);
+    
+    // Simulate the validation that might be failing
+    const testData = {
+      userId: String(body.userId || 'anonymous'),
+      stationId: String(body.stationId || ''),
+      slotId: String(body.slotId || ''),
+      duration: Math.max(1, Math.min(24, Number(body.duration) || 1)),
+      amount: Math.max(1, Number(body.amount) || 1)
+    };
+    
+    console.log("TEST ENDPOINT - Processed data:", testData);
+    
+    return NextResponse.json({
+      success: true,
+      received: body,
+      processed: testData,
+      message: "Data processed successfully"
+    });
+  } catch (error: any) {
+    console.error("TEST ENDPOINT - Error:", error);
+    return NextResponse.json({
+      success: false,
+      error: error.message
+    }, { status: 500 });
+  }
+}

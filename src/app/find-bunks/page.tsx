@@ -187,6 +187,47 @@ export default function FindBunksPage() {
     });
   };
 
+  // Add a validation function to ensure data integrity
+  const validatePaymentData = (data: any) => {
+    const errors: string[] = [];
+    
+    // Validate required fields
+    if (!data.userId || String(data.userId).trim() === '') {
+      errors.push('User ID is required');
+    }
+    
+    if (!data.stationId || String(data.stationId).trim() === '') {
+      errors.push('Station ID is required');
+    }
+    
+    if (!data.slotId || String(data.slotId).trim() === '') {
+      errors.push('Slot ID is required');
+    }
+    
+    // Validate numeric fields
+    const duration = Number(data.duration);
+    if (isNaN(duration) || duration <= 0 || duration > 24) {
+      errors.push('Duration must be a number between 1 and 24');
+    }
+    
+    const amount = Number(data.amount);
+    if (isNaN(amount) || amount <= 0) {
+      errors.push('Amount must be a positive number');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+      data: {
+        userId: String(data.userId || 'anonymous').trim(),
+        stationId: String(data.stationId || '').trim(),
+        slotId: String(data.slotId || '').trim(),
+        duration: Math.max(1, Math.min(24, duration)),
+        amount: Math.max(1, amount)
+      }
+    };
+  };
+
   const calculatePrice = () => {
     // Ensure we have valid values
     if (!selectedStation || !selectedSlot || !duration || duration <= 0) {
@@ -229,49 +270,32 @@ export default function FindBunksPage() {
       const amount = calculatePrice();
       console.log("handlePayment: Calculated amount", { amount, duration });
       
-      // Ensure we have valid values
-      const validAmount = Math.max(1, Number(amount) || 1);
-      const validDuration = Math.max(1, Math.min(24, Number(duration) || 1));
-      const validUserId = user.id || "anonymous";
-      const validStationId = selectedStation._id || "";
-      const validSlotId = selectedSlot || "";
-      
-      // Validate before proceeding
-      if (!validStationId || !validSlotId) {
-        setToast({
-          message: "Invalid station or slot selection.",
-          type: 'error'
-        });
-        return;
-      }
-      
-      if (validAmount <= 0) {
-        setToast({
-          message: "Invalid booking amount. Please check duration and try again.",
-          type: 'error'
-        });
-        return;
-      }
-      
-      if (validDuration <= 0 || validDuration > 24) {
-        setToast({
-          message: "Invalid duration. Please select between 1 and 24 hours.",
-          type: 'error'
-        });
-        return;
-      }
-      
-      // Create request data with guaranteed non-null values
-      const requestData = {
-        userId: String(validUserId),
-        stationId: String(validStationId),
-        slotId: String(validSlotId),
-        duration: Number(validDuration),
-        amount: Number(validAmount),
+      // Create raw request data
+      const rawRequestData = {
+        userId: user.id,
+        stationId: selectedStation._id,
+        slotId: selectedSlot,
+        duration: duration,
+        amount: amount,
       };
       
+      // Validate the data
+      const validation = validatePaymentData(rawRequestData);
+      
+      if (!validation.isValid) {
+        console.error("Validation errors:", validation.errors);
+        setToast({
+          message: `Validation failed: ${validation.errors.join(', ')}`,
+          type: 'error'
+        });
+        return;
+      }
+      
+      // Use validated data
+      const requestData = validation.data;
+      
       // DEBUG: Log the request data
-      console.log("PAYMENT REQUEST DATA (FINAL):", requestData);
+      console.log("PAYMENT REQUEST DATA (VALIDATED):", requestData);
       console.log("DATA TYPES:", {
         userIdType: typeof requestData.userId,
         stationIdType: typeof requestData.stationId,
