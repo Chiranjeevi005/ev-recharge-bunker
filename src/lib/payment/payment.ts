@@ -141,21 +141,24 @@ export class PaymentService {
               updatedAt: new Date()
             } 
           },
-          { returnDocument: 'after' }
+          { 
+            returnDocument: 'after',
+            includeResultMetadata: true
+          }
         );
         
         console.log("findOneAndUpdate result for paymentId update:", result);
         
-        if (!result || !result.value) {
+        if (!result || !result['value']) {
           console.error(`Failed to update paymentId for orderId: '${orderId}'`);
           return null;
         }
         
         console.log(`Successfully updated paymentId for orderId: '${orderId}'`);
         const updatedPayment = {
-          ...result.value,
-          id: result.value._id.toString(),
-          _id: result.value._id
+          ...result['value'],
+          id: result['value']._id.toString(),
+          _id: result['value']._id
         } as Payment;
         
         // Clear Redis cache for this user by setting a short TTL
@@ -182,14 +185,17 @@ export class PaymentService {
             updatedAt: new Date()
           } 
         },
-        { returnDocument: 'after' }
+        { 
+          returnDocument: 'after',
+          includeResultMetadata: true
+        }
       );
       
       console.log("findOneAndUpdate result for status update:", result);
       
       // Check if a document was found and updated
       // The result object has a 'value' property that contains the updated document
-      if (!result || !result.value) {
+      if (!result || !result['value']) {
         console.error(`Payment record not found for orderId: '${orderId}' after update attempt`);
         // Let's try one more time with a direct update operation
         try {
@@ -238,9 +244,9 @@ export class PaymentService {
       console.log(`Successfully updated payment status for orderId: '${orderId}'`);
       
       const updatedPayment = {
-        ...result.value,
-        id: result.value._id.toString(),
-        _id: result.value._id
+        ...result['value'],
+        id: result['value']._id.toString(),
+        _id: result['value']._id
       } as Payment;
       
       // Clear Redis cache for this user by setting a short TTL
