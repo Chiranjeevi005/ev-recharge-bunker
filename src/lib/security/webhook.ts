@@ -24,6 +24,11 @@ export function verifyWebhookSignature(
       .update(payloadBuffer)
       .digest('hex');
     
+    // Check if signature is a valid hex string before attempting comparison
+    if (!/^[0-9a-fA-F]+$/.test(signature)) {
+      return false;
+    }
+    
     // Compare signatures safely
     return crypto.timingSafeEqual(
       Buffer.from(signature, 'hex'),
@@ -69,6 +74,11 @@ export function verifyStripeWebhook(
       .digest('hex');
     
     const signatureHash = `v1=${expectedSignature}`;
+    
+    // Check if both signatures are valid before attempting comparison
+    if (typeof signature !== 'string' || typeof signatureHash !== 'string') {
+      return false;
+    }
     
     return crypto.timingSafeEqual(
       Buffer.from(signature),

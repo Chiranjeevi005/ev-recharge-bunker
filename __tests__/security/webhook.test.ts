@@ -68,5 +68,11 @@ describe('Webhook Security', () => {
       const signature = 'invalid-signature';
       expect(verifyStripeWebhook(payload, signature, secret)).toBe(false);
     });
+    
+    // Test for non-hex signature that would cause timingSafeEqual to fail
+    it('should reject non-hex signature without throwing error', () => {
+      const signature = 'not-a-hex-string-at-all';
+      expect(verifyWebhookSignature(payload, signature, secret)).toBe(false);
+    });
   });
 });
