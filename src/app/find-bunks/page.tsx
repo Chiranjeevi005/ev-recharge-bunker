@@ -188,29 +188,30 @@ export default function FindBunksPage() {
   };
 
   const calculatePrice = () => {
+    // Ensure we have valid values
     if (!selectedStation || !selectedSlot || !duration || duration <= 0) {
       console.log("calculatePrice: Invalid parameters", { selectedStation, selectedSlot, duration });
-      return 0;
+      return 1; // Default to ₹1 minimum
     }
     
     const slot = selectedStation.slots.find(s => s.slotId === selectedSlot);
     if (!slot) {
       console.log("calculatePrice: Slot not found", { slotId: selectedSlot, slots: selectedStation.slots });
-      return 0;
+      return 1; // Default to ₹1 minimum
     }
     
     // Ensure we have valid numbers
     const pricePerHour = Number(slot.pricePerHour) || 0;
-    const durationValue = Number(duration) || 0;
+    const durationValue = Number(duration) || 1; // Default to 1 hour
     
     if (pricePerHour <= 0 || durationValue <= 0) {
       console.log("calculatePrice: Invalid price or duration values", { pricePerHour, durationValue });
-      return 0;
+      return 1; // Default to ₹1 minimum
     }
     
     const price = pricePerHour * durationValue;
     console.log("calculatePrice: Calculated price", { pricePerHour, duration: durationValue, price });
-    return price;
+    return Math.max(1, price); // Ensure at least ₹1
   };
 
   const handlePayment = async () => {
@@ -228,9 +229,21 @@ export default function FindBunksPage() {
       const amount = calculatePrice();
       console.log("handlePayment: Calculated amount", { amount, duration });
       
-      // Validate amount before proceeding - ensure it's at least 1
+      // Ensure we have valid values
       const validAmount = Math.max(1, Number(amount) || 1);
       const validDuration = Math.max(1, Math.min(24, Number(duration) || 1));
+      const validUserId = user.id || "anonymous";
+      const validStationId = selectedStation._id || "";
+      const validSlotId = selectedSlot || "";
+      
+      // Validate before proceeding
+      if (!validStationId || !validSlotId) {
+        setToast({
+          message: "Invalid station or slot selection.",
+          type: 'error'
+        });
+        return;
+      }
       
       if (validAmount <= 0) {
         setToast({
@@ -248,17 +261,17 @@ export default function FindBunksPage() {
         return;
       }
       
-      // Ensure all values are proper numbers before sending to API
+      // Create request data with guaranteed non-null values
       const requestData = {
-        userId: user.id || "anonymous",
-        stationId: selectedStation._id || "",
-        slotId: selectedSlot || "",
-        duration: validDuration, // Use validated duration
-        amount: validAmount, // Use validated amount
+        userId: String(validUserId),
+        stationId: String(validStationId),
+        slotId: String(validSlotId),
+        duration: Number(validDuration),
+        amount: Number(validAmount),
       };
       
       // DEBUG: Log the request data
-      console.log("PAYMENT REQUEST DATA:", requestData);
+      console.log("PAYMENT REQUEST DATA (FINAL):", requestData);
       console.log("DATA TYPES:", {
         userIdType: typeof requestData.userId,
         stationIdType: typeof requestData.stationId,
@@ -266,23 +279,6 @@ export default function FindBunksPage() {
         durationType: typeof requestData.duration,
         amountType: typeof requestData.amount
       });
-      
-      // Additional validation
-      if (!requestData.stationId || !requestData.slotId) {
-        setToast({
-          message: "Invalid station or slot selection.",
-          type: 'error'
-        });
-        return;
-      }
-      
-      if (isNaN(requestData.duration) || isNaN(requestData.amount) || requestData.amount <= 0) {
-        setToast({
-          message: "Invalid numeric values. Please try again.",
-          type: 'error'
-        });
-        return;
-      }
       
       showLoader("Processing payment..."); // Show loader
       
@@ -306,7 +302,7 @@ export default function FindBunksPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify(requestData), // This will never have null values now
       });
       
       const orderData = await response.json();

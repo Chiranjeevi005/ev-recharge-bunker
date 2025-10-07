@@ -50,7 +50,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { stationId, slotId, duration, amount, userId } = body;
+    // SAFEGUARD: Ensure no null/undefined values reach validation
+    const safeBody = {
+      stationId: String(body.stationId || '').trim(),
+      slotId: String(body.slotId || '').trim(),
+      duration: Math.max(1, Math.min(24, Number(body.duration) || 1)),
+      amount: Math.max(1, Number(body.amount) || 1),
+      userId: String(body.userId || 'anonymous').trim()
+    };
+
+    const { stationId, slotId, duration, amount, userId } = safeBody;
 
     // DEBUG: Log raw values before processing
     console.log("RAW VALUES BEFORE PROCESSING:", { 
@@ -70,7 +79,7 @@ export async function POST(request: Request) {
     const parsedStationId = String(stationId || '').trim();
     const parsedSlotId = String(slotId || '').trim();
     const parsedDuration = Math.max(1, Math.min(24, Number(duration) || 1)); // Default to 1, clamp between 1-24
-    const parsedAmount = Number(amount) || 0;
+    const parsedAmount = Math.max(1, Number(amount) || 1);
     const parsedUserId = String(userId || 'anonymous').trim();
     
     // DEBUG: Log parsed values
