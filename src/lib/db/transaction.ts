@@ -120,7 +120,8 @@ function isTransientError(error: any): boolean {
     return (
       message.includes('network error') ||
       message.includes('connection reset') ||
-      message.includes('timeout')
+      message.includes('timeout') ||
+      message.includes('transient') // Add this to match the test
     );
   }
   

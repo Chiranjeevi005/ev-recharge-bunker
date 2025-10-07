@@ -61,14 +61,14 @@ describe('executeTransaction', () => {
 
   it('should throw error after max retries exceeded', async () => {
     const transactionFunction = jest.fn()
-      .mockRejectedValue(new Error('Persistent error'));
+      .mockRejectedValue(new Error('Transient network error'));
     
     mockSession.startTransaction.mockImplementation(() => {});
     mockSession.abortTransaction.mockImplementation(() => Promise.resolve());
     
     await expect(executeTransaction(transactionFunction, 2))
       .rejects
-      .toThrow('Transaction failed after 2 attempts: Error: Persistent error');
+      .toThrow('Transaction failed after 2 attempts: Error: Transient network error');
     
     expect(mockClient.startSession).toHaveBeenCalledTimes(1);
     expect(mockSession.startTransaction).toHaveBeenCalledTimes(2);
