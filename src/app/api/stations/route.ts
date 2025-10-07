@@ -95,8 +95,8 @@ export async function GET(request: Request) {
     // Convert ObjectId to string for JSON serialization and transform location data
     const serializedStations = stations.map((station: any) => {
       // Use direct lat/lng fields instead of transforming from GeoJSON
-      let lat = station.lat || 0;
-      let lng = station.lng || 0;
+      const lat = station.lat || 0;
+      const lng = station.lng || 0;
       
       // Debug logging to see what we're getting
       console.log(`Station ${station.name}: lat=${lat}, lng=${lng}`);
@@ -255,8 +255,8 @@ export async function PUT(request: Request) {
     }
     
     // Transform location data for the response
-    let lat = result.value.lat || 0;
-    let lng = result.value.lng || 0;
+    const lat = result.value.lat || 0;
+    const lng = result.value.lng || 0;
 
     const transformedResult = {
       ...result.value,

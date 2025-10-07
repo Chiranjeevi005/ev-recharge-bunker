@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import type { Adapter } from "next-auth/adapters";
@@ -34,10 +33,6 @@ declare module "@auth/core/jwt" {
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter() as Adapter,
   providers: [
-    Google({
-      clientId: process.env['GOOGLE_CLIENT_ID'] || "",
-      clientSecret: process.env['GOOGLE_CLIENT_SECRET'] || "",
-    }),
     Credentials({
       id: "admin-credentials",
       name: "Admin Credentials",
@@ -68,52 +63,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Check if admin user exists in database, create if not
-        const { db } = await connectToDatabase();
-        let admin = await db.collection("admins").findOne({ email: "admin@ebunker.com" });
-
-        if (!admin) {
-          // Hash the password for security
-          const hashedPassword = await bcrypt.hash("admin123", 12);
-          
-          // Create the admin user with fixed credentials
-          const result = await db.collection("admins").insertOne({
-            email: "admin@ebunker.com",
-            hashedPassword,
-            role: "admin",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-          
-          admin = await db.collection("admins").findOne({ _id: result.insertedId });
-        } else {
-          // Ensure the admin user always has the correct email and role
-          // This prevents any potential database manipulation
-          if (admin['email'] !== "admin@ebunker.com" || admin['role'] !== "admin") {
-            await db.collection("admins").updateOne(
-              { _id: admin._id },
-              { 
-                $set: { 
-                  email: "admin@ebunker.com", 
-                  role: "admin",
-                  updatedAt: new Date()
-                } 
-              }
-            );
-            admin = await db.collection("admins").findOne({ _id: admin._id });
-          }
-        }
-
-        if (!admin) {
-          console.log("Failed to find or create admin");
-          return null;
-        }
-
+        // Return the admin user object
         console.log("Admin authentication successful");
         return {
-          id: admin._id.toString(),
-          email: admin['email'],
-          role: admin['role'],
+          id: "admin",
+          email: "admin@ebunker.com",
+          role: "admin",
         };
       }
     }),
@@ -148,11 +103,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // For email/password clients, check if they have a credentials-type googleId
+        // For email/password clients, check if they have a credentials-type identifier
         // In our implementation, clients with googleId starting with "credentials-" are email/password clients
         if (!client['googleId']?.startsWith("credentials-")) {
           console.log("Client is not a credentials-type client");
-          // This is a Google OAuth client, they can't use password auth
+          // This is an OAuth client, they can't use password auth
           return null;
         }
 
@@ -224,24 +179,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   events: {
     async signIn({ user, account, profile }) {
       console.log("User signed in:", user.id);
-      // Update last login time
-      const { db } = await connectToDatabase();
-      await db.collection("clients").updateOne(
-        { _id: new ObjectId(user.id) },
-        { $set: { lastLogin: new Date() } }
-      );
     },
-    async signOut(message) {
-      // Handle both possible message types
-      if ('token' in message && message.token) {
-        console.log("User signed out with token:", message.token.id);
-      } else if ('session' in message && message.session) {
-        // For session, we need to check if it has a user property
-        const session = message.session as any;
-        if (session.user && session.user.id) {
-          console.log("User signed out with session:", session.user.id);
-        }
-      }
-    }
-  }
+    async signOut() {
+      console.log("User signed out");
+    },
+  },
 });
