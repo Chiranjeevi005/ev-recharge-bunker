@@ -120,6 +120,18 @@ function AdminDashboardContent() {
   const { isConnected, updates, joinUserRoom, data: realTimeData, loading, error } = useRealTimeData();
   const dataFetchedRef = useRef(false);
   
+  // Redirect if user is not an admin
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role && session.user.role !== 'admin') {
+      // Redirect to appropriate dashboard based on role
+      if (session.user.role === 'client') {
+        router.push('/dashboard/client');
+      } else {
+        router.push('/unauthorized');
+      }
+    }
+  }, [session, status, router]);
+  
   // Check if we're running on Vercel (serverless environment)
   const isVercel = process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'production' || 
                   process.env['VERCEL'] === '1' ||
@@ -677,6 +689,22 @@ function AdminDashboardContent() {
   }, [updates]);
 
   {/* Main content - Mobile-first responsive design */ }
+  if (status === "loading" || loadingState) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4">
+        <div className="text-center">
+          <LoadingSpinner size="lg" className="mb-4" />
+          <p className="text-[#CBD5E1]">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated or not admin
+  if (status === "unauthenticated" || !session || session.user?.role !== 'admin') {
+    return null;
+  }
+
   return (
     // Added background gradient for consistency with other dashboard pages
     // Added pt-16 to account for fixed navbar height
@@ -692,7 +720,7 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
                 <p className="text-[#CBD5E1] mt-2">Welcome, {session?.user?.name || 'Admin'}. Here's what's happening today.</p>
-                {/* Real-time connection status is intentionally hidden for cleaner UI */}
+                {/* Real-time connection status is intentionally hidden for cleaner UI */ }
               </div>
               
               {/* Sub-tabs for Dashboard - Mobile-first responsive design */ }

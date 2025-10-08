@@ -9,8 +9,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   ChargingStatusCard, 
-  PaymentHistoryCard, 
-  SlotAvailabilityCard,
+  PaymentHistoryCard,
   BusinessStats,
   JourneyImpactStats,
   MapSection,
@@ -29,14 +28,6 @@ interface Session {
     image?: string;
     role?: string;
   }
-}
-
-// Define the slot type
-interface Slot {
-  slotId: string;
-  status: "available" | "occupied" | "maintenance";
-  chargerType: string;
-  pricePerHour: number;
 }
 
 // Loading component for Suspense
@@ -72,9 +63,19 @@ function ClientDashboardContent() {
 
   const [chargingStatus, setChargingStatus] = useState<'available' | 'charging' | 'completed' | 'offline' | 'maintenance'>('available');
   const [paymentHistory, setPaymentHistory] = useState<Payment[]>([]);
-  const [slots, setSlots] = useState<Slot[]>([]);
   const [paymentLoading, setPaymentLoading] = useState(true);
-  const [slotsLoading, setSlotsLoading] = useState(true);
+
+  // Redirect if user is not a client
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role && session.user.role !== 'client') {
+      // Redirect to appropriate dashboard based on role
+      if (session.user.role === 'admin') {
+        router.push('/dashboard/admin');
+      } else {
+        router.push('/unauthorized');
+      }
+    }
+  }, [session, status, router]);
 
   // Fetch payment history
   useEffect(() => {
@@ -101,53 +102,6 @@ function ClientDashboardContent() {
       fetchPaymentHistory();
     }
   }, [status, session]);
-
-  // Fetch slot availability
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.id) {
-      const fetchSlotAvailability = async () => {
-        try {
-          setSlotsLoading(true);
-          const response = await fetch(`/api/dashboard/slots?userId=${session.user.id}`);
-          if (response.ok) {
-            const result = await response.json();
-            // Extract slots data from the response
-            const slotsData = result.slots || [];
-            setSlots(slotsData);
-          } else {
-            console.error("Failed to fetch slot availability");
-            // Fallback to default slots
-            setSlots([
-              { slotId: 'SL-7890', status: 'available', chargerType: 'Fast Charger', pricePerHour: 50 },
-              { slotId: 'SL-7891', status: 'occupied', chargerType: 'Standard Charger', pricePerHour: 30 },
-              { slotId: 'SL-7892', status: 'maintenance', chargerType: 'Fast Charger', pricePerHour: 50 },
-              { slotId: 'SL-7893', status: 'available', chargerType: 'Ultra Fast Charger', pricePerHour: 80 }
-            ]);
-          }
-        } catch (err) {
-          console.error("Error fetching slot availability:", err);
-          // Fallback to default slots
-          setSlots([
-            { slotId: 'SL-7890', status: 'available', chargerType: 'Fast Charger', pricePerHour: 50 },
-            { slotId: 'SL-7891', status: 'occupied', chargerType: 'Standard Charger', pricePerHour: 30 },
-            { slotId: 'SL-7892', status: 'maintenance', chargerType: 'Fast Charger', pricePerHour: 50 },
-            { slotId: 'SL-7893', status: 'available', chargerType: 'Ultra Fast Charger', pricePerHour: 80 }
-          ]);
-        } finally {
-          setSlotsLoading(false);
-        }
-      };
-
-      fetchSlotAvailability();
-    }
-  }, [status, session]);
-
-  // Handle book slot action
-  const handleBookSlot = (slotId: string) => {
-    // In a real app, you would navigate to the booking page or show a booking modal
-    console.log(`Booking slot ${slotId}`);
-    router.push(`/booking?slotId=${slotId}`);
-  };
 
   // Handle view history action
   const handleViewHistory = () => {
@@ -184,7 +138,8 @@ function ClientDashboardContent() {
     );
   }
 
-  if (!session) {
+  // Redirect if not authenticated or not a client
+  if (status === "unauthenticated" || !session || session.user?.role !== 'client') {
     return null;
   }
 
@@ -275,14 +230,6 @@ function ClientDashboardContent() {
             
             {/* Right Column */}
             <div className="space-y-4 sm:space-y-6">
-              {/* Slot Availability */}
-              <SlotAvailabilityCard 
-                stationName="Green Energy Hub"
-                slots={slots}
-                loading={slotsLoading}
-                onBookSlot={handleBookSlot}
-              />
-              
               {/* Business Stats */}
               <BusinessStats />
               

@@ -1,5 +1,4 @@
 export { ChargingStatusCard } from './ChargingStatusCard';
-export { SlotAvailabilityCard } from './SlotAvailabilityCard';
 export { PaymentHistoryCard } from './PaymentHistoryCard';
 export { ProfessionalPaymentHistoryCard } from './ProfessionalPaymentHistoryCard';
 export { default as NotificationBanner } from './NotificationBanner';

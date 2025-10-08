@@ -81,7 +81,6 @@ function LoginContent() {
         email: adminCredentials.email.trim(),
         password: adminCredentials.password.trim(),
         redirect: false,
-        callbackUrl: "/dashboard/admin",
       });
 
       if (result?.error) {
@@ -94,8 +93,8 @@ function LoginContent() {
         hideLoader();
         // Small delay to ensure state is properly set
         setTimeout(() => {
-          // Redirect to admin dashboard after successful login
-          router.push("/dashboard/admin");
+          // Redirect to home page after successful login
+          router.push("/");
           router.refresh(); // Refresh to update navbar
         }, 100);
       }
@@ -120,7 +119,6 @@ function LoginContent() {
         email: clientCredentials.email.trim(),
         password: clientCredentials.password.trim(),
         redirect: false,
-        callbackUrl: "/",
       });
 
       if (result?.error) {

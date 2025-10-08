@@ -217,13 +217,13 @@ function NavbarContent() {
           <div className="hidden md:block relative">
             {session?.user ? (
               <div className="flex items-center space-x-2 sm:space-x-3">
-                {/* CHANGED: Direct link to dashboard instead of redirect page */}
+                {/* Dashboard link that routes based on user role - only shown when logged in */}
                 <button 
                   onClick={() => {
                     if (session.user?.role === "admin") {
                       router.push("/dashboard/admin");
                     } else {
-                      router.push("/dashboard");
+                      router.push("/dashboard/client");
                     }
                     // Close mobile menu if open
                     setIsMenuOpen(false);
@@ -320,9 +320,7 @@ function NavbarContent() {
           <div 
             className="md:hidden bg-[#1E293B] border-t border-[#334155]/50 overflow-hidden transition-all duration-300 ease-in-out"
             style={{ maxHeight: isMenuOpen ? '500px' : '0px' }}
-
-
->
+          >
             <div className="px-3 py-2 sm:px-4 sm:py-3 space-y-1">
               <button 
                 onClick={() => handleNavigation("/find-bunks", "Finding charging stations...")}
@@ -344,13 +342,13 @@ function NavbarContent() {
                     <div className="px-3 py-2 text-[#CBD5E1] text-sm">
                       Welcome, {userName || session.user.name || session.user.email}
                     </div>
-                    {/* CHANGED: Direct link to dashboard instead of redirect page */}
+                    {/* Dashboard link that routes based on user role - only shown when logged in */}
                     <button 
                       onClick={() => {
                         if (session.user?.role === "admin") {
                           router.push("/dashboard/admin");
                         } else {
-                          router.push("/dashboard");
+                          router.push("/dashboard/client");
                         }
                         // Close mobile menu if open
                         setIsMenuOpen(false);
