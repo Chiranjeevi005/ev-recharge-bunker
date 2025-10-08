@@ -7,13 +7,14 @@ import { Card } from "@/components/common/Card";
 import Link from "next/link";
 import { useLoader } from "@/context/LoaderContext";
 import { useRouteTransition } from '@/hooks/useRouteTransition';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 // Loading component for Suspense
 function Loading() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <LoadingSpinner size="lg" className="mb-4" />
         <p className="text-[#CBD5E1]">Loading...</p>
       </div>
     </div>

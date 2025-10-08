@@ -73,17 +73,17 @@ export const MapSection: React.FC<MapSectionProps> = React.memo(({ onBookPay }) 
   }, []);
 
   return (
-    <div className="rounded-2xl p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-[#F1F5F9]">Charging Stations Near You</h2>
+    <div className="rounded-2xl p-4 sm:p-6 shadow-lg border border-[#475569]/50 relative overflow-hidden bg-[#1E293B]/50">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-[#F1F5F9]">Charging Stations Near You</h2>
         <button 
           onClick={onBookPay}
-          className="px-4 py-2 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity text-sm"
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity text-sm sm:text-base"
         >
           View All Stations
         </button>
       </div>
-      <div className="px-4 py-6 h-[450px]">
+      <div className="px-2 sm:px-4 py-4 sm:py-6 h-[300px] sm:h-[400px] md:h-[450px]">
         <FuturisticMap 
           userId={session?.user?.id}
           location={location ? CITY_NAME_MAPPING[location] || location : null}

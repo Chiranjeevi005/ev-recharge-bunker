@@ -8,6 +8,7 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Button } from '@/components/common/Button';
 import { Footer } from '@/components/landing/Footer';
 import { useLoader } from '@/context/LoaderContext';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import io from 'socket.io-client';
 
 interface Payment {
@@ -253,7 +254,7 @@ export default function PaymentHistoryPage() {
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="text-center">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+                  <LoadingSpinner size="lg" className="mb-4" />
                   <p className="text-[#CBD5E1]">Loading payment history...</p>
                 </div>
               </div>

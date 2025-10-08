@@ -19,6 +19,7 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [task, setTask] = useState("Loading...");
   const [state, setState] = useState<'loading' | 'success' | 'error' | 'idle'>('loading');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check if we're on a dashboard page and hide loader initially
   useEffect(() => {
@@ -42,21 +43,33 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       timeoutRef.current = null;
     }
     
+    // Clear any existing hide timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    
     setTask(task);
     setState(state);
     setIsLoading(true);
   }, []);
 
   const hideLoader = useCallback(() => {
-    // Add a small delay to ensure smooth transitions and prevent flickering
+    // Clear any existing timeout to prevent race conditions
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     
-    timeoutRef.current = setTimeout(() => {
+    // Add a small delay to ensure smooth transitions and prevent flickering
+    // Use hideTimeoutRef to track this specific timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+    
+    hideTimeoutRef.current = setTimeout(() => {
       setIsLoading(false);
-      timeoutRef.current = null;
-    }, 500); // Increased delay for smoother transitions
+      hideTimeoutRef.current = null;
+    }, 250); // Optimized delay for smoother transitions
   }, []);
 
   const updateLoader = useCallback((task: string, state: 'loading' | 'success' | 'error' | 'idle' = 'loading') => {
@@ -64,17 +77,29 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setState(state);
   }, []);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <LoaderContext.Provider value={{ isLoading, showLoader, hideLoader, updateLoader }}>
       {children}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isLoading && (
           <motion.div 
             className="fixed inset-0 z-50 flex items-center justify-center bg-[#1E293B] backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <UniversalLoader task={task} state={state} size="lg" />
           </motion.div>

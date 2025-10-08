@@ -10,15 +10,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoader } from '@/context/LoaderContext';
 import { useRealTimeData } from '@/hooks/useRealTimeData';
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart';
-import { FetchingAnimation } from '@/components/dashboard/FetchingAnimation';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { AdminDashboardTabs, DashboardOverview, DashboardAnalytics, DashboardActivity, ClientsManagement, StationsManagement, PaymentsManagement, ReportsManagement, SettingsManagement } from '@/components/dashboard';
 
 // Loading component for Suspense
 function Loading() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155] flex items-center justify-center p-4">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
-        <p className="text-[#CBD5E1]">Loading...</p>
+        <LoadingSpinner size="lg" className="mb-4" />
+        <p className="text-[#CBD5E1]">Loading dashboard...</p>
       </div>
     </div>
   );
@@ -74,37 +75,37 @@ const renderIcon = (iconName: string) => {
   switch (iconName) {
     case 'user-group':
       return (
-        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
         </svg>
       );
     case 'lightning-bolt':
       return (
-        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
         </svg>
       );
     case 'clock':
       return (
-        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
       );
     case 'currency-rupee':
       return (
-        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
       );
     case 'tree':
       return (
-        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
         </svg>
       );
     default:
       return (
-        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
         </svg>
       );
@@ -181,15 +182,6 @@ function AdminDashboardContent() {
     }
   }, [searchParams, activeTab, dashboardSubTab, clientsSubTab, stationsSubTab, paymentsSubTab, reportsSubTab, settingsSubTab]);
 
-  interface Stat {
-    id: string;
-    name: string;
-    value: number;
-    change: number;
-    color: string;
-    icon: string;
-  }
-
   // Add new state variables for chart data after the existing state declarations
   // Real data from MongoDB
   // Add new state variables for chart data after the existing state declarations
@@ -201,9 +193,16 @@ function AdminDashboardContent() {
   const [userGrowthData, setUserGrowthData] = useState<any[]>([]);
   const [revenueByCityData, setRevenueByCityData] = useState<any[]>([]);
   const [usageByCityData, setUsageByCityData] = useState<any[]>([]);
-  const [reports, setReports] = useState<any[]>([]); // New state for report data
+  const [reports, setReports] = useState<any[]>([]);
   const [errorState, setErrorState] = useState<string | null>(null);
-  const [loadingState, setLoadingState] = useState(true);
+  const [loadingState, setLoadingState] = useState<boolean>(true);
+
+  // Function to update URL parameters
+  const updateUrl = (tab: string, subTab: string) => {
+    // In a real implementation, you would use router.push with query parameters
+    // For now, we'll just log the action
+    console.log(`Updating URL: tab=${tab}, subTab=${subTab}`);
+  };
 
   // Enhanced data fetching with better error handling and timeout management
   const fetchData = useCallback(async () => {
@@ -415,14 +414,6 @@ function AdminDashboardContent() {
       setPayments(realTimeData.payments);
     }
   }, [realTimeData]);
-
-  // Helper function to update URL parameters
-  const updateUrl = (tab: string, subTab: string) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set('tab', tab);
-    params.set('subTab', subTab);
-    window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
-  };
 
   // Helper function to safely get property values
   const getSafeProperty = (obj: any, prop: string, defaultValue: any) => {
@@ -701,13 +692,7 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
                 <p className="text-[#CBD5E1] mt-2">Welcome, {session?.user?.name || 'Admin'}. Here's what's happening today.</p>
-                {isVercel ? (
-                  <p className="text-blue-400 text-sm mt-1">Real-time connection: Not available (Vercel deployment)</p>
-                ) : isConnected ? (
-                  <p className="text-green-400 text-sm mt-1">Real-time connection: Active</p>
-                ) : (
-                  <p className="text-yellow-400 text-sm mt-1">Real-time connection: Connecting...</p>
-                )}
+                {/* Real-time connection status is intentionally hidden for cleaner UI */}
               </div>
               
               {/* Sub-tabs for Dashboard - Mobile-first responsive design */ }
@@ -757,150 +742,25 @@ function AdminDashboardContent() {
 
               {/* Dashboard content based on sub-tab */ }
               {dashboardSubTab === 'overview' && (
-                <div className="w-full">
-                  {/* Stats cards - Updated to show Users, Stations, Locations, Revenue */ }
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-                    {stats.map((stat) => (
-                      <Card key={stat.id} className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6 hover:border-[#8B5CF6] transition-colors duration-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-[#CBD5E1]">{stat.name}</p>
-                            <p className="text-xl md:text-2xl font-bold text-[#F1F5F9] mt-1">{stat.value.toLocaleString()}</p>
-                            <p className={`text-xs md:text-sm mt-1 ${stat.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                              {stat.change >= 0 ? '↑' : '↓'} {Math.abs(stat.change)}% from last month
-                            </p>
-                          </div>
-                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r ${stat.color} flex items-center justify-center text-white`}>
-                            {renderIcon(stat.icon)}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                  
-                  {/* Charts and reports - Mobile-first responsive design */ }
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-                    <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                      <AnalyticsChart 
-                        type="line" 
-                        data={userGrowthData}
-                        dataKey="value" 
-                        title="User Growth Trends"
-                      />
-                    </Card>
-                    
-                    <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                      <AnalyticsChart 
-                        type="bar" 
-                        data={revenueByCityData}
-                        dataKey="value"
-                        dataKeys={["value", "growth"]}
-                        seriesNames={["Revenue", "Growth Rate"]}
-                        title="Revenue and Growth by City"
-                      />
-                    </Card>
-                  </div>
-                </div>
+                <DashboardOverview 
+                  stats={stats} 
+                  userGrowthData={userGrowthData} 
+                  revenueByCityData={revenueByCityData} 
+                />
               )}
               
               {dashboardSubTab === 'analytics' && (
-                <div className="w-full">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
-                    <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                      <AnalyticsChart 
-                        type="line" 
-                        data={revenueByCityData}
-                        dataKey="value" 
-                        title="Revenue Trends by City"
-                      />
-                    </Card>
-                    <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                      <AnalyticsChart 
-                        type="bar" 
-                        data={usageByCityData}
-                        dataKey="users"
-                        dataKeys={["users", "chargingSessions"]}
-                        seriesNames={["Active Users", "Charging Sessions"]}
-                        title="User Engagement and Usage by City"
-                      />
-                    </Card>
-                  </div>
-                </div>
+                <DashboardAnalytics 
+                  revenueByCityData={revenueByCityData} 
+                  usageByCityData={usageByCityData} 
+                />
               )}
               
               {dashboardSubTab === 'activity' && (
-                <div className="w-full">
-                  {/* Recent activity - Mobile-first responsive design */ }
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                    <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                      <h3 className="text-lg font-bold text-[#F1F5F9] mb-4 md:mb-6">Recent Clients</h3>
-                      <div className="space-y-3 md:space-y-4">
-                        {clients.slice(0, 5).map((client) => (
-                          <div key={client._id} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-xs md:text-sm font-medium mr-2 md:mr-3">
-                                {client.name.charAt(0)}
-                              </div>
-                              <div>
-                                <p className="text-[#F1F5F9] font-medium text-sm md:text-base">{client.name}</p>
-                                <p className="text-[#CBD5E1] text-xs md:text-sm">{client.email}</p>
-                              </div>
-                            </div>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              client.status === 'active' 
-                                ? 'bg-green-900/30 text-green-400' 
-                                : client.status === 'suspended'
-                                  ? 'bg-red-900/30 text-red-400'
-                                  : 'bg-yellow-900/30 text-yellow-400'
-                            }`}>
-                              {client.status}
-                            </span>
-                          </div>
-                        ))}
-                        {clients.length === 0 && (
-                          <div className="text-center py-4 text-[#CBD5E1]">
-                            No clients found
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                    
-                    <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                      <h3 className="text-lg font-bold text-[#F1F5F9] mb-4 md:mb-6">Recent Payments</h3>
-                      <div className="space-y-3 md:space-y-4">
-                        {payments.slice(0, 5).map((payment) => (
-                          <div key={payment._id} className="flex items-center justify-between">
-                            <div>
-                              <p className="text-[#F1F5F9] font-medium text-sm md:text-base">₹{payment.amount}</p>
-                              <p className="text-[#CBD5E1] text-xs md:text-sm">
-                                {new Date(payment.createdAt).toLocaleDateString()} at {new Date(payment.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                              <p className="text-[#94A3B8] text-xs mt-1">
-                                Order ID: {payment.orderId.substring(0, 8)}...
-                              </p>
-                            </div>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              payment.status === 'completed' 
-                                ? 'bg-green-900/30 text-green-400' 
-                                : payment.status === 'failed'
-                                  ? 'bg-red-900/30 text-red-400'
-                                  : payment.status === 'refunded'
-                                    ? 'bg-blue-900/30 text-blue-400'
-                                    : 'bg-yellow-900/30 text-yellow-400'
-                            }`}>
-                              {payment.status}
-                            </span>
-                          </div>
-                        ))}
-                        {payments.length === 0 && (
-                          <div className="text-center py-4 text-[#CBD5E1]">
-                            No payments found
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </div>
-                </div>
+                <DashboardActivity 
+                  clients={clients} 
+                  payments={payments} 
+                />
               )}
             </div>
           )}
@@ -912,187 +772,12 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-[#F1F5F9] mb-1 md:mb-2">Client Management</h2>
-                  <p className="text-[#CBD5E1] text-sm md:text-base">Manage all client accounts in the system</p>
-                </div>
-                <Button className="mt-3 md:mt-0 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white text-sm md:text-base">
-                  <svg className="w-4 h-4 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Add Client
-                </Button>
-              </div>
-              
-              {/* Sub-tabs for Clients - Mobile-first responsive design */ }
-              <div className="mb-4 md:mb-6 border-b border-[#334155] overflow-x-auto">
-                <nav className="flex space-x-4 md:space-x-6 min-w-max md:min-w-0">
-                  <button
-                    onClick={() => {
-                      setClientsSubTab('all');
-                      updateUrl('clients', 'all');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      clientsSubTab === 'all'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    All Clients
-                  </button>
-                  <button
-                    onClick={() => {
-                      setClientsSubTab('active');
-                      updateUrl('clients', 'active');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      clientsSubTab === 'active'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Active
-                  </button>
-                  <button
-                    onClick={() => {
-                      setClientsSubTab('inactive');
-                      updateUrl('clients', 'inactive');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      clientsSubTab === 'inactive'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Inactive
-                  </button>
-                  <button
-                    onClick={() => {
-                      setClientsSubTab('suspended');
-                      updateUrl('clients', 'suspended');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      clientsSubTab === 'suspended'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Suspended
-                  </button>
-                </nav>
-              </div>
-
-              <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-                  <div className="relative mb-3 md:mb-0 md:mr-3 w-full md:w-auto">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-4 w-4 md:h-5 md:w-5 text-[#CBD5E1]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search clients..."
-                      className="block w-full pl-9 pr-3 py-2 rounded-lg bg-white border border-[#334155] text-[#1E293B] placeholder-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent text-sm md:text-base"
-                    />
-                  </div>
-                  <div className="flex space-x-2 w-full md:w-auto">
-                    <Button variant="outline" size="sm" className="flex-1 md:flex-none">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                      </svg>
-                      <span className="hidden md:inline ml-1">Filter</span>
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 md:flex-none">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                      </svg>
-                      <span className="hidden md:inline ml-1">Export</span>
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#334155]">
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Client</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm hidden md:table-cell">Email</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Role</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Status</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm hidden lg:table-cell">Last Login</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {clients.map((client) => (
-                        <tr key={client._id} className="border-b border-[#334155] hover:bg-[#F1F5F9]/30">
-                          <td className="py-3 md:py-4">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] flex items-center justify-center text-white text-xs md:text-sm font-medium mr-2 md:mr-3">
-                                {client.name.charAt(0)}
-                              </div>
-                              <div>
-                                <span className="text-[#F1F5F9] text-sm md:text-base block">{client.name}</span>
-                                <span className="text-[#CBD5E1] text-xs md:hidden">{client.email}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 md:py-4 text-[#CBD5E1] text-xs md:text-sm hidden md:table-cell">{client.email}</td>
-                          <td className="py-3 md:py-4">
-                            <span className="px-2 py-1 text-xs rounded-full bg-blue-900/30 text-blue-400">
-                              {client.role}
-                            </span>
-                          </td>
-                          <td className="py-3 md:py-4">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              client.status === 'active' 
-                                ? 'bg-green-900/30 text-green-400' 
-                                : client.status === 'suspended'
-                                  ? 'bg-red-900/30 text-red-400'
-                                  : 'bg-yellow-900/30 text-yellow-400'
-                            }`}>
-                              {client.status}
-                            </span>
-                          </td>
-                          <td className="py-3 md:py-4 text-[#CBD5E1] text-xs md:text-sm hidden lg:table-cell">
-                            {client.lastLogin ? new Date(client.lastLogin).toLocaleDateString() : 'Never'}
-                          </td>
-                          <td className="py-3 md:py-4">
-                            <div className="flex space-x-1">
-                              <Button variant="outline" size="sm" className="p-1 md:p-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                              </Button>
-                              <Button variant="outline" size="sm" className="p-1 md:p-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                </svg>
-                              </Button>
-                              <Button variant="outline" size="sm" className="p-1 md:p-2 text-red-400 hover:text-red-300">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-4 md:mt-6">
-                  <p className="text-[#CBD5E1] text-xs md:text-sm mb-3 md:mb-0">Showing 1 to {clients.length} of {clients.length} results</p>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" disabled className="text-xs md:text-sm">Previous</Button>
-                    <Button variant="outline" size="sm" className="text-xs md:text-sm">Next</Button>
-                  </div>
-                </div>
-              </Card>
+              <ClientsManagement 
+                clients={clients} 
+                clientsSubTab={clientsSubTab} 
+                setClientsSubTab={setClientsSubTab} 
+                updateUrl={updateUrl} 
+              />
             </div>
           )}
           
@@ -1103,121 +788,12 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-[#F1F5F9] mb-1 md:mb-2">Station Management</h2>
-                  <p className="text-[#CBD5E1] text-sm md:text-base">Manage all charging stations in the network</p>
-                </div>
-                <Button className="mt-3 md:mt-0 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white text-sm md:text-base">
-                  <svg className="w-4 h-4 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Add Station
-                </Button>
-              </div>
-              
-              {/* Sub-tabs for Stations - Mobile-first responsive design */ }
-              <div className="mb-4 md:mb-6 border-b border-[#334155] overflow-x-auto">
-                <nav className="flex space-x-4 md:space-x-6 min-w-max md:min-w-0">
-                  <button
-                    onClick={() => {
-                      setStationsSubTab('all');
-                      updateUrl('stations', 'all');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      stationsSubTab === 'all'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    All Stations
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStationsSubTab('active');
-                      updateUrl('stations', 'active');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      stationsSubTab === 'active'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Active
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStationsSubTab('maintenance');
-                      updateUrl('stations', 'maintenance');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      stationsSubTab === 'maintenance'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Maintenance
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStationsSubTab('inactive');
-                      updateUrl('stations', 'inactive');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      stationsSubTab === 'inactive'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Inactive
-                  </button>
-                </nav>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-                {stations.map((station) => (
-                  <Card key={station._id} className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6 hover:border-[#8B5CF6] transition-colors duration-200">
-                    <div className="flex items-center justify-between mb-3 md:mb-4">
-                      <h3 className="text-base md:text-lg font-bold text-[#F1F5F9] truncate">{station.name}</h3>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        station.status === 'active' 
-                          ? 'bg-green-900/30 text-green-400' 
-                          : station.status === 'maintenance'
-                            ? 'bg-yellow-900/30 text-yellow-400'
-                            : 'bg-red-900/30 text-red-400'
-                      }`}>
-                        {station.status}
-                      </span>
-                    </div>
-                    <p className="text-[#CBD5E1] text-sm md:text-base mb-2">{station.address}</p>
-                    <p className="text-[#CBD5E1] text-xs md:text-sm mb-3 md:mb-4">{station.city}</p>
-                    <div className="flex items-center justify-between mb-3 md:mb-4">
-                      <div>
-                        <p className="text-xs md:text-sm text-[#CBD5E1]">Slots</p>
-                        <p className="text-[#F1F5F9] font-medium text-sm md:text-base">{station.totalSlots}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs md:text-sm text-[#CBD5E1]">Available</p>
-                        <p className="text-[#F1F5F9] font-medium text-sm md:text-base">{station.availableSlots}</p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1 text-xs md:text-sm">
-                        <svg className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                        Edit
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1 text-red-400 hover:text-red-300 text-xs md:text-sm">
-                        <svg className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                        Remove
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+              <StationsManagement 
+                stations={stations} 
+                stationsSubTab={stationsSubTab} 
+                setStationsSubTab={setStationsSubTab} 
+                updateUrl={updateUrl} 
+              />
             </div>
           )}
           
@@ -1228,177 +804,12 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
-              <div className="mb-4 md:mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-[#F1F5F9] mb-1 md:mb-2">Payment Management</h2>
-                <p className="text-[#CBD5E1] text-sm md:text-base">Monitor all payment transactions in the system</p>
-              </div>
-              
-              {/* Sub-tabs for Payments - Mobile-first responsive design */ }
-              <div className="mb-4 md:mb-6 border-b border-[#334155] overflow-x-auto">
-                <nav className="flex space-x-4 md:space-x-6 min-w-max md:min-w-0">
-                  <button
-                    onClick={() => {
-                      setPaymentsSubTab('all');
-                      updateUrl('payments', 'all');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      paymentsSubTab === 'all'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    All Payments
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPaymentsSubTab('completed');
-                      updateUrl('payments', 'completed');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      paymentsSubTab === 'completed'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Completed
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPaymentsSubTab('pending');
-                      updateUrl('payments', 'pending');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      paymentsSubTab === 'pending'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Pending
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPaymentsSubTab('failed');
-                      updateUrl('payments', 'failed');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      paymentsSubTab === 'failed'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Failed
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPaymentsSubTab('refunded');
-                      updateUrl('payments', 'refunded');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      paymentsSubTab === 'refunded'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Refunded
-                  </button>
-                </nav>
-              </div>
-
-              <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-                  <div className="relative mb-3 md:mb-0 md:mr-3 w-full md:w-auto">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-4 w-4 md:h-5 md:w-5 text-[#CBD5E1]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search payments..."
-                      className="block w-full pl-9 pr-3 py-2 rounded-lg bg-white border border-[#334155] text-[#1E293B] placeholder-[#CBD5E1] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent text-sm md:text-base"
-                    />
-                  </div>
-                  <div className="flex space-x-2 w-full md:w-auto">
-                    <Button variant="outline" size="sm" className="flex-1 md:flex-none">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                      </svg>
-                      <span className="hidden md:inline ml-1">Filter</span>
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 md:flex-none">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                      </svg>
-                      <span className="hidden md:inline ml-1">Export</span>
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#334155]">
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Payment ID</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm hidden md:table-cell">Client</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Amount</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Status</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Date</th>
-                        <th className="py-2 md:py-3 text-left text-[#CBD5E1] font-medium text-xs md:text-sm">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payments.map((payment) => (
-                        <tr key={payment._id} className="border-b border-[#334155] hover:bg-[#F1F5F9]/30">
-                          <td className="py-3 md:py-4 text-[#F1F5F9] text-xs md:text-sm">#{payment.orderId.substring(0, 8)}</td>
-                          <td className="py-3 md:py-4 text-[#CBD5E1] text-xs md:text-sm hidden md:table-cell">Client {payment.userId.substring(0, 8)}</td>
-                          <td className="py-3 md:py-4 text-[#F1F5F9] text-xs md:text-sm">₹{payment.amount}</td>
-                          <td className="py-3 md:py-4">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              payment.status === 'completed' 
-                                ? 'bg-green-900/30 text-green-400' 
-                                : payment.status === 'failed'
-                                  ? 'bg-red-900/30 text-red-400'
-                                  : payment.status === 'refunded'
-                                    ? 'bg-blue-900/30 text-blue-400'
-                                    : 'bg-yellow-900/30 text-yellow-400'
-                            }`}>
-                              {payment.status}
-                            </span>
-                          </td>
-                          <td className="py-3 md:py-4 text-[#CBD5E1] text-xs md:text-sm">
-                            {new Date(payment.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="py-3 md:py-4">
-                            <div className="flex space-x-1">
-                              <Button variant="outline" size="sm" className="p-1 md:p-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                              </Button>
-                              {payment.status === 'completed' && (
-                                <Button variant="outline" size="sm" className="p-1 md:p-2 text-blue-400 hover:text-blue-300">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                  </svg>
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-4 md:mt-6">
-                  <p className="text-[#CBD5E1] text-xs md:text-sm mb-3 md:mb-0">Showing 1 to {payments.length} of {payments.length} results</p>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" disabled className="text-xs md:text-sm">Previous</Button>
-                    <Button variant="outline" size="sm" className="text-xs md:text-sm">Next</Button>
-                  </div>
-                </div>
-              </Card>
+              <PaymentsManagement 
+                payments={payments} 
+                paymentsSubTab={paymentsSubTab} 
+                setPaymentsSubTab={setPaymentsSubTab} 
+                updateUrl={updateUrl} 
+              />
             </div>
           )}
           
@@ -1409,152 +820,15 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
-              
-              {/* Sub-tabs for Reports - Mobile-first responsive design */ }
-              <div className="mb-6 border-b border-[#334155] overflow-x-auto">
-                <nav className="flex space-x-4 md:space-x-6 min-w-max md:min-w-0">
-                  <button
-                    onClick={() => {
-                      setReportsSubTab('usage');
-                      updateUrl('reports', 'usage');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      reportsSubTab === 'usage'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Usage Reports
-                  </button>
-                  <button
-                    onClick={() => {
-                      setReportsSubTab('financial');
-                      updateUrl('reports', 'financial');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      reportsSubTab === 'financial'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Financial Reports
-                  </button>
-                  <button
-                    onClick={() => {
-                      setReportsSubTab('performance');
-                      updateUrl('reports', 'performance');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      reportsSubTab === 'performance'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Performance Reports
-                  </button>
-                </nav>
-              </div>
-
-              {/* Reports content based on sub-tab */ }
-              {reportsSubTab === 'usage' && (
-                <div className="w-full">
-                  <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6 mb-6">
-                    <h3 className="text-lg font-bold text-[#F1F5F9] mb-4">Usage Statistics</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <AnalyticsChart 
-                          type="bar" 
-                          data={usageByCityData}
-                          dataKey="chargingSessions"
-                          title="Charging Sessions by City"
-                        />
-                      </div>
-                      <div>
-                        <AnalyticsChart 
-                          type="line" 
-                          data={userGrowthData}
-                          dataKey="value"
-                          title="User Growth Trend"
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
-
-              {reportsSubTab === 'financial' && (
-                <div className="w-full">
-                  <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6 mb-6">
-                    <h3 className="text-lg font-bold text-[#F1F5F9] mb-4">Financial Overview</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <AnalyticsChart 
-                          type="bar" 
-                          data={revenueByCityData}
-                          dataKey="value"
-                          title="Revenue by City"
-                        />
-                      </div>
-                      <div>
-                        <div className="space-y-4">
-                          {reports.map((report) => (
-                            <div key={report.id} className="flex items-center justify-between p-3 bg-[#334155]/50 rounded-lg">
-                              <div>
-                                <h4 className="font-medium text-[#F1F5F9]">{report.name}</h4>
-                                <p className="text-sm text-[#CBD5E1]">{report.dateRange}</p>
-                              </div>
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                report.status === 'completed' 
-                                  ? 'bg-green-900/30 text-green-400' 
-                                  : report.status === 'processing'
-                                    ? 'bg-yellow-900/30 text-yellow-400'
-                                    : 'bg-red-900/30 text-red-400'
-                              }`}>
-                                {report.status}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
-
-              {reportsSubTab === 'performance' && (
-                <div className="w-full">
-                  <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                    <h3 className="text-lg font-bold text-[#F1F5F9] mb-4">Performance Metrics</h3>
-                    <div className="space-y-6">
-                      <div>
-                        <AnalyticsChart 
-                          type="line" 
-                          data={userGrowthData}
-                          dataKey="value"
-                          title="System Performance Trend"
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="bg-[#334155]/50 p-4">
-                          <h4 className="font-medium text-[#F1F5F9] mb-2">Response Time</h4>
-                          <p className="text-2xl font-bold text-[#8B5CF6]">128ms</p>
-                          <p className="text-xs text-green-400">↓ 12% from last week</p>
-                        </Card>
-                        <Card className="bg-[#334155]/50 p-4">
-                          <h4 className="font-medium text-[#F1F5F9] mb-2">Uptime</h4>
-                          <p className="text-2xl font-bold text-[#10B981]">99.98%</p>
-                          <p className="text-xs text-green-400">↑ 0.02% from last week</p>
-                        </Card>
-                        <Card className="bg-[#334155]/50 p-4">
-                          <h4 className="font-medium text-[#F1F5F9] mb-2">Error Rate</h4>
-                          <p className="text-2xl font-bold text-[#EF4444]">0.02%</p>
-                          <p className="text-xs text-green-400">↓ 0.01% from last week</p>
-                        </Card>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
+              <ReportsManagement 
+                reports={reports} 
+                reportsSubTab={reportsSubTab} 
+                setReportsSubTab={setReportsSubTab} 
+                updateUrl={updateUrl} 
+                usageByCityData={usageByCityData} 
+                userGrowthData={userGrowthData} 
+                revenueByCityData={revenueByCityData} 
+              />
             </div>
           )}
 
@@ -1565,190 +839,11 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
               </div>
-              
-              {/* Sub-tabs for Settings - Mobile-first responsive design */ }
-              <div className="mb-6 border-b border-[#334155] overflow-x-auto">
-                <nav className="flex space-x-4 md:space-x-6 min-w-max md:min-w-0">
-                  <button
-                    onClick={() => {
-                      setSettingsSubTab('general');
-                      updateUrl('settings', 'general');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      settingsSubTab === 'general'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    General
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSettingsSubTab('security');
-                      updateUrl('settings', 'security');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      settingsSubTab === 'security'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Security
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSettingsSubTab('notifications');
-                      updateUrl('settings', 'notifications');
-                    }}
-                    className={`py-2 px-1 text-sm font-medium whitespace-nowrap ${
-                      settingsSubTab === 'notifications'
-                        ? 'text-[#8B5CF6] border-b-2 border-[#8B5CF6]'
-                        : 'text-[#CBD5E1] hover:text-[#F1F5F9]'
-                    }`}
-                  >
-                    Notifications
-                  </button>
-                </nav>
-              </div>
-
-              {/* Settings content based on sub-tab */ }
-              {settingsSubTab === 'general' && (
-                <div className="w-full">
-                  <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                    <h3 className="text-lg font-bold text-[#F1F5F9] mb-4">General Settings</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-[#CBD5E1] mb-1">Site Name</label>
-                        <input
-                          type="text"
-                          defaultValue="EV Bunker"
-                          className="w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-[#F1F5F9] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#CBD5E1] mb-1">Contact Email</label>
-                        <input
-                          type="email"
-                          defaultValue="admin@evbunker.com"
-                          className="w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-[#F1F5F9] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#CBD5E1] mb-1">Timezone</label>
-                        <select className="w-full px-3 py-2 rounded-lg bg-[#334155] border border-[#475569] text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]">
-                          <option>UTC</option>
-                          <option>IST (UTC+5:30)</option>
-                          <option>PST (UTC-8:00)</option>
-                        </select>
-                      </div>
-                      <div className="flex items-center justify-between pt-4">
-                        <div>
-                          <h4 className="font-medium text-[#F1F5F9]">Maintenance Mode</h4>
-                          <p className="text-sm text-[#CBD5E1]">Temporarily disable the platform for maintenance</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" />
-                          <div className="w-11 h-6 bg-[#475569] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
-                        </label>
-                      </div>
-                      <div className="pt-4">
-                        <Button className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white">
-                          Save Changes
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
-
-              {settingsSubTab === 'security' && (
-                <div className="w-full">
-                  <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                    <h3 className="text-lg font-bold text-[#F1F5F9] mb-4">Security Settings</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-[#F1F5F9] mb-2">Password Policy</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <input type="checkbox" className="mr-2 rounded bg-[#334155] border-[#475569] text-[#8B5CF6] focus:ring-[#8B5CF6]" defaultChecked />
-                            <label className="text-sm text-[#CBD5E1]">Require uppercase letters</label>
-                          </div>
-                          <div className="flex items-center">
-                            <input type="checkbox" className="mr-2 rounded bg-[#334155] border-[#475569] text-[#8B5CF6] focus:ring-[#8B5CF6]" defaultChecked />
-                            <label className="text-sm text-[#CBD5E1]">Require lowercase letters</label>
-                          </div>
-                          <div className="flex items-center">
-                            <input type="checkbox" className="mr-2 rounded bg-[#334155] border-[#475569] text-[#8B5CF6] focus:ring-[#8B5CF6]" defaultChecked />
-                            <label className="text-sm text-[#CBD5E1]">Require numbers</label>
-                          </div>
-                          <div className="flex items-center">
-                            <input type="checkbox" className="mr-2 rounded bg-[#334155] border-[#475569] text-[#8B5CF6] focus:ring-[#8B5CF6]" />
-                            <label className="text-sm text-[#CBD5E1]">Require special characters</label>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-[#F1F5F9] mb-2">Two-Factor Authentication</h4>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-[#CBD5E1]">Require 2FA for all admin accounts</p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
-                            <div className="w-11 h-6 bg-[#475569] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
-                          </label>
-                        </div>
-                      </div>
-                      <div className="pt-4">
-                        <Button className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white">
-                          Update Security Settings
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
-
-              {settingsSubTab === 'notifications' && (
-                <div className="w-full">
-                  <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 md:p-6">
-                    <h3 className="text-lg font-bold text-[#F1F5F9] mb-4">Notification Settings</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium text-[#F1F5F9] mb-2">Email Notifications</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm text-[#CBD5E1]">Payment confirmations</label>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input type="checkbox" className="sr-only peer" defaultChecked />
-                              <div className="w-11 h-6 bg-[#475569] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
-                            </label>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm text-[#CBD5E1]">System alerts</label>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input type="checkbox" className="sr-only peer" defaultChecked />
-                              <div className="w-11 h-6 bg-[#475569] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
-                            </label>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm text-[#CBD5E1]">Maintenance notifications</label>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input type="checkbox" className="sr-only peer" />
-                              <div className="w-11 h-6 bg-[#475569] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="pt-4">
-                        <Button className="bg-gradient-to-r from-[#8B5CF6] to-[#10B981] hover:from-[#7C3AED] hover:to-[#059669] text-white">
-                          Save Notification Settings
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )}
+              <SettingsManagement 
+                settingsSubTab={settingsSubTab} 
+                setSettingsSubTab={setSettingsSubTab} 
+                updateUrl={updateUrl} 
+              />
             </div>
           )}
         </div>

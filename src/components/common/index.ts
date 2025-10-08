@@ -4,5 +4,6 @@ export * from './Input';
 export * from './LoadingScreen';
 export * from './Logo';
 export * from './TestimonialCard';
-export * from './UniversalLoader';
 export * from './Toast';
+export * from './UniversalLoader';
+export * from './LoadingSpinner';

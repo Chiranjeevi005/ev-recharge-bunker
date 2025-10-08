@@ -6,6 +6,9 @@ import {
   Bar, 
   LineChart, 
   Line, 
+  PieChart, 
+  Pie, 
+  Cell, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -21,7 +24,7 @@ interface ChartData {
 }
 
 interface AnalyticsChartProps {
-  type: 'bar' | 'line';
+  type: 'bar' | 'line' | 'pie';
   data: ChartData[];
   dataKey: string;
   title: string;
@@ -36,7 +39,7 @@ export default function AnalyticsChart({
   data, 
   dataKey, 
   title,
-  colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'],
+  colors = ['#8B5CF6', '#10B981', '#0EA5E9', '#F59E0B', '#EC4899'],
   dataKeys,
   seriesNames
 }: AnalyticsChartProps) {
@@ -109,6 +112,42 @@ export default function AnalyticsChart({
               name={title} 
             />
           </LineChart>
+        );
+      
+      case 'pie':
+        return (
+          <PieChart
+            margin={{
+              top: 10,
+              right: 15,
+              left: 0,
+              bottom: 5,
+            }}
+          >
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              labelLine={true}
+              outerRadius={80}
+              fill={colors[0]}
+              dataKey={dataKey}
+              nameKey="name"
+              label={({ name, percent }) => `${name}: ${(percent as number * 100).toFixed(0)}%`}
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+              ))}
+            </Pie>
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#1E293B', 
+                borderColor: '#334155', 
+                color: 'white' 
+              }} 
+            />
+            <Legend />
+          </PieChart>
         );
       
       default:

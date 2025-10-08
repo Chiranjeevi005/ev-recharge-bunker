@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 interface UniversalLoaderProps {
@@ -166,7 +166,7 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
       gsap.killTweensOf([logo, textRef.current]);
       energies.forEach(energy => gsap.killTweensOf(energy));
     };
-  }, [task]);
+  }, [task, state]);
 
   // Update text when task prop changes with enhanced futuristic transition
   useEffect(() => {
@@ -201,7 +201,7 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
     >
       {/* Logo with focused animations */}
       <div className="relative flex items-center justify-center">
@@ -316,6 +316,7 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
             width={currentSize.width}
             height={currentSize.height}
             className="object-contain"
+            priority
           />
         </motion.div>
       </div>
@@ -335,7 +336,7 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
         }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
         {task}
       </motion.div>

@@ -3,13 +3,14 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 // Loading component for Suspense
 function Loading() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex items-center justify-center">
       <div className="text-[#F1F5F9] text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <LoadingSpinner size="lg" className="mb-4" />
         <p>Loading...</p>
       </div>
     </div>

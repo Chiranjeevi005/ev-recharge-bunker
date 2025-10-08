@@ -10,14 +10,15 @@ import { Card } from '@/components/common/Card';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { useContactForm } from '@/hooks/useContactForm';
-import { useRouteTransition } from '@/hooks/useRouteTransition'; // Added import
+import { useRouteTransition } from '@/hooks/useRouteTransition';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'; // Added import
 
 // Loading component for Suspense
 function Loading() {
   return (
     <div className="min-h-screen bg-[#1E293B] flex items-center justify-center">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+        <LoadingSpinner size="lg" className="mb-4" />
         <p className="text-[#CBD5E1]">Loading...</p>
       </div>
     </div>
