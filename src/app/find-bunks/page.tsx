@@ -80,7 +80,7 @@ export default function FindBunksPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { showLoader, hideLoader } = useLoader(); // Added loader context
 
-  // Load Razorpay script
+  // Load Razorpay script with better error handling
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       // Check if Razorpay is already loaded
@@ -95,8 +95,10 @@ export default function FindBunksPage() {
         resolve(true);
       };
       script.onerror = () => {
+        console.error('Failed to load Razorpay SDK');
         resolve(false);
       };
+      script.async = true; // Load asynchronously
       document.body.appendChild(script);
     });
   };
@@ -346,6 +348,16 @@ export default function FindBunksPage() {
         // Initialize Razorpay for real payments
         const razorpayKey = (process.env['NEXT_PUBLIC_RAZORPAY_KEY_ID'] || 'rzp_test_example').trim();
         
+        // Add validation for Razorpay key
+        if (!razorpayKey || razorpayKey === 'rzp_test_example') {
+          hideLoader(); // Hide loader
+          setToast({
+            message: 'Payment gateway not properly configured. Please contact support.',
+            type: 'error'
+          });
+          return;
+        }
+        
         const options = {
           key: razorpayKey,
           amount: orderData.amount,
@@ -412,9 +424,27 @@ export default function FindBunksPage() {
           }
         };
         
-        // @ts-ignore
-        const rzp = new window.Razorpay(options);
-        rzp.open();
+        // Improved Razorpay initialization with error handling
+        try {
+          // @ts-ignore
+          const rzp = new window.Razorpay(options);
+          rzp.on('payment.failed', function (response: any) {
+            console.error('Payment failed:', response.error);
+            hideLoader(); // Hide loader
+            setToast({
+              message: `Payment failed: ${response.error.description || 'Unknown error'}. Please try again.`,
+              type: 'error'
+            });
+          });
+          rzp.open();
+        } catch (rzpError: any) {
+          console.error("Error initializing Razorpay:", rzpError);
+          hideLoader(); // Hide loader
+          setToast({
+            message: `Failed to initialize payment gateway: ${rzpError.message || 'Unknown error'}. Please try again.`,
+            type: 'error'
+          });
+        }
       } else {
         hideLoader(); // Hide loader
         setToast({

@@ -35,6 +35,7 @@ export class PaymentService {
       // Use provided secret or get from environment variables, and trim whitespace
       const keySecret = (secret || process.env['RAZORPAY_KEY_SECRET'] || '').trim();
       
+      // Add validation for key secret
       if (!keySecret) {
         console.error('Razorpay key secret not found in environment variables');
         return false;
@@ -47,6 +48,12 @@ export class PaymentService {
           razorpay_payment_id: !!razorpay_payment_id,
           razorpay_signature: !!razorpay_signature
         });
+        return false;
+      }
+      
+      // Validate parameter types
+      if (typeof razorpay_order_id !== 'string' || typeof razorpay_payment_id !== 'string' || typeof razorpay_signature !== 'string') {
+        console.error('Invalid parameter types for signature verification');
         return false;
       }
       
@@ -91,6 +98,22 @@ export class PaymentService {
    */
   static async updatePaymentStatus(orderId: string, paymentId: string, status: string): Promise<Payment | null> {
     try {
+      // Validate input parameters
+      if (!orderId || typeof orderId !== 'string') {
+        console.error("Invalid orderId provided:", orderId);
+        return null;
+      }
+      
+      if (!paymentId || typeof paymentId !== 'string') {
+        console.error("Invalid paymentId provided:", paymentId);
+        return null;
+      }
+      
+      if (!status || typeof status !== 'string') {
+        console.error("Invalid status provided:", status);
+        return null;
+      }
+      
       const { db } = await connectToDatabase();
       
       console.log(`Attempting to update payment status for orderId: '${orderId}'`);

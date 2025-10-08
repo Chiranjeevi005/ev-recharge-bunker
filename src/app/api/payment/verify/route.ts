@@ -9,23 +9,93 @@ export async function POST(request: Request) {
     // Trim whitespace from environment variables to handle potential newline characters
     const razorpayKeySecret = process.env['RAZORPAY_KEY_SECRET']?.trim();
     
-    const { db } = await connectToDatabase(); // Removed client since we're not using transactions
-    const body = await request.json();
-    
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
-    
-    // Validate input
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    // Add validation for Razorpay key secret
+    if (!razorpayKeySecret) {
+      console.error("Razorpay key secret not found or is empty");
       return NextResponse.json(
-        { error: "Missing required parameters" }, 
+        { error: "Payment service not properly configured" }, 
+        { status: 500 }
+      );
+    }
+    
+    const { db } = await connectToDatabase(); // Removed client since we're not using transactions
+    
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
         { status: 400 }
       );
     }
     
-    // Additional validation for data types
-    if (typeof razorpay_order_id !== 'string' || typeof razorpay_payment_id !== 'string' || typeof razorpay_signature !== 'string') {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+    
+    // Validate input with detailed error messages
+    if (!razorpay_order_id) {
       return NextResponse.json(
-        { error: "Invalid parameter types. All parameters must be strings." }, 
+        { error: "Missing razorpay_order_id parameter" }, 
+        { status: 400 }
+      );
+    }
+    
+    if (!razorpay_payment_id) {
+      return NextResponse.json(
+        { error: "Missing razorpay_payment_id parameter" }, 
+        { status: 400 }
+      );
+    }
+    
+    if (!razorpay_signature) {
+      return NextResponse.json(
+        { error: "Missing razorpay_signature parameter" }, 
+        { status: 400 }
+      );
+    }
+    
+    // Additional validation for data types and format
+    if (typeof razorpay_order_id !== 'string') {
+      return NextResponse.json(
+        { error: "Invalid razorpay_order_id parameter type. Expected string." }, 
+        { status: 400 }
+      );
+    }
+    
+    if (typeof razorpay_payment_id !== 'string') {
+      return NextResponse.json(
+        { error: "Invalid razorpay_payment_id parameter type. Expected string." }, 
+        { status: 400 }
+      );
+    }
+    
+    if (typeof razorpay_signature !== 'string') {
+      return NextResponse.json(
+        { error: "Invalid razorpay_signature parameter type. Expected string." }, 
+        { status: 400 }
+      );
+    }
+    
+    // Validate parameter lengths
+    if (razorpay_order_id.length > 100) {
+      return NextResponse.json(
+        { error: "Invalid razorpay_order_id parameter. Too long." }, 
+        { status: 400 }
+      );
+    }
+    
+    if (razorpay_payment_id.length > 100) {
+      return NextResponse.json(
+        { error: "Invalid razorpay_payment_id parameter. Too long." }, 
+        { status: 400 }
+      );
+    }
+    
+    if (razorpay_signature.length > 200) {
+      return NextResponse.json(
+        { error: "Invalid razorpay_signature parameter. Too long." }, 
         { status: 400 }
       );
     }

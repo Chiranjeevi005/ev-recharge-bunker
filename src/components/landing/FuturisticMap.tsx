@@ -463,8 +463,15 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
       }
       
       // Initialize Razorpay
+      const razorpayKey = (process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example').trim();
+      
+      // Validate Razorpay key
+      if (!razorpayKey || razorpayKey === 'rzp_test_example') {
+        throw new Error('Payment gateway not properly configured');
+      }
+      
       const options = {
-        key: (process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example').trim(),
+        key: razorpayKey,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'EV Bunker',
@@ -537,31 +544,41 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
         }
       };
       
-      // @ts-ignore
-      const rzp = new window.Razorpay(options);
-      
-      // Add error handling for Razorpay
-      rzp.on('payment.failed', function (response: any) {
-        console.error('Payment failed:', response);
-        try {
-          const errorMessage = response.error?.description || 'Payment failed';
-          const errorCode = response.error?.code || 'UNKNOWN_ERROR';
-          console.error('Payment failure details:', { code: errorCode, description: errorMessage });
-          setToast({
-            message: `Payment failed: ${errorMessage} (Code: ${errorCode})`,
-            type: 'error'
-          });
-        } catch (e) {
-          console.error('Error processing payment failure:', e);
-          setToast({
-            message: 'Payment failed. Please try again.',
-            type: 'error'
-          });
-        }
+      // Initialize Razorpay with error handling
+      try {
+        // @ts-ignore
+        const rzp = new window.Razorpay(options);
+        
+        // Add error handling for Razorpay
+        rzp.on('payment.failed', function (response: any) {
+          console.error('Payment failed:', response);
+          try {
+            const errorMessage = response.error?.description || 'Payment failed';
+            const errorCode = response.error?.code || 'UNKNOWN_ERROR';
+            console.error('Payment failure details:', { code: errorCode, description: errorMessage });
+            setToast({
+              message: `Payment failed: ${errorMessage} (Code: ${errorCode})`,
+              type: 'error'
+            });
+          } catch (e) {
+            console.error('Error processing payment failure:', e);
+            setToast({
+              message: 'Payment failed. Please try again.',
+              type: 'error'
+            });
+          }
+          setIsLoading(false);
+        });
+        
+        rzp.open();
+      } catch (rzpError: any) {
+        console.error('Error initializing Razorpay:', rzpError);
+        setToast({
+          message: `Failed to initialize payment gateway: ${rzpError.message || 'Unknown error'}`,
+          type: 'error'
+        });
         setIsLoading(false);
-      });
-      
-      rzp.open();
+      }
     } catch (error) {
       console.error('Error booking slot:', error);
       setToast({

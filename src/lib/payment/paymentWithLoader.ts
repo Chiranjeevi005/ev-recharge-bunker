@@ -43,83 +43,138 @@ export function usePayment() {
       return {
         orderData,
         initializeRazorpay: (prefillData: any = {}) => {
-          // Initialize Razorpay
-          const razorpay = new (window as any).Razorpay({
-            key: (process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example').trim(),
-            order_id: orderData.orderId,
-            handler: async function (response: any) {
-              try {
-                // Verify payment
-                updateLoader("Verifying payment...", 'loading');
-                
-                const verifyResponse = await fetch('/api/payment/verify', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                  }),
-                });
-                
-                if (!verifyResponse.ok) {
-                  throw new Error('Payment verification failed');
-                }
-                
-                const verifyData = await verifyResponse.json();
-                
-                if (verifyData.success) {
-                  // Update loader to success state
-                  updateLoader("Payment successful!", 'success');
+          // Get Razorpay key with proper validation
+          const razorpayKey = (process.env["NEXT_PUBLIC_RAZORPAY_KEY_ID"] || 'rzp_test_example').trim();
+          
+          // Validate Razorpay key
+          if (!razorpayKey || razorpayKey === 'rzp_test_example') {
+            const errorMsg = 'Payment gateway not properly configured';
+            updateLoader(errorMsg, 'error');
+            if (onPaymentFailure) {
+              onPaymentFailure(errorMsg);
+            }
+            setTimeout(() => {
+              hideLoader();
+            }, 2000);
+            return;
+          }
+          
+          // Initialize Razorpay with error handling
+          try {
+            const razorpay = new (window as any).Razorpay({
+              key: razorpayKey,
+              amount: orderData.amount,
+              currency: orderData.currency,
+              name: "EV Bunker",
+              description: orderData.description || "EV Charging Service",
+              order_id: orderData.orderId,
+              handler: async function (response: any) {
+                try {
+                  // Verify payment
+                  updateLoader("Verifying payment...", 'loading');
                   
-                  // Process successful payment
-                  await PaymentService.processSuccessfulPayment(
-                    orderData.orderId,
-                    response.razorpay_payment_id,
-                    paymentData.userId
-                  );
+                  const verifyResponse = await fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature,
+                    }),
+                  });
                   
-                  // Call success callback
-                  if (onPaymentSuccess) {
-                    onPaymentSuccess();
+                  if (!verifyResponse.ok) {
+                    throw new Error('Payment verification failed');
+                  }
+                  
+                  const verifyData = await verifyResponse.json();
+                  
+                  if (verifyData.success) {
+                    // Update loader to success state
+                    updateLoader("Payment successful!", 'success');
+                    
+                    // Process successful payment
+                    await PaymentService.processSuccessfulPayment(
+                      orderData.orderId,
+                      response.razorpay_payment_id,
+                      paymentData.userId
+                    );
+                    
+                    // Call success callback
+                    if (onPaymentSuccess) {
+                      onPaymentSuccess();
+                    }
+                    
+                    // Hide loader after delay
+                    setTimeout(() => {
+                      hideLoader();
+                    }, 1500);
+                  } else {
+                    throw new Error('Payment verification failed');
+                  }
+                } catch (error) {
+                  const errorMsg = error instanceof Error ? error.message : 'Payment verification failed';
+                  updateLoader(`Payment failed: ${errorMsg}`, 'error');
+                  
+                  // Call failure callback
+                  if (onPaymentFailure) {
+                    onPaymentFailure(errorMsg);
                   }
                   
                   // Hide loader after delay
                   setTimeout(() => {
                     hideLoader();
-                  }, 1500);
-                } else {
-                  throw new Error('Payment verification failed');
+                  }, 2000);
                 }
-              } catch (error) {
-                const errorMsg = error instanceof Error ? error.message : 'Payment verification failed';
-                updateLoader(`Payment failed: ${errorMsg}`, 'error');
-                
-                // Call failure callback
-                if (onPaymentFailure) {
-                  onPaymentFailure(errorMsg);
+              },
+              prefill: {
+                email: prefillData.email || paymentData.email,
+                name: prefillData.name || paymentData.name,
+                contact: prefillData.contact || paymentData.contact,
+              },
+              theme: {
+                color: '#10B981',
+              },
+              modal: {
+                ondismiss: function() {
+                  updateLoader("Payment cancelled", 'error');
+                  setTimeout(() => {
+                    hideLoader();
+                  }, 1000);
                 }
-                
-                // Hide loader after delay
-                setTimeout(() => {
-                  hideLoader();
-                }, 2000);
               }
-            },
-            prefill: {
-              email: prefillData.email || paymentData.email,
-              name: prefillData.name || paymentData.name,
-              contact: prefillData.contact || paymentData.contact,
-            },
-            theme: {
-              color: '#10B981',
-            },
-          });
-          
-          // Open Razorpay checkout
-          razorpay.open();
+            });
+            
+            // Add payment failure handler
+            razorpay.on('payment.failed', function (response: any) {
+              const errorMsg = response.error.description || 'Payment failed';
+              updateLoader(`Payment failed: ${errorMsg}`, 'error');
+              
+              if (onPaymentFailure) {
+                onPaymentFailure(errorMsg);
+              }
+              
+              setTimeout(() => {
+                hideLoader();
+              }, 2000);
+            });
+            
+            // Open Razorpay checkout
+            razorpay.open();
+          } catch (rzpError: any) {
+            const errorMsg = rzpError.message || 'Failed to initialize payment gateway';
+            updateLoader(`Payment failed: ${errorMsg}`, 'error');
+            
+            if (onPaymentFailure) {
+              onPaymentFailure(errorMsg);
+            }
+            
+            setTimeout(() => {
+              hideLoader();
+            }, 2000);
+          }
         }
       };
     } catch (error) {

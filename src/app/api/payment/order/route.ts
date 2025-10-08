@@ -45,6 +45,15 @@ const validatePaymentRequest = (body: any) => {
     validatedData.amount = Math.max(1, amount);
   }
   
+  // Additional validation for realistic values
+  if (validatedData.amount > 100000) { // Max ₹1000
+    errors.push('Amount exceeds maximum allowed value');
+  }
+  
+  if (validatedData.duration > 24) { // Max 24 hours
+    errors.push('Duration exceeds maximum allowed value');
+  }
+  
   return {
     isValid: errors.length === 0,
     errors,
@@ -53,41 +62,53 @@ const validatePaymentRequest = (body: any) => {
 };
 
 export async function POST(request: Request) {
+  // Initialize Razorpay instance inside the function for better compatibility with serverless environments
+  let razorpay: Razorpay | null = null;
+  
   try {
-    // Initialize Razorpay instance inside the function for better compatibility with serverless environments
-    let razorpay: Razorpay | null = null;
-    
-    try {
-      if (!process.env['RAZORPAY_KEY_ID'] || !process.env['RAZORPAY_KEY_SECRET']) {
-        console.error("Razorpay environment variables not set");
-        return NextResponse.json(
-          { 
-            error: "Payment service not properly configured",
-            details: "Missing Razorpay API keys. Please check environment variables."
-          },
-          { status: 500 }
-        );
-      }
-      
-      // Trim whitespace from environment variables to handle potential newline characters
-      const razorpayKeyId = process.env['RAZORPAY_KEY_ID'].trim();
-      const razorpayKeySecret = process.env['RAZORPAY_KEY_SECRET'].trim();
-      
-      razorpay = new Razorpay({
-        key_id: razorpayKeyId,
-        key_secret: razorpayKeySecret
-      });
-    } catch (razorpayInitError: any) {
-      console.error("Error initializing Razorpay:", razorpayInitError);
+    if (!process.env['RAZORPAY_KEY_ID'] || !process.env['RAZORPAY_KEY_SECRET']) {
+      console.error("Razorpay environment variables not set");
       return NextResponse.json(
         { 
-          error: "Failed to initialize payment service", 
-          details: razorpayInitError.message || "Unknown error during Razorpay initialization"
+          error: "Payment service not properly configured",
+          details: "Missing Razorpay API keys. Please check environment variables."
         },
         { status: 500 }
       );
     }
-
+    
+    // Trim whitespace from environment variables to handle potential newline characters
+    const razorpayKeyId = process.env['RAZORPAY_KEY_ID'].trim();
+    const razorpayKeySecret = process.env['RAZORPAY_KEY_SECRET'].trim();
+    
+    // Add additional validation to ensure keys are not empty
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      console.error("Razorpay environment variables are empty");
+      return NextResponse.json(
+        { 
+          error: "Payment service not properly configured",
+          details: "Razorpay API keys are empty. Please check environment variables."
+        },
+        { status: 500 }
+      );
+    }
+    
+    razorpay = new Razorpay({
+      key_id: razorpayKeyId,
+      key_secret: razorpayKeySecret
+    });
+  } catch (razorpayInitError: any) {
+    console.error("Error initializing Razorpay:", razorpayInitError);
+    return NextResponse.json(
+      { 
+        error: "Failed to initialize payment service", 
+        details: razorpayInitError.message || "Unknown error during Razorpay initialization"
+      },
+      { status: 500 }
+    );
+  }
+  
+  try {
     const { db } = await connectToDatabase();
 
     // Parse the request body safely
