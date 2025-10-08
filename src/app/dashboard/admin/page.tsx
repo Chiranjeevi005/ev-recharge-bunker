@@ -119,6 +119,11 @@ function AdminDashboardContent() {
   const { isConnected, updates, joinUserRoom, data: realTimeData, loading, error } = useRealTimeData();
   const dataFetchedRef = useRef(false);
   
+  // Check if we're running on Vercel (serverless environment)
+  const isVercel = process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'production' || 
+                  process.env['VERCEL'] === '1' ||
+                  (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'));
+  
   // Initialize route transition handler
   // We'll move this to a separate component that's wrapped in Suspense
   // useRouteTransition();
@@ -696,7 +701,9 @@ function AdminDashboardContent() {
                 <h1 className="text-3xl font-bold text-[#F1F5F9] mb-2">Admin Powerhouse</h1>
                 <p className="text-[#CBD5E1] text-xl">Your central control panel to manage, monitor, and master the system with ease.</p>
                 <p className="text-[#CBD5E1] mt-2">Welcome, {session?.user?.name || 'Admin'}. Here's what's happening today.</p>
-                {isConnected ? (
+                {isVercel ? (
+                  <p className="text-blue-400 text-sm mt-1">Real-time connection: Not available (Vercel deployment)</p>
+                ) : isConnected ? (
                   <p className="text-green-400 text-sm mt-1">Real-time connection: Active</p>
                 ) : (
                   <p className="text-yellow-400 text-sm mt-1">Real-time connection: Connecting...</p>

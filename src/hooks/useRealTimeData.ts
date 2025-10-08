@@ -91,6 +91,11 @@ export function useRealTimeData(): UseRealTimeDataReturn {
   const maxReconnectAttempts = 5;
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Check if we're running on Vercel (serverless environment)
+  const isVercel = process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'production' || 
+                  process.env['VERCEL'] === '1' ||
+                  (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'));
+
   // Function to fetch initial data
   const fetchInitialData = async () => {
     try {
@@ -169,6 +174,35 @@ export function useRealTimeData(): UseRealTimeDataReturn {
   };
 
   useEffect(() => {
+    // If we're on Vercel (serverless environment), skip socket initialization
+    // and rely on polling instead
+    if (isVercel) {
+      console.log('Running on Vercel - using polling instead of WebSocket');
+      setLoading(false);
+      
+      // Set up polling as the primary method
+      setTimeout(() => {
+        // If we haven't received any real-time updates after 5 seconds, set up polling fallback
+        if (isChangeStreamsAvailableRef.current && !pollingIntervalRef.current) {
+          console.log('Setting up polling fallback for Vercel environment...');
+          isChangeStreamsAvailableRef.current = false;
+          
+          // Set up polling interval
+          pollingIntervalRef.current = setInterval(() => {
+            fetchInitialData();
+            fetchUpdatedStats();
+          }, 30000); // Poll every 30 seconds
+        }
+      }, 5000);
+      
+      // Cleanup function
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+      };
+    }
+
     let socketInstance: Socket | null = null;
     
     const connectSocket = () => {

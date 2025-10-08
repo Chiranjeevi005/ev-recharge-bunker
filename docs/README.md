@@ -163,6 +163,23 @@ When deploying to Vercel, set the following environment variables in the Vercel 
 - `RAZORPAY_SECRET`: Your production Razorpay secret
 - `ARCJET_KEY`: Your production Arcjet key
 
+### Vercel Deployment Considerations
+
+Due to Vercel's serverless architecture, some features behave differently than in traditional server environments:
+
+#### Real-time Features Limitations
+- **Socket.IO/WebSocket connections are not supported** on Vercel's serverless platform
+- The application automatically detects when it's running on Vercel and falls back to polling mechanisms
+- Real-time updates will still work but with a slight delay (polling interval of 30 seconds)
+
+#### Fallback Mechanisms
+When deployed to Vercel:
+1. Socket.IO connections are disabled
+2. Data is refreshed every 30 seconds via polling
+3. Real-time status indicators show "Not available (Vercel deployment)"
+
+For detailed deployment instructions, see `DEPLOYMENT_CHECKLIST.md`.
+
 ## 📁 Project Structure
 
 ```
@@ -198,48 +215,3 @@ ev-bunker/
 - `npm run build`: Create production build
 - `npm run start`: Start production server
 - `npm run lint`: Run ESLint
-- `npm run type-check`: Run TypeScript type checking
-- `npm test`: Run test suite
-- `npm run seed`: Seed database with test data
-
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-- Check that your `DATABASE_URL` is correctly formatted
-- Verify your MongoDB credentials
-- Ensure your IP address is whitelisted in MongoDB Atlas (if using)
-
-### Redis Connection Issues
-- If Redis is not available, real-time features will be disabled
-- Check that your `REDIS_URL` is correctly formatted
-- Verify Redis is running on the specified host and port
-
-### Authentication Issues
-- Make sure `NEXTAUTH_SECRET` is set
-- Verify `NEXTAUTH_URL` matches your deployment URL
-- Check that the database is accessible and contains user data
-
-### Build Issues
-- Run `npm run type-check` to identify TypeScript errors
-- Run `npm run lint` to identify code style issues
-- Ensure all environment variables are properly configured
-
-## 📚 Additional Documentation
-
-For more detailed information about the project, see:
-- `PROJECT_REPORT.md`: Comprehensive project documentation
-- `VERCEL_DEPLOYMENT_GUIDE.md`: Detailed deployment instructions
-- `DEPLOYMENT_READY.md`: Deployment readiness status
-
-## 🎉 Status
-
-✅ **Ready for Production Deployment**
-- All critical errors resolved
-- Builds complete successfully
-- Authentication working with enhanced security
-- Real-time features functional
-- Payment processing integrated
-- Admin and client dashboards operational
-- Significant security improvements implemented
-
-The application is fully prepared for Vercel deployment with comprehensive documentation and deployment guides. All hardcoded credentials have been removed and authentication now uses secure database-backed verification.

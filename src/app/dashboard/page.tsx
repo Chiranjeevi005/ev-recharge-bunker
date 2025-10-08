@@ -125,6 +125,17 @@ function DashboardContent() {
 
   // Initialize socket connection and set up listeners
   useEffect(() => {
+    // Check if we're running on Vercel (serverless environment)
+    const isVercel = process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'production' || 
+                    process.env['VERCEL'] === '1' ||
+                    (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'));
+    
+    // Skip socket initialization on Vercel
+    if (isVercel) {
+      console.log('Running on Vercel - skipping Socket.IO initialization');
+      return;
+    }
+    
     if (status === "authenticated" && session?.user?.id) {
       // Initialize socket connection
       socketRef.current = io({
@@ -218,6 +229,85 @@ function DashboardContent() {
     // Return a no-op cleanup function for cases where the effect doesn't run
     return () => {};
   }, [status, session?.user?.id, showLoader, hideLoader]);
+
+  // Fallback polling mechanism for Vercel environment
+  useEffect(() => {
+    // Check if we're running on Vercel (serverless environment)
+    const isVercel = process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'production' || 
+                    process.env['VERCEL'] === '1' ||
+                    (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'));
+    
+    // Only set up polling on Vercel
+    if (!isVercel) {
+      return;
+    }
+    
+    let pollingInterval: NodeJS.Timeout | null = null;
+    
+    // Function to fetch updated data
+    const fetchUpdatedData = async () => {
+      if (status !== "authenticated" || !session?.user?.id) {
+        return;
+      }
+      
+      try {
+        // Fetch payment history
+        const paymentResponse = await fetch(`/api/dashboard/payments?userId=${session.user.id}`);
+        if (paymentResponse.ok) {
+          const paymentData = await paymentResponse.json();
+          
+          // Transform payment data to ensure it matches the expected structure
+          const transformedPaymentData = Array.isArray(paymentData) ? paymentData.map((payment: any) => ({
+            // Ensure all required fields are present with proper defaults
+            userId: payment.userId || session.user.id || '',
+            paymentId: payment.paymentId || payment.id || payment._id || '',
+            amount: payment.amount || 0,
+            status: payment.status || 'unknown',
+            method: payment.method || 'unknown',
+            createdAt: payment.createdAt || payment.updatedAt || new Date().toISOString(),
+            updatedAt: payment.updatedAt || payment.createdAt || new Date().toISOString(),
+            // Optional fields
+            date: payment.date || payment.createdAt || payment.updatedAt || '',
+            stationId: payment.stationId || '',
+            stationName: payment.stationName || payment.station?.name || 'Unknown Station',
+            slotId: payment.slotId || '',
+            duration: payment.duration || 0,
+            orderId: payment.orderId || '',
+            currency: payment.currency || 'INR',
+            // Use _id as id if id is not present
+            id: payment.id || payment._id || payment.paymentId || ''
+          })) : [];
+          
+          const recentPayments = transformedPaymentData
+            .sort((a: Payment, b: Payment) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5);
+          setPaymentHistory(recentPayments);
+        }
+        
+        // Fetch slot availability
+        const slotResponse = await fetch(`/api/dashboard/slots?userId=${session.user.id}`);
+        if (slotResponse.ok) {
+          const slotData = await slotResponse.json();
+          setSlotAvailability(slotData);
+        }
+      } catch (error) {
+        console.error("Error fetching updated dashboard data:", error);
+      }
+    };
+    
+    // Set up polling interval
+    pollingInterval = setInterval(fetchUpdatedData, 30000); // Poll every 30 seconds
+    
+    // Fetch initial data
+    fetchUpdatedData();
+    
+    // Clean up polling interval
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [status, session?.user?.id]);
 
   // Fetch initial dashboard data - simplified version
   useEffect(() => {
