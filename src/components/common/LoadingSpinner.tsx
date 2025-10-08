@@ -10,9 +10,9 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   className = ''
 }) => {
   const sizeClasses = {
-    sm: 'w-4 h-4 border-2',
-    md: 'w-8 h-8 border-4',
-    lg: 'w-12 h-12 border-4'
+    sm: 'w-3 h-3 border-2 xs:w-4 xs:h-4',
+    md: 'w-6 h-6 border-3 xs:w-8 xs:h-8 border-4',
+    lg: 'w-8 h-8 border-4 xs:w-10 xs:h-10 md:w-12 md:h-12 md:border-4'
   };
   
   const currentSize = sizeClasses[size];

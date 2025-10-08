@@ -101,7 +101,7 @@ export const LoaderProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <UniversalLoader task={task} state={state} size="lg" />
+            <UniversalLoader task={task} state={state} size="md" />
           </motion.div>
         )}
       </AnimatePresence>

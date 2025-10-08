@@ -293,10 +293,10 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
           
           el.innerHTML = `
             <div class="relative">
-              <div class="w-6 h-6 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] border-2 border-white flex items-center justify-center shadow-lg cursor-pointer">
-                <span class="text-white text-xs font-bold">⚡</span>
+              <div class="w-5 h-5 xs:w-6 xs:h-6 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#10B981] border-2 border-white flex items-center justify-center shadow-lg cursor-pointer">
+                <span class="text-white text-[10px] xs:text-xs font-bold">⚡</span>
               </div>
-              <div class="absolute -top-2 -right-2 bg-[#10B981] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <div class="absolute -top-1 -right-1 xs:-top-2 xs:-right-2 bg-[#10B981] text-white text-[8px] xs:text-xs rounded-full w-4 h-4 xs:w-5 xs:h-5 flex items-center justify-center">
                 ${availableSlots}
               </div>
             </div>
@@ -351,7 +351,7 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
             // Only fit bounds if we have valid stations
             if (validStationCount > 0 && !bounds.isEmpty()) {
               mapRef.current.fitBounds(bounds, {
-                padding: 50,
+                padding: 30,
                 maxZoom: 15
               });
             } else {
@@ -590,46 +590,46 @@ export const FuturisticMap: React.FC<{ userId?: string | undefined; location?: s
   };
 
   return (
-    <div className="map-container rounded-xl overflow-hidden border border-[#475569]">
+    <div className="map-container rounded-lg xs:rounded-xl overflow-hidden border border-[#475569]">
       {/* Map container */}
       <div ref={mapContainerRef} className="w-full h-full" />
       
       {/* Station info panel */}
       {selectedStation && (
-        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-80 bg-[#1E293B] border border-[#475569] rounded-xl p-4">
+        <div className="absolute bottom-2 xs:bottom-3 sm:bottom-4 left-2 xs:left-3 sm:left-4 right-2 xs:right-3 sm:right-4 md:left-auto md:right-4 md:bottom-4 md:w-64 xs:md:w-72 bg-[#1E293B] border border-[#475569] rounded-lg xs:rounded-xl p-2 xs:p-3 sm:p-4">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-bold text-[#F1F5F9]">{selectedStation.name}</h3>
-              <p className="text-sm text-[#94A3B8]">{selectedStation.address}</p>
+              <h3 className="text-sm xs:text-base sm:text-lg font-bold text-[#F1F5F9]">{selectedStation.name}</h3>
+              <p className="text-xs xs:text-sm text-[#94A3B8]">{selectedStation.address}</p>
             </div>
             <button 
               onClick={() => setSelectedStation(null)}
-              className="text-[#94A3B8] hover:text-[#F1F5F9]"
+              className="text-[#94A3B8] hover:text-[#F1F5F9] text-sm xs:text-base"
             >
               ✕
             </button>
           </div>
           
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-2 xs:mt-3 flex items-center justify-between">
             <div>
-              <p className="text-sm text-[#94A3B8]">Available Slots</p>
-              <p className="text-lg font-bold text-[#10B981]">
+              <p className="text-xs xs:text-sm text-[#94A3B8]">Available Slots</p>
+              <p className="text-sm xs:text-base sm:text-lg font-bold text-[#10B981]">
                 {selectedStation.slots.filter(slot => slot.status === 'available').length}/{selectedStation.slots.length}
               </p>
             </div>
             <div>
-              <p className="text-sm text-[#94A3B8]">Pricing</p>
-              <p className="text-lg font-bold text-[#F1F5F9]">
+              <p className="text-xs xs:text-sm text-[#94A3B8]">Pricing</p>
+              <p className="text-sm xs:text-base sm:text-lg font-bold text-[#F1F5F9]">
                 ₹{Math.min(...selectedStation.slots.map(slot => slot.pricePerHour))}/hr
               </p>
             </div>
           </div>
           
-          <div className="mt-4">
+          <div className="mt-3 xs:mt-4">
             <button 
               onClick={handleBookNow}
               disabled={isLoading}
-              className="w-full py-2 px-4 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full py-1.5 xs:py-2 px-3 xs:px-4 bg-gradient-to-r from-[#8B5CF6] to-[#10B981] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-xs xs:text-sm sm:text-base"
             >
               {isLoading ? 'Processing...' : 'Book Now'}
             </button>
