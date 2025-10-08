@@ -24,10 +24,10 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
   const energyRefs = useRef<HTMLDivElement[]>([]);
   
   const sizeClasses = {
-    sm: { width: 30, height: 30 },
-    md: { width: 40, height: 40 },
-    lg: { width: 50, height: 50 },
-    xl: { width: 60, height: 60 }
+    sm: { width: 40, height: 40 },
+    md: { width: 60, height: 60 },
+    lg: { width: 80, height: 80 },
+    xl: { width: 100, height: 100 }
   };
   
   // State-based glow colors
@@ -272,7 +272,7 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
             <motion.div
               key={`energy-${i}`}
               ref={(el) => { if (el) energyRefs.current[i] = el; }}
-              className="absolute w-1 h-1 rounded-full"
+              className="absolute w-1.5 h-1.5 rounded-full"
               style={{
                 background: position.background === 0 
                   ? 'rgba(255, 255, 255, 0.9)' 
@@ -324,14 +324,14 @@ export const UniversalLoader: React.FC<UniversalLoaderProps> = ({
       {/* Enhanced futuristic animated task text with additional effects */}
       <motion.div 
         ref={textRef}
-        className="mt-4 xs:mt-5 sm:mt-6 md:mt-8 text-center font-mono font-light tracking-wider relative"
+        className="mt-8 text-center font-mono font-light tracking-wider relative"
         style={{
           color: state === 'success' 
             ? '#10B981'
             : state === 'error'
             ? '#EF4444'
             : 'var(--color-foreground, #F1F5F9)',
-          fontSize: size === 'sm' ? '0.75rem' : size === 'md' ? '0.875rem' : size === 'lg' ? '1rem' : '1.125rem',
+          fontSize: size === 'sm' ? '0.875rem' : size === 'md' ? '1rem' : size === 'lg' ? '1.125rem' : '1.25rem',
           fontFamily: 'monospace'
         }}
         initial={{ opacity: 0, y: 20 }}

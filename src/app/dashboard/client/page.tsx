@@ -191,42 +191,42 @@ function ClientDashboardContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1E293B] to-[#334155]">
       <Navbar />
-      <main className="pt-16 p-1 xs:p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6">
-        <div className="w-full mx-auto">
+      <main className="pt-16 p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto">
           {/* Welcome Section */}
-          <div className="mb-3 xs:mb-4 sm:mb-5 md:mb-6 lg:mb-7 rounded-2xl bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 p-2 xs:p-3 sm:p-4 md:p-5 border border-[#475569]/50 backdrop-blur-sm">
-            <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-3 sm:gap-4">
-              <div className="text-center xs:text-left">
-                <h1 className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#F1F5F9] mb-1">
+          <div className="mb-6 sm:mb-8 rounded-2xl bg-gradient-to-br from-[#1E3A5F]/50 to-[#0F2A4A]/30 p-4 sm:p-6 border border-[#475569]/50 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#F1F5F9] mb-1 sm:mb-2">
                   Welcome back, {session.user?.name || 'User'}
                 </h1>
-                <p className="text-[10px] xs:text-xs sm:text-sm md:text-base text-[#CBD5E1]">
+                <p className="text-sm sm:text-base text-[#CBD5E1]">
                   Proud to be part of the EV revolution – Together reducing CO2 and building a greener future.
                 </p>
               </div>
-              <div className="flex flex-col items-center xs:items-end">
+              <div className="flex flex-col sm:items-end">
                 <Button 
                   onClick={() => router.push('/find-bunks')}
-                  className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] hover:from-[#7C3AED] hover:to-[#DB2777] text-white font-medium py-1.5 xs:py-2 sm:py-2.5 md:py-3 px-2 xs:px-3 sm:px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-[#8B5CF6]/30 text-[10px] xs:text-xs sm:text-sm md:text-base"
+                  className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] hover:from-[#7C3AED] hover:to-[#DB2777] text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-[#8B5CF6]/30"
                 >
                   Find Bunks
                 </Button>
-                <p className="text-[10px] xs:text-xs sm:text-sm text-[#94A3B8] mt-1">Book your next charging session</p>
+                <p className="text-xs text-[#94A3B8] mt-2">Book your next charging session</p>
               </div>
             </div>
           </div>
           
           {/* Stats Section */}
-          <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-1 xs:gap-2 sm:gap-3 md:gap-4 mb-3 xs:mb-4 sm:mb-5 md:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6">
             {stats.map((stat: any) => (
-              <Card key={stat.id} className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-2 xs:p-3 sm:p-4 md:p-5 hover:border-[#8B5CF6] transition-all duration-300 hover:shadow-lg hover:shadow-[#8B5CF6]/20">
+              <Card key={stat.id} className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-3 sm:p-4 md:p-6 hover:border-[#8B5CF6] transition-all duration-300 hover:shadow-lg hover:shadow-[#8B5CF6]/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[8px] xs:text-[10px] sm:text-xs md:text-sm font-medium text-[#CBD5E1]">{stat.name}</p>
-                    <p className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl font-bold text-[#F1F5F9] mt-0.5">{stat.value}</p>
+                    <p className="text-xs sm:text-sm font-medium text-[#CBD5E1]">{stat.name}</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-[#F1F5F9] mt-1">{stat.value}</p>
                   </div>
-                  <div className="p-1 xs:p-1.5 sm:p-2 rounded-lg bg-[#8B5CF6]/20">
-                    <svg className="w-3 xs:w-4 sm:w-5 md:w-6 h-3 xs:h-4 sm:h-5 md:h-6 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="p-2 rounded-lg bg-[#8B5CF6]/20">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
                   </div>
@@ -236,9 +236,9 @@ function ClientDashboardContent() {
           </div>
           
           {/* Main Content Grid - Single Page Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 xs:gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column */}
-            <div className="lg:col-span-2 space-y-2 xs:space-y-3 sm:space-y-4 md:space-y-5">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Charging Status */}
               <ChargingStatusCard 
                 status={chargingStatus}
@@ -250,15 +250,15 @@ function ClientDashboardContent() {
               />
               
               {/* Map Section */}
-              <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-2 xs:p-3 sm:p-4 md:p-5">
-                <h2 className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl font-bold text-[#F1F5F9] mb-2 xs:mb-3">Find Nearby Bunks</h2>
-                <div className="h-32 xs:h-40 sm:h-48 md:h-56 lg:h-64 xl:h-80 rounded-lg bg-gradient-to-br from-[#0F2A4A] to-[#1E3A5F] border border-[#334155] flex items-center justify-center">
+              <Card className="bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold text-[#F1F5F9] mb-4">Find Nearby Bunks</h2>
+                <div className="h-64 sm:h-80 rounded-lg bg-gradient-to-br from-[#0F2A4A] to-[#1E3A5F] border border-[#334155] flex items-center justify-center">
                   <MapSection onBookPay={handleBookFromMap} />
                 </div>
-                <div className="mt-2 xs:mt-3 flex justify-center">
+                <div className="mt-4 flex justify-center">
                   <Button 
                     onClick={() => router.push('/find-bunks')}
-                    className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] hover:from-[#7C3AED] hover:to-[#DB2777] text-white font-medium py-1 xs:py-1.5 sm:py-2 px-2 xs:px-3 sm:px-4 rounded-lg transition-all duration-300 text-[10px] xs:text-xs sm:text-sm md:text-base"
+                    className="bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] hover:from-[#7C3AED] hover:to-[#DB2777] text-white font-medium py-2 px-4 rounded-lg transition-all duration-300"
                   >
                     Explore All Bunks
                   </Button>
@@ -274,7 +274,7 @@ function ClientDashboardContent() {
             </div>
             
             {/* Right Column */}
-            <div className="space-y-2 xs:space-y-3 sm:space-y-4 md:space-y-5">
+            <div className="space-y-4 sm:space-y-6">
               {/* Slot Availability */}
               <SlotAvailabilityCard 
                 stationName="Green Energy Hub"
